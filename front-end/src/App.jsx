@@ -7,10 +7,12 @@ import SupervisorDashboard from './pages/SupervisorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import QualityControl from './pages/QualityControl';
 import LiveDashboard from './pages/LiveDashboard';
+import Navbar from './components/Navbar';
 
 function App() {
   return (
     <Router>
+      <Navbar/>
       <Routes>
         <Route path="/" element={<Login />} />
 
