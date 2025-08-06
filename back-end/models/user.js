@@ -20,6 +20,11 @@ const userSchema = new Schema({
         required: true,
         enum: ["user","supervisor", "manager"],
         default: "user"
+    },
+    userId: {
+        typr: String,
+        required: true,
+        unique: true,
     }
 });
 
