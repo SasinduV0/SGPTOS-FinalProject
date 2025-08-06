@@ -18,7 +18,7 @@ const userSchema = new Schema({
     role: {
         type: String,
         required: true,
-        enum: ["user","supervisor", "manager"],
+        enum: ["qc","supervisor", "manager", "admin","live-dashboard"],
         default: "user"
     }
 });
