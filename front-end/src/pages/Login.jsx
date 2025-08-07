@@ -7,7 +7,7 @@ import { FaTachometerAlt, FaChartLine, FaCogs } from 'react-icons/fa';
 
 const Login = () => {
 
-    const [form, setForm] = useState({ email: '', password: '', role:'' });
+    const [form, setForm] = useState({ userID: '', password: '', role:'' });
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -105,15 +105,15 @@ const Login = () => {
           </div>
           <form className="space-y-6" onSubmit={handleSubmit} >
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="email">
-                Email Address
+              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="userID">
+                User ID
               </label>
               <input
-                name="email"
-                type="email"
+                name="userID"
+                type="text"
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="you@company.com"
+                placeholder="Enter your user ID"
                 required
               />
             </div>
@@ -126,7 +126,7 @@ const Login = () => {
                 type="password"
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                placeholder="••••••••"
+                placeholder="Enter Your Password"
                 required
               />
             </div>
