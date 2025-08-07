@@ -7,9 +7,9 @@ const router = express.Router();
 //sign-up
 router.post("/signup", async (req,res) =>{
     try{
-        const { username, email, password, role } = req.body; 
+        const { username, userID, password, role } = req.body; 
 
-    const userExist = await User.findOne({ email });
+    const userExist = await User.findOne({ userID });
     if (userExist) {
       return res.status(400).json({ msg: "User already exists!" });
     }
@@ -19,7 +19,7 @@ router.post("/signup", async (req,res) =>{
 
     const newUser = new User({
       username,
-      email,
+      userID,
       password: hashPassword,
       role: role || 'user', 
     });
@@ -36,9 +36,9 @@ router.post("/signup", async (req,res) =>{
 //Login
 router.post("/login", async (req,res) =>{
     try{
-        const {email, password, role} = req.body;
+        const {userID, password, role} = req.body;
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ userID });
         if (!user) {
         return res.status(400).json({ msg: "User not found" });
         }
@@ -61,7 +61,7 @@ router.post("/login", async (req,res) =>{
             token,
             user:{
                 id: user.id,
-                email: user.email,
+                userID: user.userID,
                 role: user.role,
                 username: user.username,
             }
