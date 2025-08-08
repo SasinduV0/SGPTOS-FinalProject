@@ -9,46 +9,52 @@ const Login = () => {
 
     const [form, setForm] = useState({ userID: '', password: '', role:'' });
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-    const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post('http://localhost:8000/api/auth/login', form);
-      const token = res.data.token;
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true); // start loading
+  try {
+    const res = await axios.post('http://localhost:8000/api/auth/login', form);
+    const token = res.data.token;
 
-      localStorage.setItem('token', token);
+    localStorage.setItem('token', token);
 
-      const decoded = jwtDecode(token);
+    const decoded = jwtDecode(token);
 
-      // 🔀 Redirect based on role
-      switch (decoded.user.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'manager':
-          navigate('/manager');
-          break;
-        case 'supervisor':
-          navigate('/supervisor');
-          break;
-        case 'qc':
-          navigate('/qc');
-          break;
-        case 'live-dashboard':
-          navigate('/live-dashboard');
-          break;
-        default:
-          alert('Unknown role');
-      }
-    } catch (err) {
-      alert('Login failed');
-      console.error(err);
+    // redirect by role
+    switch (decoded.user.role) {
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'manager':
+        navigate('/manager');
+        break;
+      case 'supervisor':
+        navigate('/supervisor');
+        break;
+      case 'qc':
+        navigate('/qc');
+        break;
+      case 'live-dashboard':
+        navigate('/live-dashboard');
+        break;
+      default:
+        alert('Unknown role');
     }
-  };
+  } catch (err) {
+    alert('Login failed');
+    console.error(err);
+  } finally {
+    setLoading(false); // stop loading
+  }
+};
+
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 sm:p-2 absolute inset-0 bg-gradient-to-br from-slate-800 via-blue-900 to-slate-900">
@@ -161,8 +167,17 @@ const Login = () => {
             <button
               type="submit"
               className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              disabled={loading}
             >
-              Sign In
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                  Signing In...
+                </div>
+              ) : "Sign In"}
             </button>
           </form>
         </div>
