@@ -58,12 +58,6 @@ const Login = () => {
         <div className="absolute bottom-40 left-40 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
         <div className="absolute bottom-20 right-20 w-18 h-32 bg-blue-300 bg-opacity-30 rounded-b-full blur-sm transform -rotate-12"></div>
         
-        {/* Subtle animated elements */}
-        <div className="absolute top-1/3 left-1/4 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-        <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-indigo-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute bottom-1/3 left-2/3 w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
-      
-      
       <div className="flex w-full max-w-5xl bg-white shadow-3xl rounded-3xl overflow-hidden">
 
 
