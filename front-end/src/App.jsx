@@ -9,6 +9,7 @@ import QualityControl from './pages/QC/QualityControl';
 import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
+import EmployeeManagement from './pages/Manager/EmployeeManagement';
 
 function AppWrapper() {
   const location = useLocation();
@@ -32,6 +33,14 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <Manager />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manager/em"
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <EmployeeManagement />
             </ProtectedRoute>
           }
         />
