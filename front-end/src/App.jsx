@@ -10,6 +10,7 @@ import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
+import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
 
 function AppWrapper() {
   const location = useLocation();
@@ -41,6 +42,14 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <EmployeeManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manager/ee"
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <EmployeeEfficiency />
             </ProtectedRoute>
           }
         />
