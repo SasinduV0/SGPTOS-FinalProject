@@ -5,3 +5,14 @@ export const ManagerLinks = [
   { label: 'Users', href: '/admin/users', icon: <FaUser /> },
   { label: 'Settings', href: '/admin/settings', icon: <FaCog /> },
 ];
+
+export const adminLinks = [
+  { label: 'Home', href: '/admin/dashboard', icon: <FaTachometerAlt /> },
+  { label: 'Employee', href: '/admin/users', icon: <FaUser /> },
+  { label: 'Settings', href: '/admin/settings', icon: <FaCog /> },
+];
+
+export const ProfileLinks = [
+  
+];
+
