@@ -8,13 +8,19 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import QualityControl from './pages/QC/QualityControl';
 import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
-import UserProfile from './components/UserProfile';
+import UserProfile from './pages/Profile';
 
 function AppWrapper() {
   const location = useLocation();
 
   // Check if current path is NOT /live-dashboard
-  const showNavbar = location.pathname !== '/live-dashboard';
+  const hideNavbarPaths = [
+  "/live-dashboard",
+  "/",
+];
+
+const showNavbar = !hideNavbarPaths.includes(location.pathname);
+
 
   return (
     <>
