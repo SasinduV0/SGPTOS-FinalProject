@@ -27,6 +27,11 @@ const Navbar = () => {
     localStorage.removeItem('token');
     navigate('/'); // Updated to match your ProtectedRoute redirect
   };
+  
+  const handleProfileClick = () => {
+        navigate('/profile');
+    };
+
 
   const getRoleBadgeColor = (role) => {
     const colors = {
@@ -72,7 +77,13 @@ const Navbar = () => {
             {/* User Info */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <FaUser className="text-gray-500 text-5xl bg-gray-200 p-2 rounded-full" />
+                {/* <FaUser className="text-gray-500 text-5xl bg-gray-200 p-2 rounded-full" /> */}
+                 <button
+                            onClick={handleProfileClick}
+                            className="p-1 rounded-full text-gray-300 hover:bg-gray-700 "
+                        >
+                            <FaUser className="text-gray-500 text-5xl bg-gray-200 p-1 rounded-full" />
+                        </button>
                 <div className="flex flex-col">
                   <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
                     {getRoleDisplayName(user.role)}
