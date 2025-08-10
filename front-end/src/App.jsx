@@ -2,12 +2,13 @@ import React from 'react'
 import Login from './pages/login'
 import ProtectedRoute from './components/ProtectedRoute';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Manager from './pages/Manager';
-import SupervisorDashboard from './pages/SupervisorDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import QualityControl from './pages/QualityControl';
+import Manager from './pages/Manager/Manager';
+import SupervisorDashboard from './pages/Supervisor/SupervisorDashboard';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import QualityControl from './pages/QC/QualityControl';
 import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
+import UserProfile from './components/UserProfile';
 
 function AppWrapper() {
   const location = useLocation();
@@ -57,6 +58,14 @@ function AppWrapper() {
           element={
             <ProtectedRoute allowedRoles={['live-dashboard']}>
               <LiveDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
             </ProtectedRoute>
           }
         />
