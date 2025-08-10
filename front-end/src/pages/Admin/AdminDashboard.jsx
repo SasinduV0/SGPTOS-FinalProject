@@ -1,12 +1,7 @@
 import React from 'react'
 import SideBar from '../../components/SideBar'
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
-
-const adminLinks = [
-  { label: 'Dashboard', href: '/admin/dashboard', icon: <FaTachometerAlt /> },
-  { label: 'Users', href: '/admin/users', icon: <FaUser /> },
-  { label: 'Settings', href: '/admin/settings', icon: <FaCog /> },
-];
+import {adminLinks} from '../Data/SidebarNavlinks'
 
 function AdminDashboard() {
   return (
