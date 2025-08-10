@@ -3,7 +3,7 @@ import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
 export const ManagerLinks = [
   { label: 'Dashboard', href: '/manager', icon: <FaTachometerAlt /> },
   { label: 'Employee Management', href: '/manager/em', icon: <FaUser /> },
-  { label: 'Settings', href: '/admin/settings', icon: <FaCog /> },
+  { label: 'Employee Efficiency', href: '/manager/ee', icon: <FaCog /> },
 ];
 
 export const adminLinks = [
