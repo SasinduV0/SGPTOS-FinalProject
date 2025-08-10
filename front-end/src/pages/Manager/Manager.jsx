@@ -1,9 +1,6 @@
 import React from 'react'
 import SideBar from '../../components/SideBar'
-
-import UserProfile from '../../components/UserProfile';
 import {ManagerLinks} from '../../pages/Data/SidebarNavlinks';
-
 
 function Manager() {
   return (
