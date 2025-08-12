@@ -21,11 +21,6 @@ const userSchema = new Schema({
         enum: ["user","supervisor", "manager"],
         default: "user"
     },
-    userId: {
-        typr: String,
-        required: true,
-        unique: true,
-    }
 });
 
 module.exports = mongoose.model('User', userSchema);
