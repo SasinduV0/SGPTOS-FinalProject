@@ -9,61 +9,61 @@ const Login = () => {
 
     const [form, setForm] = useState({ userID: '', password: '', role:'' });
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-    const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post('http://localhost:8000/api/auth/login', form);
-      const token = res.data.token;
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true); // start loading
+  try {
+    const res = await axios.post('http://localhost:8000/api/auth/login', form);
+    const token = res.data.token;
 
-      localStorage.setItem('token', token);
+    localStorage.setItem('token', token);
 
-      const decoded = jwtDecode(token);
+    const decoded = jwtDecode(token);
 
-      // 🔀 Redirect based on role
-      switch (decoded.user.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'manager':
-          navigate('/manager');
-          break;
-        case 'supervisor':
-          navigate('/supervisor');
-          break;
-        case 'qc':
-          navigate('/qc');
-          break;
-        case 'live-dashboard':
-          navigate('/live-dashboard');
-          break;
-        default:
-          alert('Unknown role');
-      }
-    } catch (err) {
-      alert('Login failed');
-      console.error(err);
+    // redirect by role
+    switch (decoded.user.role) {
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'manager':
+        navigate('/manager');
+        break;
+      case 'supervisor':
+        navigate('/supervisor');
+        break;
+      case 'qc':
+        navigate('/qc');
+        break;
+      case 'live-dashboard':
+        navigate('/live-dashboard');
+        break;
+      default:
+        alert('Unknown role');
     }
-  };
+  } catch (err) {
+    alert('Login failed');
+    console.error(err);
+  } finally {
+    setLoading(false); // stop loading
+  }
+};
+
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 sm:p-2 absolute inset-0 bg-gradient-to-br from-slate-800 via-blue-900 to-slate-900">
       
-      <div className="absolute top-20 left-20 w-16 h-24 bg-blue-400 bg-opacity-20 rounded-t-full blur-sm transform rotate-12"></div>
+        <div className="absolute top-20 left-20 w-16 h-24 bg-blue-400 bg-opacity-20 rounded-t-full blur-sm transform rotate-12"></div>
         <div className="absolute top-32 right-32 w-20 h-16 bg-indigo-400 bg-opacity-25 rounded-lg blur-sm transform -rotate-45"></div>
         <div className="absolute bottom-40 left-40 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
         <div className="absolute bottom-20 right-20 w-18 h-32 bg-blue-300 bg-opacity-30 rounded-b-full blur-sm transform -rotate-12"></div>
         
-        {/* Subtle animated elements */}
-        <div className="absolute top-1/3 left-1/4 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-        <div className="absolute top-2/3 right-1/3 w-2 h-2 bg-indigo-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute bottom-1/3 left-2/3 w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
-      
-      
       <div className="flex w-full max-w-5xl bg-white shadow-3xl rounded-3xl overflow-hidden">
 
 
@@ -160,15 +160,26 @@ const Login = () => {
                   Remember me
                 </label>
               </div>
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
-                Forgot password?
-              </a>
+              
+              <Link to="/forgot-password" className="text-blue-600 hover:underline">
+  Forgot your password?
+</Link>
+
             </div>
             <button
               type="submit"
               className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              disabled={loading}
             >
-              Sign In
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                  Signing In...
+                </div>
+              ) : "Sign In"}
             </button>
           </form>
         </div>

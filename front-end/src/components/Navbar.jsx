@@ -27,6 +27,11 @@ const Navbar = () => {
     localStorage.removeItem('token');
     navigate('/'); // Updated to match your ProtectedRoute redirect
   };
+  
+  const handleProfileClick = () => {
+        navigate('/profile');
+    };
+
 
   const getRoleBadgeColor = (role) => {
     const colors = {
@@ -55,8 +60,8 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-64 right-0 z-10">
+      <div className="max-w-9xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
           <div className="flex items-center">
@@ -72,13 +77,20 @@ const Navbar = () => {
             {/* User Info */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <FaUser className="text-gray-500" />
+                {/* <FaUser className="text-gray-500 text-5xl bg-gray-200 p-2 rounded-full" /> */}
+                 <button
+                            onClick={handleProfileClick}
+                            className="p-1 rounded-full text-gray-300 hover:bg-gray-700 "
+                        >
+                            <FaUser className="text-gray-500 text-5xl bg-gray-200 p-1 rounded-full" />
+                        </button>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-900">
-                    {user.userID}
-                  </span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
+                  <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
                     {getRoleDisplayName(user.role)}
+                  </span>
+                  <span className="text-xs font-medium flex mx-4 text-gray-900 mt-1">
+                    <p>ID: </p>
+                    {user.userID}
                   </span>
                 </div>
               </div>
@@ -87,7 +99,7 @@ const Navbar = () => {
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-sm text-white hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors bg-rose-700"
             >
               <FaSignOutAlt />
               <span>Logout</span>
