@@ -12,6 +12,10 @@ import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
 import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
 
+
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
 function AppWrapper() {
   const location = useLocation();
 
@@ -19,6 +23,9 @@ function AppWrapper() {
   const hideNavbarPaths = [
   "/live-dashboard",
   "/",
+
+   "/forgot-password",      // hide on forgot password page
+    /^\/reset-password\/.+$/ // hide on reset password page (regex for dynamic token)
 ];
 
 const showNavbar = !hideNavbarPaths.includes(location.pathname);
@@ -29,6 +36,10 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
       {showNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Login />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+
         <Route
           path="/manager"
           element={
