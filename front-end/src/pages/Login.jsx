@@ -160,9 +160,11 @@ const Login = () => {
                   Remember me
                 </label>
               </div>
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
-                Forgot password?
-              </a>
+              
+              <Link to="/forgot-password" className="text-blue-600 hover:underline">
+  Forgot your password?
+</Link>
+
             </div>
             <button
               type="submit"
