@@ -1,6 +1,6 @@
 // middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // Make sure to import your User model
+const User = require("../models/user"); // Make sure to import your User model
 
 const authMiddleware = async (req, res, next) => { // Changed to async
     const token = req.header("x-auth-token");
