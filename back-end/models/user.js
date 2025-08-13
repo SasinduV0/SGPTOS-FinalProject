@@ -32,6 +32,10 @@ const userSchema = new Schema({
         unique: true,
         trim: true
     },
+
+     // 🆕 Password reset එකට අලුතින් add කල fields
+    resetToken: { type: String },         // Random token එක
+    resetTokenExpire: { type: Date }      // කල් ඉකුත් වෙන වෙලාව
     
 }, {
     timestamps: true
