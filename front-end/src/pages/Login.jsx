@@ -61,7 +61,7 @@ const Login = () => {
       
         <div className="absolute top-20 left-20 w-16 h-24 bg-blue-400 bg-opacity-20 rounded-t-full blur-sm transform rotate-12"></div>
         <div className="absolute top-32 right-32 w-20 h-16 bg-indigo-400 bg-opacity-25 rounded-lg blur-sm transform -rotate-45"></div>
-        <div className="absolute bottom-40 left-40 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
+        <div className="absolute bottom-40 left-20 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
         <div className="absolute bottom-20 right-20 w-18 h-32 bg-blue-300 bg-opacity-30 rounded-b-full blur-sm transform -rotate-12"></div>
         
       <div className="flex w-full max-w-5xl bg-white shadow-3xl rounded-3xl overflow-hidden">
