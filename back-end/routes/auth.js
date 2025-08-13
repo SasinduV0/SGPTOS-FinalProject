@@ -34,18 +34,29 @@ router.post("/signup", async (req,res) =>{
 }); 
 
 //Login
-router.post("/login", async (req,res) =>{
-    try{
-        const {userID, password, role} = req.body;
+// ...existing code...
 
+router.post("/login", async (req, res) => {
+    try {
+        const { userID, password, role } = req.body;
+
+        // Find the user
         const user = await User.findOne({ userID });
         if (!user) {
-        return res.status(400).json({ msg: "User not found" });
+            return res.status(400).json({ msg: "User not found" });
         }
 
+        // Verify password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-        return res.status(400).json({ msg: "Invalid Credentials" });
+            return res.status(400).json({ msg: "Invalid credentials" });
+        }
+
+        // Check if selected role matches user's actual role
+        if (role !== user.role) {
+            return res.status(403).json({ 
+                msg: "Invalid role selected for this user" 
+            });
         }
 
         const payload = {
@@ -55,12 +66,13 @@ router.post("/login", async (req,res) =>{
                 role: user.role,
                 username: user.username,
             }
-        }
+        };
+
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 
         res.status(200).json({
             token,
-            user:{
+            user: {
                 id: user.id,
                 userID: user.userID,
                 role: user.role,
@@ -68,9 +80,9 @@ router.post("/login", async (req,res) =>{
             }
         });
 
-    }catch(err){
-        console.error(err.message)
-        res.status(500).json({error:"Server Error"})
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: "Server Error" });
     }
-})
+});
 module.exports = router;
