@@ -50,6 +50,29 @@ const handleNext =()=>{
         placeholder="Enter employee email"
         />
       
+    </div>
+
+    {/*Navigation button set*/}
+
+    <div className="flex justify-between mt-4">
+
+      <button onClick={prevStep}        //Previous button
+        className="bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          Previous
+      </button>
+
+      <button onClick={nextStep}        //next button
+        className="bg-gray-500 text-white px-4 py-2 rounded"
+          >
+          Next
+      </button>
+
+      <button onClick={cancel}          //Cancel button
+        className="bg-gray-500 text-white px-4 py-2 rounded"
+          >
+            cancel
+      </button>
 
     </div>
 
