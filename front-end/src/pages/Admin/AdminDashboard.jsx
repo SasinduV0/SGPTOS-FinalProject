@@ -2,11 +2,19 @@ import React from 'react'
 import SideBar from '../../components/SideBar'
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
 import {adminLinks} from '../Data/SidebarNavlinks'
+import AdminNav from '../../components/AdminNav'
 
 function AdminDashboard() {
   return (
     <>
+   
+
     <SideBar title="Admin Panel" links={adminLinks} />
+
+     <div className="pl-50 pt-16 pb-2"> 
+        <AdminNav />
+      </div>
+
       <div className='h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
         <div className='w-[30%] flex flex-col gap-4'>
           <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[250px]'>chart 1</div>
