@@ -61,9 +61,9 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(IRQ_PIN_3), isr3, FALLING);
 
   // Enable the IRQ on all RC522 modules for card detection
-  rfid1.PCD_SetRegisterBitMask(MFRC522::ComIEnReg, MFRC522::IRqInv_IRQEn | MFRC522::RxIEn_IRQEn);
-  rfid2.PCD_SetRegisterBitMask(MFRC522::ComIEnReg, MFRC522::IRqInv_IRQEn | MFRC522::RxIEn_IRQEn);
-  rfid3.PCD_SetRegisterBitMask(MFRC522::ComIEnReg, MFRC522::IRqInv_IRQEn | MFRC522::RxIEn_IRQEn);
+  rfid1.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Enable RxIRq
+  rfid2.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Enable RxIRq
+  rfid3.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Enable RxIRq
 
   Serial.println("Place a card on any scanner...");
 }
@@ -99,8 +99,8 @@ void scanCard(MFRC522& rfid, int scanner_id) {
     Serial.println();
 
     // Reset the IRQ on the RC522 module
-    rfid.PCD_ClearRegisterBitMask(MFRC522::DivIrqReg, MFRC522::IRqInv_IRQEn | MFRC522::RxIEn_IRQEn);
-    rfid.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80);
+    rfid.PCD_WriteRegister(MFRC522::ComIrqReg, 0x7F);  // Clear interrupt request bits
+    rfid.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Re-enable RxIRq
 
     // Halt PICC
     rfid.PICC_HaltA();
