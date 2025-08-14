@@ -2,17 +2,17 @@
 #include <MFRC522.h>
 
 // RFID Scanner 1
-#define SS_PIN_1 5
+#define SS_PIN_1 5   // SDA
 #define RST_PIN_1 27
 #define IRQ_PIN_1 26
 
 // RFID Scanner 2
-#define SS_PIN_2 4
+#define SS_PIN_2 4   // SDA
 #define RST_PIN_2 32
 #define IRQ_PIN_2 33
 
 // RFID Scanner 3
-#define SS_PIN_3 2
+#define SS_PIN_3 2   // SDA
 #define RST_PIN_3 34
 #define IRQ_PIN_3 35
 
@@ -21,89 +21,158 @@
 #define MOSI_PIN 23
 #define MISO_PIN 19
 
+// Create instances
 MFRC522 rfid1(SS_PIN_1, RST_PIN_1);
 MFRC522 rfid2(SS_PIN_2, RST_PIN_2);
 MFRC522 rfid3(SS_PIN_3, RST_PIN_3);
 
-// Global flags to signal an interrupt has occurred
+// Global flags
 volatile bool card_ready_1 = false;
 volatile bool card_ready_2 = false;
 volatile bool card_ready_3 = false;
 
-// Interrupt Service Routines (ISRs)
-void isr1() {
-  card_ready_1 = true;
+// ISR handlers
+void IRAM_ATTR isr1() {
+    card_ready_1 = true;
 }
 
-void isr2() {
-  card_ready_2 = true;
+void IRAM_ATTR isr2() {
+    card_ready_2 = true;
 }
 
-void isr3() {
-  card_ready_3 = true;
+void IRAM_ATTR isr3() {
+    card_ready_3 = true;
+}
+
+void initRFID(MFRC522& rfid) {
+    rfid.PCD_Init();
+    delay(50);
+    
+    rfid.PCD_Reset();
+    delay(50);
+    
+    rfid.PCD_WriteRegister(MFRC522::TModeReg, 0x80);
+    rfid.PCD_WriteRegister(MFRC522::TPrescalerReg, 0xA9);
+    rfid.PCD_WriteRegister(MFRC522::TReloadRegH, 0x03);
+    rfid.PCD_WriteRegister(MFRC522::TReloadRegL, 0xE8);
+    
+    rfid.PCD_WriteRegister(MFRC522::TxASKReg, 0x40);
+    rfid.PCD_WriteRegister(MFRC522::ModeReg, 0x3D);
+    
+    byte value = rfid.PCD_ReadRegister(MFRC522::TxControlReg);
+    if ((value & 0x03) != 0x03) {
+        rfid.PCD_WriteRegister(MFRC522::TxControlReg, value | 0x03);
+    }
+    
+    rfid.PCD_WriteRegister(MFRC522::RFCfgReg, 0x70);
+    delay(50);
 }
 
 void setup() {
-  Serial.begin(115200);
-  SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN);
+    Serial.begin(9600);
+    delay(1000);
+    
+    Serial.println("\nStarting RFID Scanner Setup...");
+    
+    // Configure SPI pins
+    pinMode(SS_PIN_1, OUTPUT);
+    pinMode(SS_PIN_2, OUTPUT);
+    pinMode(SS_PIN_3, OUTPUT);
+    digitalWrite(SS_PIN_1, HIGH);
+    digitalWrite(SS_PIN_2, HIGH);
+    digitalWrite(SS_PIN_3, HIGH);
+    
+    SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN);
+    SPI.setFrequency(100000);
+    SPI.setDataMode(SPI_MODE0);
+    SPI.setBitOrder(MSBFIRST);
+    
+    delay(100);
+    
+    // Initialize RFID readers
+    Serial.println("Initializing Reader 1...");
+    initRFID(rfid1);
+    byte ver1 = rfid1.PCD_ReadRegister(MFRC522::VersionReg);
+    Serial.print("Reader 1 Version: 0x"); Serial.println(ver1, HEX);
+    
+    Serial.println("Initializing Reader 2...");
+    initRFID(rfid2);
+    byte ver2 = rfid2.PCD_ReadRegister(MFRC522::VersionReg);
+    Serial.print("Reader 2 Version: 0x"); Serial.println(ver2, HEX);
+    
+    Serial.println("Initializing Reader 3...");
+    initRFID(rfid3);
+    byte ver3 = rfid3.PCD_ReadRegister(MFRC522::VersionReg);
+    Serial.print("Reader 3 Version: 0x"); Serial.println(ver3, HEX);
+    
+    // Configure interrupts
+    pinMode(IRQ_PIN_1, INPUT_PULLUP);
+    pinMode(IRQ_PIN_2, INPUT_PULLUP);
+    pinMode(IRQ_PIN_3, INPUT_PULLUP);
+    
+    attachInterrupt(digitalPinToInterrupt(IRQ_PIN_1), isr1, FALLING);
+    attachInterrupt(digitalPinToInterrupt(IRQ_PIN_2), isr2, FALLING);
+    attachInterrupt(digitalPinToInterrupt(IRQ_PIN_3), isr3, FALLING);
 
-  // Initialize all three RFID scanners
-  rfid1.PCD_Init();
-  rfid2.PCD_Init();
-  rfid3.PCD_Init();
-
-  // Configure interrupts for each scanner
-  pinMode(IRQ_PIN_1, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(IRQ_PIN_1), isr1, FALLING);
-  pinMode(IRQ_PIN_2, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(IRQ_PIN_2), isr2, FALLING);
-  pinMode(IRQ_PIN_3, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(IRQ_PIN_3), isr3, FALLING);
-
-  // Enable the IRQ on all RC522 modules for card detection
-  rfid1.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Enable RxIRq
-  rfid2.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Enable RxIRq
-  rfid3.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Enable RxIRq
-
-  Serial.println("Place a card on any scanner...");
+    Serial.println("Setup complete!");
 }
 
 void loop() {
-  // Check global flags set by the ISRs
-  if (card_ready_1) {
-    scanCard(rfid1, 1);
-    card_ready_1 = false;
-  }
-  if (card_ready_2) {
-    scanCard(rfid2, 2);
-    card_ready_2 = false;
-  }
-  if (card_ready_3) {
-    scanCard(rfid3, 3);
-    card_ready_3 = false;
-  }
-}
-
-void scanCard(MFRC522& rfid, int scanner_id) {
-  // Check if a new card is present
-  if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-    Serial.print("Card found by Scanner ");
-    Serial.print(scanner_id);
-    Serial.print(": ");
-
-    // Print the UID
-    for (byte i = 0; i < rfid.uid.size; i++) {
-      Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
-      Serial.print(rfid.uid.uidByte[i], HEX);
+    // Check Reader 1
+    digitalWrite(SS_PIN_1, LOW);
+    digitalWrite(SS_PIN_2, HIGH);
+    delay(10);
+    
+    if (rfid1.PICC_IsNewCardPresent() && rfid1.PICC_ReadCardSerial()) {
+        Serial.print("\nCard detected on Reader 1 - UID: ");
+        for (byte i = 0; i < rfid1.uid.size; i++) {
+            Serial.print(rfid1.uid.uidByte[i] < 0x10 ? " 0" : " ");
+            Serial.print(rfid1.uid.uidByte[i], HEX);
+        }
+        Serial.println();
+        rfid1.PICC_HaltA();
+        rfid1.PCD_StopCrypto1();
     }
-    Serial.println();
-
-    // Reset the IRQ on the RC522 module
-    rfid.PCD_WriteRegister(MFRC522::ComIrqReg, 0x7F);  // Clear interrupt request bits
-    rfid.PCD_WriteRegister(MFRC522::ComIEnReg, 0x80 | 0x20);  // Re-enable RxIRq
-
-    // Halt PICC
-    rfid.PICC_HaltA();
-    rfid.PCD_StopCrypto1();
-  }
+    digitalWrite(SS_PIN_1, HIGH);
+    
+    delay(50);
+    
+    // Check Reader 2
+    digitalWrite(SS_PIN_1, HIGH);
+    digitalWrite(SS_PIN_2, LOW);
+    delay(10);
+    
+    if (rfid2.PICC_IsNewCardPresent() && rfid2.PICC_ReadCardSerial()) {
+        Serial.print("\nCard detected on Reader 2 - UID: ");
+        for (byte i = 0; i < rfid2.uid.size; i++) {
+            Serial.print(rfid2.uid.uidByte[i] < 0x10 ? " 0" : " ");
+            Serial.print(rfid2.uid.uidByte[i], HEX);
+        }
+        Serial.println();
+        rfid2.PICC_HaltA();
+        rfid2.PCD_StopCrypto1();
+    }
+    digitalWrite(SS_PIN_2, HIGH);
+    
+    delay(50);
+    
+    // Check Reader 3
+    digitalWrite(SS_PIN_1, HIGH);
+    digitalWrite(SS_PIN_2, HIGH);
+    digitalWrite(SS_PIN_3, LOW);
+    delay(10);
+    
+    if (rfid3.PICC_IsNewCardPresent() && rfid3.PICC_ReadCardSerial()) {
+        Serial.print("\nCard detected on Reader 3 - UID: ");
+        for (byte i = 0; i < rfid3.uid.size; i++) {
+            Serial.print(rfid3.uid.uidByte[i] < 0x10 ? " 0" : " ");
+            Serial.print(rfid3.uid.uidByte[i], HEX);
+        }
+        Serial.println();
+        rfid3.PICC_HaltA();
+        rfid3.PCD_StopCrypto1();
+    }
+    digitalWrite(SS_PIN_3, HIGH);
+    
+    delay(50);
 }
