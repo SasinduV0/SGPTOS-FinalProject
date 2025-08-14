@@ -20,13 +20,11 @@ function AdminDashboard() {
 
     <SideBar title="Admin Panel" links={adminLinks} />
 
-     <div className="pl-50 pt-16 pb-2"> 
+     <div className="pl-165 pt-20 pb-0 item-center"> 
         <AdminNav />
       </div>
 
-      <div className="flex-1 p-4">
-        <AdminNav currentStep = {step}/>
-      </div>
+      
 
       <div className='min-h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
         

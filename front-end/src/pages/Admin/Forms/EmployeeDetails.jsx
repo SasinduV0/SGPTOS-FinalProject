@@ -18,7 +18,7 @@ const handleNext =()=>{
 }
 
   return (
-    <div className="border p-6 rounded shadow-md bg-white w-96">
+    <div className="border p-2 rounded shadow-md bg-white w-96 mt-0">
       <h2 className="text-x1 font-bold mb-4">Employee Details</h2>
 
     <div className="mb-4">
