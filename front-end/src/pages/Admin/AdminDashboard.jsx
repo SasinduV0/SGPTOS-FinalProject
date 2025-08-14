@@ -32,15 +32,17 @@ function AdminDashboard() {
         
         <div className ="mt-4">
           {step === 1 && <EmployeeDetails nextStep={()=>  //when you click "next" button from employee details form
-            setStep(2)}/>
+            setStep(2)}
+            prevStep={()=> setStep(1)}
+            cancel={handleCancel}/>
           
           }
 
-          {step === 2 && (
-            <Security nextStep={()=> setStep (3)} prevStep={()=> setStep(1)}/>   //when you click "next" or "Previous"button from security form
+          {/*{step === 2 && (
+            <Security nextStep={()=> setStep (3)} prevStep={()=> setStep(1)} cancel={handleCancel}/>   //when you click "next" or "Previous"button from security form
           )}
 
-          {step ===3 && <Review prevStep={()=> setStep(2)}/>}
+          {step ===3 && <Review prevStep={()=> setStep(2)} cancel={handleCancel}/>}*/}
 
 
         </div>
