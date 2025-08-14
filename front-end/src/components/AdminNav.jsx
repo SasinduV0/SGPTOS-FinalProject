@@ -1,19 +1,23 @@
-import React from "react";
+import React from 'react'
 
-function NavBar() {
+function AdminNav() {
+
+  const step = ["Employee Details", "Security", "Review"];
   return (
-    <nav className="bg-blue-600 h-12 flex justify-center gap-10">
-      <button className="bg-green text-blue-600 px-4 h-10 rounded hover:bg-gray-200">
-        Home
-      </button>
-      <button className="bg-white text-blue-600 px-4 h-10 rounded hover:bg-gray-200">
-        About
-      </button>
-      <button className="bg-white text-blue-600 px-4 h-10 rounded hover:bg-gray-200">
-        Contact
-      </button>
-    </nav>
-  );
+    <div className="flex gap-4 mb-6">
+
+      {FaStripeS.map((lable, index) => (
+
+        <div
+          key={index}
+          className={`px-4 py-2 rounded ${
+            step === index + 1 ? "bg-blue-500 text-white":"bg-gray-500"}`}>
+              
+          </div>
+
+      ))}
+    </div>
+  )
 }
 
-export default NavBar;
+export default AdminNav
