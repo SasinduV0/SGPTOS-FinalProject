@@ -1,6 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
+
+
 
 function EmployeeDetails() {
+
+
 
   return (
     <div className="mb-4">

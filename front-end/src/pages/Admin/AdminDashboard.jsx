@@ -3,8 +3,13 @@ import SideBar from '../../components/SideBar'
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
 import {adminLinks} from '../Data/SidebarNavlinks'
 import AdminNav from '../../components/AdminNav'
+import EmployeeDetails from '../Admin/Forms/EmployeeDetails'
+import { useState } from 'react';
 
 function AdminDashboard() {
+
+  const [step, setStep] = useState(1);
+
   return (
     <>
    
@@ -15,19 +20,27 @@ function AdminDashboard() {
         <AdminNav />
       </div>
 
+      <div className="felx-1 p-4">
+        <AdminNav currentstep = {step}/>
+      </div>
+
       <div className='h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
-        <div className='w-[30%] flex flex-col gap-4'>
-          <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[250px]'>chart 1</div>
-          <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[200px]'>chart 3</div>
-          <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[200px]'>chart 3</div>
+        
+        <div className ="mt-4">
+          {step === 1 && <EmployeeDetails nextStep={()=>  //when you click "next" button from employee details form
+            setStep(2)}/>
+          
+          }
+
+          {step === 2 && (
+            <Security nextStep={()=> setStep (3)} prevStep={()=> setStep(1)}/>   //when you click "next" or "Previous"button from security form
+          )}
+
+          {step ===3 && <Review prevStep={()=> setStep(2)}/>}
+
+
         </div>
-        <div className='w-[30%]'>
-          <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[680px]'>chart 2</div>
-        </div>
-        <div className='w-[30%] flex flex-col gap-4'>
-          <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[265px]'>chart 4</div>
-          <div className='bg-gray-400 rounded-xl shadow-2xl p-4 h-[400px]'>chart 5</div>
-        </div>
+
       </div>
     </>
   )
