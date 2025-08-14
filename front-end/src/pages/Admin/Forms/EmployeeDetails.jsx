@@ -18,6 +18,9 @@ const handleNext =()=>{
 }
 
   return (
+    <div className="border p-6 rounded shadow-md bg-white w-96">
+      <h2 className="text-x1 font-bold mb-4">Employee Details</h2>
+
     <div className="mb-4">
 
         <label className="block mb-2 front-medium">
@@ -30,6 +33,25 @@ const handleNext =()=>{
             onChange={()=> setEmployeeName (e.target.value)}
             className="border p-2 rounded w-64"
             placeholder="Enter employee name"/>
+
+    </div>
+
+    <div className="mb-4">
+
+      <label className="block mb-2 front-medium">
+        Email
+      </label>
+
+      <input 
+        type="email"
+        value={employeeEmail}
+        onChange={(e)=>setEmployeeEmail(e.target.value)}
+        className= "border p-2 rounded w-full"
+        placeholder="Enter employee email"
+        />
+      
+
+    </div>
 
     </div>
   )
