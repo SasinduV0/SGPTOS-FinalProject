@@ -20,8 +20,8 @@ function AdminDashboard() {
         <AdminNav />
       </div>
 
-      <div className="felx-1 p-4">
-        <AdminNav currentstep = {step}/>
+      <div className="flex-1 p-4">
+        <AdminNav currentStep = {step}/>
       </div>
 
       <div className='h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>

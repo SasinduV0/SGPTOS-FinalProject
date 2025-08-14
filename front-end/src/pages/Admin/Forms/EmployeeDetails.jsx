@@ -5,6 +5,17 @@ import React, { useState } from 'react'
 function EmployeeDetails() {
 
 const [employeeName, setEmployeeName] =  useState('');
+const [employeeEmail, setEmployeeEmail] = useState('');
+
+//handle next button click
+const handleNext =()=>{
+  if (employeeName.trim()==='' || employeeEmail.trim()===''){
+    alert("please fill all field");
+    return;
+  }
+
+  nextStep(); //move to security step
+}
 
   return (
     <div className="mb-4">
