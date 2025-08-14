@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 
 function EmployeeDetails() {
 
-
+const [employeeName, setEmployeeName] =  useState('');
 
   return (
     <div className="mb-4">
