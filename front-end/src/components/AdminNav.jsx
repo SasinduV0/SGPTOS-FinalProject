@@ -6,11 +6,11 @@ function AdminNav({currentStep}) {
 
   const icon = [FaStripeS]
 
-  const step = ["Employee Details", "Security", "Review"];
+  const steps = ["Employee Details", "Security", "Review"];
   return (
     <div className="flex gap-4 mb-6">
 
-      {icon.map((label, index) => (
+      {steps.map((label, index) => (
 
         <div
           key={index}
