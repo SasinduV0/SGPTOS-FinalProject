@@ -10,6 +10,10 @@ function AdminDashboard() {
 
   const [step, setStep] = useState(1);
 
+  const handleCancel = ()=>{
+    setStep(1);
+  }
+
   return (
     <>
    
@@ -24,7 +28,7 @@ function AdminDashboard() {
         <AdminNav currentStep = {step}/>
       </div>
 
-      <div className='h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
+      <div className='min-h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
         
         <div className ="mt-4">
           {step === 1 && <EmployeeDetails nextStep={()=>  //when you click "next" button from employee details form

@@ -2,7 +2,7 @@ import React from 'react'
 import { FaStripeS } from "react-icons/fa";
 
 
-function AdminNav() {
+function AdminNav({currentStep}) {
 
   const icon = [FaStripeS]
 

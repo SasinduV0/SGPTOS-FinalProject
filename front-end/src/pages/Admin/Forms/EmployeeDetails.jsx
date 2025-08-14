@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 
 
-function EmployeeDetails() {
+function EmployeeDetails({nextStep, prevStep, cancel}) {
 
 const [employeeName, setEmployeeName] =  useState('');
 const [employeeEmail, setEmployeeEmail] = useState('');
@@ -62,7 +62,7 @@ const handleNext =()=>{
           Previous
       </button>
 
-      <button onClick={nextStep}        //next button
+      <button onClick={handleNext}       //next button
         className="bg-gray-500 text-white px-4 py-2 rounded"
           >
           Next
