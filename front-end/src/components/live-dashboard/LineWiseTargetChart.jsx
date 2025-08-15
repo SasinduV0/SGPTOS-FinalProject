@@ -28,7 +28,7 @@ const LineWiseTargetChart = () => {
         display: true, 
         text: "hjghjguky"
       },  
-      legend: { display: false },
+      legend: { display: true },
       tooltip: {
         callbacks: {
           label: (context) => `${context.parsed.y}%`,
@@ -45,7 +45,7 @@ const LineWiseTargetChart = () => {
 
       y: {
         beginAtZero: true,
-        max: 110, // Little more than 100% for spacing
+        max: 120, // Little more than 100% for spacing
         ticks: {
           callback: (value) => `${value}%`,
         },
