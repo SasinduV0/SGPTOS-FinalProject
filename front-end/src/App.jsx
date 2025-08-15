@@ -91,9 +91,10 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
         <Route
           path="/live-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['live-dashboard']}>
-              <LiveDashboard />
-            </ProtectedRoute>
+            // <ProtectedRoute allowedRoles={['live-dashboard']}>
+            //   <LiveDashboard />
+            // </ProtectedRoute>
+            <LiveDashboard/>
           }
         />
         <Route
