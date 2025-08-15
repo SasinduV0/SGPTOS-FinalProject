@@ -14,3 +14,15 @@ export const leadingLineData = [
     ],
   }
 ];
+
+export const fastestEmployeesData = [
+    {
+    topic: "Our fastest employees",
+    employees: [
+      { name: "Employee 7", pcs: 31 },
+      { name: "Employee 4", pcs: 27 },
+      { name: "Employee 3", pcs: 15 },
+      { name: "Employee 6", pcs: 11 }
+    ], 
+    }
+]
