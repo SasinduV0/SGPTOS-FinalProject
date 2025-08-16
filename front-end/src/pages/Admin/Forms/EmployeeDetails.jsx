@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 
 
-function EmployeeDetails() {
+function EmployeeDetails({formData, setFormData}) {
  return(
 
   <div>
@@ -19,29 +19,41 @@ function EmployeeDetails() {
         <label htmlFor="firstname" className="block mb-1">Fist Name</label>
         <input
         type="text"
+        name="firstname"
+        value={formData.firstname}
+        onChange={e => setFormData({ ...formData, firstname: e.target.value})}
         className="border rounded-lg p-2 mt-2 w-full"/>
       </div>
 
       <div className="flex-1">
-        <label htmlFor="Lastname" className="block mb-1">Last Name</label>
+        <label htmlFor="lastname" className="block mb-1">Last Name</label>
         <input
         type="text"
+        name="lastname"
+        value={formData.lastname}
+        onChange={e => setFormData({ ...formData, lastname: e.target.value})}
         className="border rounded-lg p-2 mt-2 w-full"/>
       </div>
 
       </div>
 
       <div>
-        <label htmlFor="Email" className="block mb-1">Email Address</label>
+        <label htmlFor="email" className="block mb-1">Email Address</label>
         <input
         type="email"
+        name="email"
+        value={formData.email}
+        onChange={e => setFormData({ ...formData, email: e.target.value})}
         className="border rounded-lg p-2 mt-2 w-full"/>
       </div>
       
       <div>
-        <label htmlFor="Phone Number" className="block mb-1">Phone Number</label>
+        <label htmlFor="phoneNumber" className="block mb-1">Phone Number</label>
         <input
         type="tel"
+        name="phoneNumber"
+        value={formData.phoneNumber}
+        onChange={e => setFormData({ ...formData, phoneNumber: e.target.value})}
         className="border rounded-lg p-2 mt-2 w-full"/>
       </div>
 
@@ -59,17 +71,24 @@ function EmployeeDetails() {
           <label htmlFor="employeeId" className="block mb-1">Employee ID</label>
           <input
           type="text"
+          name="employeeId"
+          value={formData.employeeId}
+          onChange={e => setFormData({ ...formData, employeeId: e.target.value})}
           className="border rounded-lg p-2 mt-2 w-full"/>
         </div>
 
         <div className="flex-1">
             <label htmlFor="department" className="block mb-1"></label>
-            <select className="border rounded-lg p-2 mt-2 w-full">
+            <select 
+            name="department"
+            value={formData.department}
+            onChange={e => setFormData({ ...formData, department: e.target.value})}
+            className="border rounded-lg p-2 mt-2 w-full">
 
               <option value="" disabled>Select Department</option>
               <option value="Cutting">Cutting</option>
-              <option value="Cutting">packing</option>
-              <option value="Cutting">sawing</option>
+              <option value="Packing">Packing</option>
+              <option value="Sawing">Sawing</option>
 
             </select>
         </div>

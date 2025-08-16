@@ -10,17 +10,23 @@ function Security() {
 
         <div>
             <div>
-                <label htmlFor="employeeId" className="block mb-1">Password</label>
+                <label htmlFor="password" className="block mb-1">Password</label>
                 <input
                 type="password"
+                name="password"
+                value={formData.password}
+                onChange={e => setFormData({ ...formData, password: e.target.value})}
                 placeholder="Enter Password (min 8 char)"
                 className="border rounded-lg p-2 mt-2 w-full"/>
             </div>
 
             <div>
-                <label htmlFor="employeeId" className="block mb-1">Confirm Password</label>
+                <label htmlFor="confirmPassword" className="block mb-1">Confirm Password</label>
                 <input
-                type="password"
+                type="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={e => setFormData({ ...formData, confirmPassword: e.target.value})}
                 placeholder="Confirm password"
                 className="border rounded-lg p-2 mt-2 w-full"/>
             </div>
