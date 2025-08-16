@@ -1,5 +1,7 @@
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
-import { MdDashboard } from "react-icons/md";
+import { MdAppRegistration } from 'react-icons/md';
+import { BiRfid } from "react-icons/bi";
+import { RiRfidLine } from "react-icons/ri";
 
 export const ManagerLinks = [
   { label: 'Dashboard', href: '/manager', icon: <FaTachometerAlt /> },
@@ -9,10 +11,10 @@ export const ManagerLinks = [
 ];
 
 export const adminLinks = [
-  { label: 'Home', href: '/admin/dashboard', icon: <FaTachometerAlt /> },
-  { label: 'Employee', href: '/admin/users', icon: <FaUser /> },
-  { label: 'Settings', href: '/admin/settings', icon: <FaCog /> },
-  { label: 'Live Dashboard', href: '/live-dashboard', icon: <MdDashboard /> },
+  { label: 'User Registration', href: '/admin/UserRegistration', icon: <MdAppRegistration /> },
+  { label: 'User Management', href: '/admin/userManagement', icon: <FaUser /> },
+  { label: 'Employees RFID Update', href: '/admin/employeesRFID', icon: <BiRfid /> },
+  { label: 'Product RFID Update', href: '/admin/rfidUpdate', icon: <RiRfidLine /> },
 ];
 
 export const ProfileLinks = [
