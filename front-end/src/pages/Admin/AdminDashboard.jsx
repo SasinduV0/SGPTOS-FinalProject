@@ -12,11 +12,12 @@ function AdminDashboard() {
   const [currentStep, setCurrentStep] = useState(1);
 
   const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-    confirmPassword:"",
-    fullName:"",
+    firstname: "",
+    lastname: "",
     email:"",
+    phoneNumber:"",
+    employeeId:"",
+    department:"",
     
   });
 
@@ -37,24 +38,21 @@ function AdminDashboard() {
     }
   };
 
+  //EmployeeDetail form
+
   const validateStep = () => {
     if(currentStep===1){
-      if(!formData.usernam || !formData.password || !formData.confirmPassword){
+      if(!formData.firstname || !formData.lastname || !formData.email || !formData.phoneNumber || !formData.phoneNumber || !formData.employeeId || !formData.department){
         alert("Please fill all fields.");
-        return false;
-      }
-
-      if(formData.password !== formData.confirmPassword){
-        alert("Passwords do not  match !");
         return false;
       }
     }
 
-    /*if (currentStep === 2){
+    
 
-    }*/
-  }
+
   
+}
 }
 
 export default AdminDashboard
