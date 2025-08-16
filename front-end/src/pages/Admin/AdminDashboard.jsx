@@ -5,6 +5,8 @@ import {adminLinks} from '../Data/SidebarNavlinks'
 import AdminNav from '../../components/AdminNav'
 import AdminNavControl from '../../components/AdminNavControl'
 import EmployeeDetails from '../Admin/Forms/EmployeeDetails'
+import Security from '../Admin/Forms/Security'
+import Final from '../Admin/Forms/Final'
 import { useState } from 'react';
 
 function AdminDashboard() {
@@ -23,7 +25,7 @@ function AdminDashboard() {
     
   });
 
-  const steps = ["Employee Details", "Security", "Review", "Complete"]
+  const steps = ["Employee Details", "Security", "Complete"]
 
   const displayStep = (step) => {
     switch (step){
@@ -46,6 +48,7 @@ function AdminDashboard() {
         alert("Please fill all fields.");
         return false;
       }
+      return true;
     }
 
   //Security form
@@ -59,7 +62,9 @@ function AdminDashboard() {
         alert("Password do not match !")
         return false;
       }
+      return true;
     }
+    return true;
   
 }
 

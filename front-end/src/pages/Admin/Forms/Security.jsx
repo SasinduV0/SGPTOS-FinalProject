@@ -1,6 +1,6 @@
 import React from 'react'
 
-function Security() {
+function Security({ formData, setFormData }) {
   return (
     <div>
         <div>
