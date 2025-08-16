@@ -3,51 +3,58 @@ import SideBar from '../../components/SideBar'
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
 import {adminLinks} from '../Data/SidebarNavlinks'
 import AdminNav from '../../components/AdminNav'
+import AdminNavControl from '../../components/AdminNavControl'
 import EmployeeDetails from '../Admin/Forms/EmployeeDetails'
 import { useState } from 'react';
 
 function AdminDashboard() {
 
-  const [step, setStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1);
 
-  const handleCancel = ()=>{
-    setStep(1);
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    confirmPassword:"",
+    fullName:"",
+    email:"",
+    
+  });
+
+  const steps = ["Employee Details", "Security", "Review", "Complete"]
+
+  const displayStep = (step) => {
+    switch (step){
+      case 1:
+        return <EmployeeDetails formData={formDate} setFormData={setFormData}/>
+      case 2:
+        return <Security formData={formDate} setFormData={setFormData}/>
+      case 3:
+        return <Review formData={formDate} setFormData={setFormData}/>
+      case 4:
+        return <Final formData={formDate} setFormData={setFormData}/>
+      default:
+        return null;
+    }
+  };
+
+  const validateStep = () => {
+    if(currentStep===1){
+      if(!formData.usernam || !formData.password || !formData.confirmPassword){
+        alert("Please fill all fields.");
+        return false;
+      }
+
+      if(formData.password !== formData.confirmPassword){
+        alert("Passwords do not  match !");
+        return false;
+      }
+    }
+
+    /*if (currentStep === 2){
+
+    }*/
   }
-
-  return (
-    <>
-   
-
-    <SideBar title="Admin Panel" links={adminLinks} />
-
-     <div className="pl-165 pt-20 pb-0 item-center"> 
-        <AdminNav />
-      </div>
-
-      
-
-      <div className='min-h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
-        
-        <div className ="mt-4">
-          {step === 1 && <EmployeeDetails nextStep={()=>  //when you click "next" button from employee details form
-            setStep(2)}
-            prevStep={()=> setStep(1)}
-            cancel={handleCancel}/>
-          
-          }
-
-          {/*{step === 2 && (
-            <Security nextStep={()=> setStep (3)} prevStep={()=> setStep(1)} cancel={handleCancel}/>   //when you click "next" or "Previous"button from security form
-          )}
-
-          {step ===3 && <Review prevStep={()=> setStep(2)} cancel={handleCancel}/>}*/}
-
-
-        </div>
-
-      </div>
-    </>
-  )
+  
 }
 
 export default AdminDashboard
