@@ -5,23 +5,39 @@ import { FaStripeS } from "react-icons/fa";
 function AdminNav({currentStep}) {
 
   const icon = [FaStripeS]
+  const [newStep, setNewStep] = useState([]);
+  const stepRef = useRef();
 
-  const steps = ["Employee Details", "Security", "Review"];
+  useEffect(()=>{
+    const updateStep = steps.map((step, index) => ({
+      description: step,
+      completed: index < currentStep - 1,
+      highlighted: index === currentStep - 1,
+      selected: index <= currentStep -1,
+    }));
+    setNewStep(updateStep);
+  }, [steps, currentStep]);
+
+
   return (
-    <div className="flex gap-4 mb-6 h-10">
+    <div className="flex justify-between item-center">
 
-      {steps.map((label, index) => (
+      {newStep.map((step, index)=>(
+        <div key={index} className="flex item-center">
 
-        <div
-          key={index}
-          className={`px-4 py-2 rounded ${
-            currentStep === index + 1 ? "bg-blue-100 text-white":"bg-gray-500"}`}
-              >
+          <div className={`rounded-full h-10 w-10 flex items-center justify-center
+            ${step.selected ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
 
-                {label}
+              {index + 1}
 
           </div>
 
+            <div className="ml-2">{step.description}</div>
+
+            {index !== steps.length - 1 && (
+              <div className="flex-auto border-t-2 mx-2"></div>
+            )}
+        </div>
       ))}
     </div>
   )
