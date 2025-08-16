@@ -1,8 +1,9 @@
-import React from 'react'
+
 import { FaStripeS } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from 'react'
 
 
-function AdminNav({currentStep}) {
+function AdminNav({steps, currentStep}) {
 
   const icon = [FaStripeS]
   const [newStep, setNewStep] = useState([]);

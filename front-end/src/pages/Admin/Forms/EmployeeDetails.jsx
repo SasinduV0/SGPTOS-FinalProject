@@ -16,14 +16,14 @@ function EmployeeDetails() {
       <div className="flex flex-row gap-4 w-full">
 
       <div  className="flex-1">
-        <label htmlfor="firstname" className="block mb-1">Fist Name</label>
+        <label htmlFor="firstname" className="block mb-1">Fist Name</label>
         <input
         type="text"
         className="border rounded-lg p-2 mt-2 w-full"/>
       </div>
 
       <div className="flex-1">
-        <label htmlfor="Lastname" className="block mb-1">Last Name</label>
+        <label htmlFor="Lastname" className="block mb-1">Last Name</label>
         <input
         type="text"
         className="border rounded-lg p-2 mt-2 w-full"/>
@@ -32,14 +32,14 @@ function EmployeeDetails() {
       </div>
 
       <div>
-        <label htmlfor="Email" className="block mb-1">Email Address</label>
+        <label htmlFor="Email" className="block mb-1">Email Address</label>
         <input
         type="email"
         className="border rounded-lg p-2 mt-2 w-full"/>
       </div>
       
       <div>
-        <label htmlfor="Phone Number" className="block mb-1">Phone Number</label>
+        <label htmlFor="Phone Number" className="block mb-1">Phone Number</label>
         <input
         type="tel"
         className="border rounded-lg p-2 mt-2 w-full"/>
@@ -53,17 +53,17 @@ function EmployeeDetails() {
       <h2 className="text-x1 font-bold text-center">Work Informaton</h2>
       <p className="text-x1 font-bold text-center">Assign department and employee details</p>
 
-      <div calssName="flex">
+      <div className="flex">
 
         <div className="flex-1">
-          <lable htmlfor="employeeId" classname="block mb-1">Employee ID</lable>
+          <label htmlFor="employeeId" className="block mb-1">Employee ID</label>
           <input
           type="text"
           className="border rounded-lg p-2 mt-2 w-full"/>
         </div>
 
-        <div classname="flex-1">
-            <lable htmlfor="department" classname="block mb-1"></lable>
+        <div className="flex-1">
+            <label htmlFor="department" className="block mb-1"></label>
             <select className="border rounded-lg p-2 mt-2 w-full">
 
               <option value="" disabled>Select Department</option>

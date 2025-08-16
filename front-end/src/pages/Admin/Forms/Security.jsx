@@ -10,7 +10,7 @@ function Security() {
 
         <div>
             <div>
-                <lable htmlfor="employeeId" classname="block mb-1">Password</lable>
+                <label htmlFor="employeeId" className="block mb-1">Password</label>
                 <input
                 type="password"
                 placeholder="Enter Password (min 8 char)"
@@ -18,7 +18,7 @@ function Security() {
             </div>
 
             <div>
-                <label htmlfor="employeeId" classname="block mb-1">Confirm Password</label>
+                <label htmlFor="employeeId" className="block mb-1">Confirm Password</label>
                 <input
                 type="password"
                 placeholder="Confirm password"

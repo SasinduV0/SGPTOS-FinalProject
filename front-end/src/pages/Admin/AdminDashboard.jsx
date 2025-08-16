@@ -28,11 +28,11 @@ function AdminDashboard() {
   const displayStep = (step) => {
     switch (step){
       case 1:
-        return <EmployeeDetails formData={formDate} setFormData={setFormData}/>
+        return <EmployeeDetails formData={formData} setFormData={setFormData}/>
       case 2:
-        return <Security formData={formDate} setFormData={setFormData}/>
+        return <Security formData={formData} setFormData={setFormData}/>
       case 3:
-        return <Final formData={formDate} setFormData={setFormData}/>
+        return <Final formData={formData} setFormData={setFormData}/>
       default:
         return null;
     }
@@ -62,6 +62,48 @@ function AdminDashboard() {
     }
   
 }
+
+const handleClick = (direction) => {
+  let newStep = currentStep;
+
+  if (direction=== "next"){
+    if(!validateStep()) return;   //stop if validation fail
+    newStep++;
+  } else{
+    newStep--;
+  }
+
+  if (newStep > 0 && newStep <= steps.length){
+    setCurrentStep(newStep);
+  }
+};
+
+return(
+
+  <div className='ml-70 mt-20'>
+        <SideBar title="Admin Panal" links={adminLinks} />
+        EmployeeEfficiency Dashboard
+   
+
+  <div className="mx-auto rounded-2xl bg-white pb-2 shadow-xl md:w-1/2">
+    <div className="container horizontal mt-5">
+      <AdminNav steps={steps} currentStep={currentStep}/>
+    </div>
+
+    <div className="my-10 p-10">{displayStep(currentStep)}</div>
+
+    {currentStep !== steps.length && (
+      <AdminNavControl
+      handleClick={handleClick}
+      currentStep={currentStep}
+      steps={steps}
+      />
+    )}
+
+  </div>
+
+   </div>
+)
 }
 
 export default AdminDashboard
