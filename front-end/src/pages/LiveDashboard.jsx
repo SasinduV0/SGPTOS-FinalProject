@@ -4,6 +4,7 @@ import React from 'react'
 import ProductionDashboard from '../components/live-dashboard/ProductionDashboard'
 import LeadingLineCard from '../components/live-dashboard/LeadingLineCard'
 import FastestEmployees from '../components/live-dashboard/FastestEmployees'
+import OverallTargetChart from '../components/Charts/Live-Dashboard/OverallTargetChart'
 
 function LiveDashboard() {
   return (
@@ -21,11 +22,13 @@ function LiveDashboard() {
         </div>
 
         {/* Middle-section */}
-        <div className='w-[30%]'>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[840px]'>chart 2
-            {/* <ProductionDashboard/> */}
+        <div className="w-[30%]">
+          <div className="bg-white rounded-xl shadow-2xl p-4 h-[840px] flex items-center justify-center gap-25 flex-col">
+            <OverallTargetChart />
+            <OverallTargetChart />
           </div>
         </div>
+
 
         {/* Right-section */}
         <div className='w-[30%] flex flex-col gap-4'>
