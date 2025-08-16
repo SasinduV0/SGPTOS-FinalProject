@@ -18,6 +18,8 @@ function AdminDashboard() {
     phoneNumber:"",
     employeeId:"",
     department:"",
+    password:"",
+    confirmPassword:"",
     
   });
 
@@ -30,8 +32,6 @@ function AdminDashboard() {
       case 2:
         return <Security formData={formDate} setFormData={setFormData}/>
       case 3:
-        return <Review formData={formDate} setFormData={setFormData}/>
-      case 4:
         return <Final formData={formDate} setFormData={setFormData}/>
       default:
         return null;
@@ -48,9 +48,18 @@ function AdminDashboard() {
       }
     }
 
-    
+  //Security form
+    if(currentStep===2){
+      if(!formData.password || !formData.confirmPassword){
+        alert("Please fill all fields.");
+        return false;
+      }
 
-
+      if(formData.password!==formData.confirmPassword){
+        alert("Password do not match !")
+        return false;
+      }
+    }
   
 }
 }
