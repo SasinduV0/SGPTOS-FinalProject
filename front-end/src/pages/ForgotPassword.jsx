@@ -1,71 +1,85 @@
-// components/ForgotPassword.js
-
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const ForgotPassword = () => {
-    const [email, setEmail] = useState(''); // Correctly use 'email' in state
-    const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ userID: "", role: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
+    setMessage("");
+  };
 
-        try {
-            // Send the email to the backend
-            const res = await axios.post('http://localhost:8000/api/auth/forgotpassword', { email });
-            setMessage(res.data.msg);
-        } catch (err) {
-            // Handle specific error messages from the backend
-            if (err.response && err.response.data.msg) {
-                setMessage(err.response.data.msg);
-            } else {
-                setMessage('Failed to send reset email. Please try again later.');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
 
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold text-center text-gray-900">Forgot Your Password?</h2>
-                <p className="text-center text-gray-600">
-                    Enter your email address to receive a password reset link.
-                </p>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700" htmlFor="email">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Enter your email"
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                        disabled={loading}
-                    >
-                        {loading ? 'Sending...' : 'Send Reset Link'}
-                    </button>
-                </form>
-                {message && <p className={`text-center text-sm mt-4 ${message.includes("sent") ? "text-green-600" : "text-red-600"}`}>{message}</p>}
-                <div className="text-center text-sm mt-4">
-                    <Link to="/" className="text-blue-600 hover:text-blue-500">Back to Login</Link>
-                </div>
-            </div>
-        </div>
-    );
+    try {
+      const res = await axios.post("http://localhost:8000/api/auth/forgot-password", form);
+      setMessage(res.data.message);
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+        <h2 className="text-2xl font-bold mb-6 text-center">Forgot Password</h2>
+        {message && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">{message}</div>}
+        {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>}
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label className="block mb-1 font-medium">User ID</label>
+            <input
+              name="userID"
+              value={form.userID}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your User ID"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium">Role</label>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select role...</option>
+              <option value="admin">Admin</option>
+              <option value="manager">Manager</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="qc">Quality Control</option>
+              <option value="live-dashboard">Live Dashboard</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700"
+            disabled={loading}
+          >
+            {loading ? "Sending..." : "Send Reset Link"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default ForgotPassword;

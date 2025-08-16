@@ -7,6 +7,7 @@ export const ManagerLinks = [
   { label: 'Dashboard', href: '/manager', icon: <FaTachometerAlt /> },
   { label: 'Employee Management', href: '/manager/em', icon: <FaUser /> },
   { label: 'Employee Efficiency', href: '/manager/ee', icon: <FaCog /> },
+  { label: 'Live Dashboard', href: '/live-dashboard', icon: <MdDashboard /> },
 ];
 
 export const adminLinks = [
