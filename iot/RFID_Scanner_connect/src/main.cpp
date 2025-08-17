@@ -23,8 +23,8 @@
 #include <freertos/queue.h>
 
 // WiFi credentials - Replace with your network credentials
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "Redmi Note 9 Pro";
+const char* password = "1234r65i";
 
 // NTP server configuration for Sri Lanka timezone
 const char* ntpServer = "pool.ntp.org";
