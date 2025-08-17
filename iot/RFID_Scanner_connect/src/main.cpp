@@ -59,6 +59,10 @@ const unsigned long NTP_SYNC_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours in millis
 volatile bool wifiConnected = false;
 volatile bool timeInitialized = false;
 
+// Forward declarations for FreeRTOS tasks
+void connectivityTask(void *parameter);
+void rfidScanningTask(void *parameter);
+
 // RFID Scanner pins
 const struct {
     uint8_t ss;    // SDA
