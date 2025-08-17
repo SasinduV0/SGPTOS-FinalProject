@@ -2,82 +2,103 @@ import React, { useState } from 'react'
 
 
 
-function EmployeeDetails({nextStep, prevStep, cancel}) {
+function EmployeeDetails({formData, setFormData}) {
+ return(
 
-const [employeeName, setEmployeeName] =  useState('');
-const [employeeEmail, setEmployeeEmail] = useState('');
+  <div>
 
-//handle next button click
-const handleNext =()=>{
-  if (employeeName.trim()==='' || employeeEmail.trim()===''){
-    alert("please fill all field");
-    return;
-  }
+{/*//Personal information*/}
 
-  nextStep(); //move to security step
-}
+    <div className=" max-w-2x1 mx-auto p-4">
+      <h2 className="text-x1 font-bold text-center">Personal Information</h2>
+      <p className="text-x1 font-bold text-center">Enter the employee’s basic details</p>
 
-  return (
-    <div className="border p-2 rounded shadow-md bg-white w-96 mt-0">
-      <h2 className="text-x1 font-bold mb-4">Employee Details</h2>
+      <div className="flex flex-row gap-4 w-full">
 
-    <div className="mb-4">
-
-        <label className="block mb-2 front-medium">
-            Employee Name
-        </label>
-
+      <div  className="flex-1">
+        <label htmlFor="firstname" className="block mb-1">Fist Name</label>
         <input
-            type="text"
-            value={employeeName}
-            onChange={()=> setEmployeeName (e.target.value)}
-            className="border p-2 rounded w-64"
-            placeholder="Enter employee name"/>
+        type="text"
+        name="firstname"
+        value={formData.firstname}
+        onChange={e => setFormData({ ...formData, firstname: e.target.value})}
+        className="border rounded-lg p-2 mt-2 w-full"/>
+      </div>
 
-    </div>
+      <div className="flex-1">
+        <label htmlFor="lastname" className="block mb-1">Last Name</label>
+        <input
+        type="text"
+        name="lastname"
+        value={formData.lastname}
+        onChange={e => setFormData({ ...formData, lastname: e.target.value})}
+        className="border rounded-lg p-2 mt-2 w-full"/>
+      </div>
 
-    <div className="mb-4">
+      </div>
 
-      <label className="block mb-2 front-medium">
-        Email
-      </label>
-
-      <input 
+      <div>
+        <label htmlFor="email" className="block mb-1">Email Address</label>
+        <input
         type="email"
-        value={employeeEmail}
-        onChange={(e)=>setEmployeeEmail(e.target.value)}
-        className= "border p-2 rounded w-full"
-        placeholder="Enter employee email"
-        />
+        name="email"
+        value={formData.email}
+        onChange={e => setFormData({ ...formData, email: e.target.value})}
+        className="border rounded-lg p-2 mt-2 w-full"/>
+      </div>
       
-    </div>
-
-    {/*Navigation button set*/}
-
-    <div className="flex justify-between mt-4">
-
-      <button onClick={prevStep}        //Previous button
-        className="bg-gray-500 text-white px-4 py-2 rounded"
-        >
-          Previous
-      </button>
-
-      <button onClick={handleNext}       //next button
-        className="bg-gray-500 text-white px-4 py-2 rounded"
-          >
-          Next
-      </button>
-
-      <button onClick={cancel}          //Cancel button
-        className="bg-gray-500 text-white px-4 py-2 rounded"
-          >
-            cancel
-      </button>
+      <div>
+        <label htmlFor="phoneNumber" className="block mb-1">Phone Number</label>
+        <input
+        type="tel"
+        name="phoneNumber"
+        value={formData.phoneNumber}
+        onChange={e => setFormData({ ...formData, phoneNumber: e.target.value})}
+        className="border rounded-lg p-2 mt-2 w-full"/>
+      </div>
 
     </div>
 
+{/*//Work information*/}
+    <div>
+
+      <h2 className="text-x1 font-bold text-center">Work Informaton</h2>
+      <p className="text-x1 font-bold text-center">Assign department and employee details</p>
+
+      <div className="flex">
+
+        <div className="flex-1">
+          <label htmlFor="employeeId" className="block mb-1">Employee ID</label>
+          <input
+          type="text"
+          name="employeeId"
+          value={formData.employeeId}
+          onChange={e => setFormData({ ...formData, employeeId: e.target.value})}
+          className="border rounded-lg p-2 mt-2 w-full"/>
+        </div>
+
+        <div className="flex-1">
+            <label htmlFor="department" className="block mb-1"></label>
+            <select 
+            name="department"
+            value={formData.department}
+            onChange={e => setFormData({ ...formData, department: e.target.value})}
+            className="border rounded-lg p-2 mt-2 w-full">
+
+              <option value="" disabled>Select Department</option>
+              <option value="Cutting">Cutting</option>
+              <option value="Packing">Packing</option>
+              <option value="Sawing">Sawing</option>
+
+            </select>
+        </div>
+      </div>
+
     </div>
-  )
+  </div>
+
+ )
+
 }
 
 export default EmployeeDetails
