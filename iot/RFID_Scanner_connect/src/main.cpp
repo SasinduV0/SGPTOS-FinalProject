@@ -32,7 +32,7 @@ const char* password = "1234r65i";
 
 // NTP server configuration for Sri Lanka timezone
 const char* ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 19800;  // GMT+5:30 for Sri Lanka (5.5 hours * 3600 seconds)
+const long gmtOffset_sec = 19800;    // GMT+5:30 for Sri Lanka (5.5 hours * 3600 seconds)
 const int daylightOffset_sec = 0;   // Sri Lanka doesn't use daylight saving time
 
 // ScannedData structure for queue
@@ -90,8 +90,8 @@ void initRFID(MFRC522& rfid) {
     delay(50);
     
     // Configure for reliable operation
-    rfid.PCD_WriteRegister(MFRC522::TxASKReg, 0x40);     // Force 100% ASK modulation
-    rfid.PCD_WriteRegister(MFRC522::RFCfgReg, 0x70);     // Receiver gain 48dB
+    rfid.PCD_WriteRegister(MFRC522::TxASKReg, 0x40);       // Force 100% ASK modulation
+    rfid.PCD_WriteRegister(MFRC522::RFCfgReg, 0x70);      // Receiver gain 48dB
     rfid.PCD_WriteRegister(MFRC522::ModeReg, 0x3D);      // CRC with 0x6363
     
     // Enable antenna
