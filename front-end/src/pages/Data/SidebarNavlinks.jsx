@@ -1,5 +1,5 @@
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
-import { MdAppRegistration } from 'react-icons/md';
+import { MdAppRegistration, MdDashboard } from 'react-icons/md';
 import { BiRfid } from "react-icons/bi";
 import { RiRfidLine } from "react-icons/ri";
 
