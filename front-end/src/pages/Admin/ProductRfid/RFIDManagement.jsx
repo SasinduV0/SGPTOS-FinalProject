@@ -1,6 +1,6 @@
-import { ChevronDown, Search, Trash2 } from 'lucide-react';
-import React from 'react'
+import { Edit, Trash2, Plus, Search, Bell, User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import RfidModal from '../../../components/AdminPanal/ProductRfid/RfidModal';
 
 function RFIDManagement() {
 const [rfidEntries, setRfidEntries] = useState([
