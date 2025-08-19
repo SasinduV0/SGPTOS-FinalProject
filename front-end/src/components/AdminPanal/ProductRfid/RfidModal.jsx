@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
+const RfidModal =({isOpen, onClose, onSave, initialData}) => {
     const [formData, setFormData] = useState({
        rfidNumber: '',
        unit: '',
@@ -9,24 +9,37 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
     });
 
     const [errors, setErrors] = useState({});
-    const [serverError, setServerError] = useState('');
+
+    const units =['Unit 1', 'Unit 2'];
+    const workplace =['Line 1', 'Line 2', 'Line 3'];
+    
 
     useEffect(()=>{
-        if(entry){
+        if(initialData){
             setFormData({
-                rfidNumber: entry.rfidNumber,
-                unit: entry.unit,
-                workplaces: entry.workplaces,
-                status: entry.status
+                rfidNumber: initialData.rfidNumber,
+                unit: initialData.unit,
+                workplaces: initialData.workplaces,
+                status: initialData.status
+            });
+        } else {
+            setFormData({
+                rfidNumber: '',
+                unit:'',
+                workplace:'',
+                status:'ACTIVE'
             });
         }
-    }, [entry]);
+        setErrors({});
+    }, [initialData, isOpen]);
 
     const validateForm = () => {
         const newErrors = {};
 
         if (!formData.rfidNumber.trim()){
             newErrors.rfidNumber = 'RFID Number is required';
+        } else if (formData.rfidNumber.length<5){
+            newErrors.rfidNumber ='RFID Number must be at least 5 characters'
         }
 
         if (!formData.unit){
@@ -34,7 +47,7 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
         }
 
         if (!formData.workplaces){
-            newErrors.workplaces = 'Workplace id required';
+            newErrors.workplaces = 'Workplace is required';
         }
 
         setErrors(newErrors);
@@ -44,27 +57,29 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();         //stop page refresh
-        setServerError('');
+        
         if(validateForm()){
             onSave(formData);       //call parent’s save function
         }
     };
 
-    const handleChange = (e) => {
-        const {name, value} = e. target;
+    const handleInputChange = (field, value) => {
+        
         setFormData(prev => ({
             ... prev,
-            [name]: value
+            [field]: value
         }));
 
         //clear error when user starts typing
-        if(errors[name]){
+        if(errors[field]){
             setErrors(prev => ({
                 ...prev,
-                [name]:''
+                [field]:''
             }));
         }
     };
+
+    if (!isOpen) return null;
 
     return(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex item-center justify-center z-50">
@@ -105,7 +120,7 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
                                 id='refidNumber'
                                 name='rfidNumber'
                                 value={formData.rfidNumber}
-                                onChange={handleChange}
+                                onChange={handleInputChange}
                                 disabled={loading}
                                 placeholder='e.g: RFID001234'
                                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
@@ -121,11 +136,12 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
 
                         <div>
                             <label htmlFor='unit' className='block text-sm font-medium text-gray-700 mb-1'>Unit</label>
+                            <div className='relative'>
                             <select
                                 id='unit'
                                 name='unit'
                                 value={formData.unit}
-                                onChange={handleChange}
+                                onChange={(e)=>handleInputChange('unit', e.target.value)}
                                 disabled={loading}
                                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed ${
                                 errors.unit ? 'border-red-300' : 'border-gray-300'
@@ -136,6 +152,11 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
                                     <option key={unit} value={unit}>{unit}</option>
                                 ))}
                             </select>
+                            
+                            <ChevronDown className='absolute right-3 top-1/2 transform-translate-y-1/2 text-gray-400 pointer-event-none' size={16}/>
+
+                            </div>
+
                             {errors.unit && (
                                 <p className='mt-1 text-sm text-red-600'> {errors.unit} </p>
                             )}
@@ -145,11 +166,12 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
 
                         <div>
                             <label htmlFor='workplace' className='block text-sm font-medium text-gray-700 mb-1'> Workplace </label>
+                            <div className='relative'>
                             <select
                                 id='workplace'
                                 name='workplace'
                                 value={formData.workplaces}
-                                onChange={handleChange}
+                                onChange={(e)=> handleInputChange('workplace', e.target.value)}
                                 disabled={loading}
                                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed ${
                                 errors.workplace ? 'border-red-300' : 'border-gray-300'
@@ -160,6 +182,10 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
                                     })}
                                 </select>
 
+                                <ChevronDown className='absolute right-3 top-1/2 transform-translate-y-1/2 text-gray-400 pointer-event-none' size={16}/>
+
+                                </div>
+
                                 {errors.workplace &&(
                                     <p className="mt-1 text-sm text-red-600">{errors.workplace}</p>
                                 )}
@@ -167,52 +193,48 @@ const RfidForm =({entry, onSave, onCancel, units, workplaces, loading}) => {
 
                         {/*Status (only show for edit)*/}
 
-                        {entry && (
-                            <div>
-                                <label htmlFor='status' className='block text-sm font-medium text-gray-700 mb-1'> Status </label>
-                                <select
-                                    id='status'
-                                    name='status'
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    disabled={loading}
-                                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed'>
-                                        <option value='ACTIVE'>ACTIVE</option>
-                                        <option value ='INACTIVE'>INACTIVE</option>
-                                    </select>
-                            </div>
-                        )};
+                        <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-2'> Status </label>
 
-                        {/*BUttons*/}
-                        <div className='flex justify-end space-x-3 pt-4'>
+                            <div className='relative'>
+                                <select
+                                    value={formData.status}
+                                    onChange={(e)=>handleInputChange('status', e.target.value)}
+                                    className='w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer transition-colors'>
+
+                                        <option value='ACTIVE'>ACTIVE</option>
+                                        <option value='INACTIVE'>INACTIVE</option>
+
+                                    </select>
+
+                                    <ChevronDown className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none' size={16}/>
+
+                            </div>
+                        </div>
+
+                        {/*Buttons*/}
+
+                        <div className='flex justify-end gap-3 pt-6 border-t border-gray-200'>
+
                             <button
-                                id='button'
-                                onClick={onCancel}
-                                disabled={loading}
-                                className='px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors duration-200'>
+                                type='button'
+                                onClick={onClose}
+                                className='px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium'
+                                >
                                     Cancel
+                            </button>
+
+                            <button
+                                type='submit'
+                                className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 translation-colors font-medium'>
+                                    {initialData? 'Update Entry' : 'Save Entry'}
                                 </button>
 
-                            <button type='submit'
-                            disabled={loading}
-                            className='px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg transition-colors duration-200 flex items-center'>
-
-                                {loading && (
-                                    <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
-                                )}
-                                {entry ? 'update' : 'Save'}
-                            </button>
                         </div>
                     </form>
-
-
+                </div>
             </div>
-
-        </div>
-    )
+    );
 };
 
-export default RfidForm;
-
-
-
+export default RfidModal;
