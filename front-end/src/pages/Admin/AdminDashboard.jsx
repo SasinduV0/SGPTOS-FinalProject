@@ -110,8 +110,6 @@ return(
         </div>
       }/>
 
-      {/*<Route path="userManagement" element={<Management />} />*/}
-      <Route path='employeesRFID' element={<EmpRFIDManagement/>}/>
       <Route path='ProductRfid/RFIDManagement' element={<RFIDManagement/>}/>
 
     </Routes>
