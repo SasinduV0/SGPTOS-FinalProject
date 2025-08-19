@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { X, ChevronDown } from 'lucide-react';
 
 const RfidModal =({isOpen, onClose, onSave, initialData}) => {
     const [formData, setFormData] = useState({
