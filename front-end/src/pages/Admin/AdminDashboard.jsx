@@ -7,7 +7,7 @@ import AdminNavControl from '../../components/AdminPanal/AdminNavControl'
 import EmployeeDetails from '../Admin/Forms/EmployeeDetails'
 import Security from '../Admin/Forms/Security'
 import Final from '../Admin/Forms/Final'
-import RFIDManagement from './ProductRfid/RFIDManagement';
+import ProductRfidMan from './ProductRfidMan';
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
@@ -110,7 +110,7 @@ return(
         </div>
       }/>
 
-      <Route path='ProductRfid/RFIDManagement' element={<RFIDManagement/>}/>
+      <Route path='ProductRfidMan' element={<ProductRfidMan/>}/>
 
     </Routes>
   </div>
