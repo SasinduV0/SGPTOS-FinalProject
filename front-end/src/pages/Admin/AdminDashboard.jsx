@@ -5,6 +5,7 @@ import {adminLinks} from '../Data/SidebarNavlinks'
 import ProductRfidMan from './ProductRfidMan';
 import UserRegistration from './UserRegistration';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import EmployeeRfidMan from './EmployeeRfidMan';
 
 function AdminDashboard() {
 
@@ -19,6 +20,8 @@ return(
       <Route index element={<Navigate to='UserRegistration'/>}/>
       <Route path='UserRegistration' element={<UserRegistration/>}/>
       <Route path='ProductRfidMan' element={<ProductRfidMan/>}/>
+      <Route path='EmployeeRfidMan' element={<EmployeeRfidMan/>}/>
+
         
 
     </Routes>

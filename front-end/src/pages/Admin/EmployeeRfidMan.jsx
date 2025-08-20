@@ -1,40 +1,40 @@
 import React, { useState } from 'react';
-import Header from '../../components/AdminPanal/ProductRfid/Header';
-import FilterBar from '../../components/AdminPanal/ProductRfid/FilterBar';
-import DataTable from '../../components/AdminPanal/ProductRfid/DataTable';
-import StatusBadge from '../../components/AdminPanal/ProductRfid/StatusBadge';
-import ActionButton from '../../components/AdminPanal/ProductRfid/ActionButton';
-import RfidModal from '../../components/AdminPanal/ProductRfid/RfidModal';
-import Modal from '../../components/AdminPanal/ProductRfid/Modal';
+import Header from '../../components/AdminPanal/EmployeeRfid/header';
+import FilterBar from '../../components/AdminPanal/EmployeeRfid/FilterBar';
+import DataTable from '../../components/AdminPanal/EmployeeRfid/DataTable';
+import StatusBadge from '../../components/AdminPanal/EmployeeRfid/StatusBadge';
+import ActionButton from '../../components/AdminPanal/EmployeeRfid/ActionButton';
+import RfidModal from '../../components/AdminPanal/EmployeeRfid/RfidModal';
+import Modal from '../../components/AdminPanal/EmployeeRfid/Modal';
 
-const ProductRfidMan = () => {
+const EmployeeRfidMan = () => {
   const [rfidEntries, setRfidEntries] = useState([
     {
       id: '1',
       rfidNumber: 'RFID01-234',
-      unit: 'UNIT 1',
-      workplace: 'LINE 1',
+      empName: 'H.D.L Fernando',
+      empId: 'EMP-002',
       status: 'ACTIVE'
     },
     {
       id: '2',
       rfidNumber: 'RFID01-235',
-      unit: 'UNIT 1',
-      workplace: 'LINE 2',
+      empName: 'P.K Perera',
+      empId: 'emp-903',
       status: 'ACTIVE'
     },
     {
       id: '3',
       rfidNumber: 'RFID01-236',
-      unit: 'UNIT 2',
-      workplace: 'LINE 3',
+      empName: 'S. silva',
+      empId: 'EMP-086',
       status: 'INACTIVE'
     },
     {
       id: '4',
       rfidNumber: 'RFID01-789',
-      unit: 'UNIT 1',
-      workplace: 'LINE 4',
+      empName: 'R. Kumara',
+      empId: 'EMP-080',
       status: 'ACTIVE'
     }
   ]);
@@ -42,11 +42,8 @@ const ProductRfidMan = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [unitFilter, setUnitFilter] = useState('All Units');
-  const [workplaceFilter, setWorkplaceFilter] = useState('All Workplaces');
+ 
 
-  const units = ['All Units', 'UNIT 1', 'UNIT 2', 'UNIT 3'];
-  const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
   const handleAddEntry = () => {
     setEditingEntry(null);
@@ -96,12 +93,11 @@ const ProductRfidMan = () => {
 
   const filteredEntries = rfidEntries.filter(entry => {
     const matchesSearch = entry.rfidNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.unit.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.workplace.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesUnit = unitFilter === 'All Units' || entry.unit === unitFilter;
-    const matchesWorkplace = workplaceFilter === 'All Workplaces' || entry.workplace === workplaceFilter;
+                         entry.empName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         entry.empId.toLowerCase().includes(searchTerm.toLowerCase());
+
     
-    return matchesSearch && matchesUnit && matchesWorkplace;
+    return matchesSearch ;
   });
 
   const tableColumns = [
@@ -111,13 +107,13 @@ const ProductRfidMan = () => {
       className: 'font-mono text-sm text-gray-800'
     },
     {
-      header: 'UNIT',
-      key: 'unit',
+      header: 'NAME',
+      key: 'empName',
       className: 'text-gray-800'
     },
     {
-      header: 'WORKPLACE',
-      key: 'workplace',
+      header: 'EMPLOYEE ID',
+      key: 'empId',
       className: 'text-gray-800'
     },
     {
@@ -144,7 +140,7 @@ const ProductRfidMan = () => {
     }
   ];
 
-  const filters = [
+  {/*const filters = [
     {
       value: unitFilter,
       onChange: setUnitFilter,
@@ -155,7 +151,7 @@ const ProductRfidMan = () => {
       onChange: setWorkplaceFilter,
       options: workplaces
     }
-  ];
+  ];*/}
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -167,7 +163,7 @@ const ProductRfidMan = () => {
         <div className="flex-1 p-6">
           <div className="bg-white rounded-lg shadow-sm">
             <Header
-              title="Product RFID Management"
+              title="Employee RFID Management"
               onAddClick={handleAddEntry}
               addButtonText="Add RFID Entry"
               icon={<div className="w-4 h-4 bg-white rounded-sm"></div>}
@@ -176,8 +172,7 @@ const ProductRfidMan = () => {
             <FilterBar
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
-              searchPlaceholder="Search RFID"
-              filters={filters}
+              searchPlaceholder="Search RFID, Name or Employee ID"
             />
 
             {/* RFID Entries */}
@@ -212,4 +207,4 @@ const ProductRfidMan = () => {
   );
 };
 
-export default ProductRfidMan;
+export default EmployeeRfidMan;
