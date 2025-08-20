@@ -73,7 +73,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
