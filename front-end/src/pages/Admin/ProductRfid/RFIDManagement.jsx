@@ -31,10 +31,10 @@ const [workplaceFilter, setWorkplaceFilter ] = useState('All Workplaces');
 
 
 
-const units = ['All Units', 'Unit 1', 'Unit 2','Unit 3'];
-const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
+const units = ['All UNIT', 'UNIT 1', 'UNIT 2','UNIT 3'];
+const workplaces = ['All Workplace', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
-  //Apply filters and fetch data
+  //Handlers
   const handleAddEntry = ()=>{
     setEditingEntry(null);
     setIsModalOpen(true);
@@ -65,7 +65,7 @@ const handleSaveEntry = (entryData)=>{
     //Add new entry
     const newEntry = {
       ...entryData,
-      id: Data.now().toString()
+      id: Date.now().toString()
     };
     setRfidEntries(prev => [...prev, newEntry])
   }
@@ -74,9 +74,9 @@ const handleSaveEntry = (entryData)=>{
 };
 
 const handleStatusChange = (id, newStatus) => {
-  setRfidEntries(prev=>
-    prev.map(entry=>
-      entry.id=== id? {...entry, status: newStatus} : entry
+  setRfidEntries((prev)=>
+    prev.map((entry)=>
+      (entry.id=== id? {...entry, status: newStatus} : entry)
     )
   );
 };
@@ -101,7 +101,7 @@ return(
 
       <div className='flex items-center justify-between p-6 border-b'>
         <div className='flex items-center gap-3'>
-          <div className='w-8 h-8 bg-blue-500 rounded-full flex item-center justify-center'>
+          <div className='w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center'>
             <div className='w-4 h-4 bg-white rounded-sm'></div>
           </div>
 
@@ -122,7 +122,7 @@ return(
       <div className='p-6 border-b bg-gray-50'>
         <div className='flex items-center gap-4'>
           <div className='relative'>
-            <Search className='absolute left-3 top-1/2 transform-translate-y-1/2 text-gray-400' size={18}/>
+            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400' size={18}/>
             <input
               type='text'
               placeholder='search RFID'
@@ -134,7 +134,7 @@ return(
           <div className='relative'>
             <select
               value={unitFilter}
-              onChange={()=>setUnitFilter(e.target.value)}
+              onChange={(e)=>setUnitFilter(e.target.value)}
               className='appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer'>
                 {units.map(unit=>(
                   <option key={unit} value={unit}>{unit}</option>
@@ -162,7 +162,7 @@ return(
 
     <div className='p-6'>
       <div className='mb-4'>
-        <h2 className='text-lg font-mrdium text-gray-800'>RFID Entries ({filteredEntries.length})</h2>
+        <h2 className='text-lg font-medium text-gray-800'>RFID Entries ({filteredEntries.length})</h2>
       </div>
 
       {/*Table*/}
@@ -205,7 +205,7 @@ return(
                 </td>
 
                 <td className='py-4 px-4'>
-                  <div className='flex item-center gap-2'>
+                  <div className='flex items-center gap-2'>
                     <button
                       onClick={()=> handleEditEntry(entry)}
                       className='text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors'
@@ -227,6 +227,17 @@ return(
         </table>
       </div>
     </div>
+
+    {/*RfidModal*/}
+
+    <RfidModal
+      isOpen={isModalOpen}
+      onClose={()=>{
+        setIsModalOpen(false);
+        setEditingEntry(null);
+      }}
+      onSave={handleSaveEntry}
+      initialData={editingEntry}/>
 
   </div>
 

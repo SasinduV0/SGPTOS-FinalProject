@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { X, ChevronDown } from 'lucide-react';
 
-const RfidModal =({isOpen, onClose, onSave, initialData}) => {
+const RfidModal =({isOpen ,onClose , onSave, initialData}) => {
+
     const [formData, setFormData] = useState({
        rfidNumber: '',
        unit: '',
@@ -10,9 +11,6 @@ const RfidModal =({isOpen, onClose, onSave, initialData}) => {
     });
 
     const [errors, setErrors] = useState({});
-
-    const units =['Unit 1', 'Unit 2'];
-    const workplace =['Line 1', 'Line 2', 'Line 3'];
     
 
     useEffect(()=>{
@@ -21,7 +19,7 @@ const RfidModal =({isOpen, onClose, onSave, initialData}) => {
                 rfidNumber: initialData.rfidNumber,
                 unit: initialData.unit,
                 workplaces: initialData.workplaces,
-                status: initialData.status
+                status: initialData.status,
             });
         } else {
             setFormData({
@@ -73,9 +71,9 @@ const RfidModal =({isOpen, onClose, onSave, initialData}) => {
 
         //clear error when user starts typing
         if(errors[field]){
-            setErrors(prev => ({
+            setErrors((prev) => ({
                 ...prev,
-                [field]:''
+                [field]:'',
             }));
         }
     };
@@ -89,12 +87,11 @@ const RfidModal =({isOpen, onClose, onSave, initialData}) => {
                 {/*header*/}
                 <div className='flex item-center justify-between mb-6'>
                     <h2 className='text-x1 font-semibold text-gray-900'>
-                        {entry ? 'Edit RFID Entry' : 'Add New RFID Entry'}
+                        {initialData ? 'Edit RFID Entry' : 'Add New RFID Entry'}
                     </h2>
 
                     <button 
-                        onChange={onCancel}
-                        disabled={loading}
+                        onChange={onClose}
                         className='text-gray-400 hover:text-gray-600 transition-colors duration-200'>
                             <X className='w-5 h-5'/>
                         </button>
@@ -104,13 +101,6 @@ const RfidModal =({isOpen, onClose, onSave, initialData}) => {
                 <form onSubmit = {handleSubmit}
                     className='space-y-4'>
 
-                        {/*server Error*/}
-
-                        {serverError && (
-                            <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg'>
-                                {serverError}
-                            </div>
-                        )}
 
                         {/*RFID Number*/}
 
@@ -118,11 +108,10 @@ const RfidModal =({isOpen, onClose, onSave, initialData}) => {
                             <label htmlFor='rfidNumber' className='block text-sm font-medium text-gray-700 mb-1'> RFID Number </label>
                             <input
                                 type='text'
-                                id='refidNumber'
+                                id='rfidNumber'
                                 name='rfidNumber'
                                 value={formData.rfidNumber}
-                                onChange={handleInputChange}
-                                disabled={loading}
+                                onChange={(e)=> handleInputChange('rfidNumber', e.target.value)}
                                 placeholder='e.g: RFID001234'
                                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
                                 errors.rfidNumber ? 'border-red-300' : 'border-gray-300'}`}/>
