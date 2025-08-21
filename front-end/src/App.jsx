@@ -10,7 +10,7 @@ import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
-import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
+import EmployeeEfficiency from './pages/Manager/ReportAnalytics';
 
 
 import ForgotPassword from './pages/ForgotPassword';
