@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Employee = require("../models/Employee");
 
-// 1️⃣ Create new employee
+
 // 1️⃣ Create new employee
 router.post("/employees", async (req, res) => {
   try {
