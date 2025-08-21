@@ -1,10 +1,11 @@
 import React from 'react'
 // import {Chart as ChartJS} from 'chart.js/auto';
 // import {Bar, Doughut, Line} from 'react-chartjs-2'
-import ProductionDashboard from '../components/live-dashboard/ProductionDashboard'
+
 import LeadingLineCard from '../components/live-dashboard/LeadingLineCard'
 import FastestEmployees from '../components/live-dashboard/FastestEmployees'
 import OverallTargetChart from '../components/Charts/Live-Dashboard/OverallTargetChart'
+import FollowingLine from '../components/live-dashboard/FollowingLine'
 
 function LiveDashboard() {
   return (
@@ -32,9 +33,11 @@ function LiveDashboard() {
 
         {/* Right-section */}
         <div className='w-[30%] flex flex-col gap-4'>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[250px]'>chart 1</div>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[200px]'>chart 3</div>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[200px]'>chart 3</div>
+          <div className=' bg-red-700 rounded-xl shadow-2xl p-4 h-[350px]'>
+            <FollowingLine/>
+          </div>
+          <div className='bg-white rounded-xl shadow-2xl p-4 h-[280px]'>chart 3</div>
+          <div className='bg-white rounded-xl shadow-2xl p-4 h-[180px]'>chart 3</div>
         </div>
       </div>
     </div>
