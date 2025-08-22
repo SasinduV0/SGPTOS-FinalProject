@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, BarChart3 } from 'lucide-react';
+import SideBar from '../../components/SideBar';
+import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 
 const ReportAnalytics = () => {
   const [showPopup, setShowPopup] = useState(false);
@@ -106,7 +108,8 @@ const ReportAnalytics = () => {
     const maxValue = getMaxValue();
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6 mt-20 ml-70">
+        <SideBar title ="Manager Panel" links={ManagerLinks}/>
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -215,10 +218,11 @@ const ReportAnalytics = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6 ml-70 mt-20">
+      <SideBar title ="Manager Panel" links={ManagerLinks}/>
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Report Analytics</h3>
-        <p className="text-gray-600 mb-6">Generate comprehensive reports and analytics</p>
+        <p className="text-gray-600 mb-6 ">Generate comprehensive reports and analytics</p>
         
         <button 
           onClick={() => setShowPopup(true)}

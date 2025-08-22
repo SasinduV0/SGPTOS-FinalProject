@@ -1,5 +1,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import SideBar from '../../components/SideBar';
+import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 
 const ManagerHome = () => {
   // Sample data for charts
@@ -45,7 +47,8 @@ const ManagerHome = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ml-70">
+      <SideBar title ="Manager Panel" links={ManagerLinks}/>
       
       {/* Total Status Card */}
       <div className="bg-white rounded-lg shadow p-6">
