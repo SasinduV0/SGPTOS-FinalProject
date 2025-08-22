@@ -12,7 +12,7 @@ export const ManagerLinks = [
 
 export const adminLinks = [
   { label: 'User Registration', href: '/admin/UserRegistration', icon: <MdAppRegistration /> },
-  { label: 'User Management', href: '/admin/userManagement', icon: <FaUser /> },
+  { label: 'User Management', href: '/admin/UserManagment', icon: <FaUser /> },
   { label: 'Employees RFID Update', href: '/admin/EmployeeRfidMan', icon: <BiRfid /> },
   { label: 'Product RFID Update', href: '/admin/ProductRfidMan', icon: <RiRfidLine /> },
 ];

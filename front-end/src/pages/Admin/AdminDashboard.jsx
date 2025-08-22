@@ -21,6 +21,7 @@ return(
       <Route path='UserRegistration' element={<UserRegistration/>}/>
       <Route path='ProductRfidMan' element={<ProductRfidMan/>}/>
       <Route path='EmployeeRfidMan' element={<EmployeeRfidMan/>}/>
+      {/*<Route path='UserManagment' element={<UserManagment/>}/>*/}
 
         
 
