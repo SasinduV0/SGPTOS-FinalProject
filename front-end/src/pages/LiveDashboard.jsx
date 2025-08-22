@@ -6,6 +6,8 @@ import LeadingLineCard from '../components/live-dashboard/LeadingLineCard'
 import FastestEmployees from '../components/live-dashboard/FastestEmployees'
 import OverallTargetChart from '../components/Charts/Live-Dashboard/OverallTargetChart'
 import FollowingLine from '../components/live-dashboard/FollowingLine'
+import Greetings from '../components/live-dashboard/Greeting'
+import TopEmployees from '../components/live-dashboard/TopEmployees'
 
 function LiveDashboard() {
   return (
@@ -16,15 +18,17 @@ function LiveDashboard() {
           <div className='bg-blue-800 rounded-xl shadow-2xl p-4 h-[350px]'>
             <LeadingLineCard/>
           </div>
-          <div className='bg-yellow-300 rounded-xl shadow-2xl p-4 h-[260px]'>
-            <FastestEmployees/>
+          <div className='bg-green-600 rounded-xl shadow-2xl p-4 h-[280px]'>
+            {/* <FastestEmployees/> */}
+            <TopEmployees/>
           </div>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[200px]'>chart 3</div>
+          <div className='bg-white rounded-xl shadow-2xl p-4 h-[270px]'>chart 3</div>
         </div>
 
         {/* Middle-section */}
         <div className="w-[30%]">
-          <div className="bg-white rounded-xl shadow-2xl p-4 h-[840px] flex items-center justify-center gap-25 flex-col">
+          <div className="bg-white rounded-xl shadow-2xl p-4 h-[930px] flex items-center justify-center gap-25 flex-col">
+            <Greetings/>
             <OverallTargetChart />
             <OverallTargetChart />
           </div>
@@ -36,8 +40,10 @@ function LiveDashboard() {
           <div className=' bg-red-700 rounded-xl shadow-2xl p-4 h-[350px]'>
             <FollowingLine/>
           </div>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[280px]'>chart 3</div>
-          <div className='bg-white rounded-xl shadow-2xl p-4 h-[180px]'>chart 3</div>
+          <div className='bg-yellow-300 rounded-xl shadow-2xl p-4 h-[280px]'>
+            chart 3
+          </div>
+          <div className='bg-white rounded-xl shadow-2xl p-4 h-[270px]'>chart 3</div>
         </div>
       </div>
     </div>
