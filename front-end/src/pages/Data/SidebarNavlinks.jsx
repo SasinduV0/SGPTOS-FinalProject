@@ -5,9 +5,9 @@ import { RiRfidLine } from "react-icons/ri";
 
 export const ManagerLinks = [
   { label: 'Dashboard', href: '/manager', icon: <FaTachometerAlt /> },
-  { label: 'Employee Management', href: '/manager/em', icon: <FaUser /> },
-  { label: 'Employee Efficiency', href: '/manager/ee', icon: <FaCog /> },
-  { label: 'Live Dashboard', href: '/live-dashboard', icon: <MdDashboard /> },
+  { label: 'Employee Management', href: '/manager/employee-management', icon: <FaUser /> },
+  { label: 'Report Analytics', href: '/manager/report-analytics', icon: <FaCog /> },
+  { label: 'Production', href: '/manager/production', icon: <MdDashboard /> },
 ];
 
 export const adminLinks = [
