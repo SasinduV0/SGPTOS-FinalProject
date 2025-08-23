@@ -6,54 +6,56 @@ import { Link } from 'react-router-dom';
 import { FaTachometerAlt, FaChartLine, FaCogs } from 'react-icons/fa';
 
 const Login = () => {
-
-    const [form, setForm] = useState({ userID: '', password: '', role:'' });
-    const navigate = useNavigate();
+    const [form, setForm] = useState({ userID: '', password: '', role: '' });
+    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
+        setError(''); // Clear any previous errors
         setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    };
 
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true); // start loading
-  try {
-    const res = await axios.post('http://localhost:8000/api/auth/login', form);
-    const token = res.data.token;
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
 
-    localStorage.setItem('token', token);
+        try {
+            const res = await axios.post('http://localhost:8000/api/auth/login', form);
+            const token = res.data.token;
 
-    const decoded = jwtDecode(token);
+            localStorage.setItem('token', token);
+            const decoded = jwtDecode(token);
 
-    // redirect by role
-    switch (decoded.user.role) {
-      case 'admin':
-        navigate('/admin');
-        break;
-      case 'manager':
-        navigate('/manager');
-        break;
-      case 'supervisor':
-        navigate('/supervisor');
-        break;
-      case 'qc':
-        navigate('/qc');
-        break;
-      case 'live-dashboard':
-        navigate('/live-dashboard');
-        break;
-      default:
-        alert('Unknown role');
-    }
-  } catch (err) {
-    alert('Login failed');
-    console.error(err);
-  } finally {
-    setLoading(false); // stop loading
-  }
-};
+            // redirect based on role
+            switch (decoded.user.role) {
+                case 'admin':
+                    navigate('/admin');
+                    break;
+                case 'manager':
+                    navigate('/manager');
+                    break;
+                case 'supervisor':
+                    navigate('/supervisor');
+                    break;
+                case 'qc':
+                    navigate('/qc');
+                    break;
+                case 'live-dashboard':
+                    navigate('/live-dashboard');
+                    break;
+                default:
+                    setError('Invalid role');
+            }
+        } catch (err) {
+            setError(err.response?.data?.msg || 'Login failed. Please try again.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
   
   return (
@@ -61,7 +63,7 @@ const Login = () => {
       
         <div className="absolute top-20 left-20 w-16 h-24 bg-blue-400 bg-opacity-20 rounded-t-full blur-sm transform rotate-12"></div>
         <div className="absolute top-32 right-32 w-20 h-16 bg-indigo-400 bg-opacity-25 rounded-lg blur-sm transform -rotate-45"></div>
-        <div className="absolute bottom-40 left-40 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
+        <div className="absolute bottom-40 left-20 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
         <div className="absolute bottom-20 right-20 w-18 h-32 bg-blue-300 bg-opacity-30 rounded-b-full blur-sm transform -rotate-12"></div>
         
       <div className="flex w-full max-w-5xl bg-white shadow-3xl rounded-3xl overflow-hidden">
@@ -104,6 +106,11 @@ const Login = () => {
             </p>
           </div>
           <form className="space-y-6" onSubmit={handleSubmit} >
+             {error && (
+                    <div className="p-3 text-sm text-red-600 bg-red-100 rounded-lg">
+                        {error}
+                    </div>
+                )}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="userID">
                 User ID
@@ -131,22 +138,23 @@ const Login = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="role">
-                Select Your Role
-              </label>
-              <select
-                name="role"
-                onChange={handleChange}
-                className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                required
-              >
-                <option value="" disabled>Choose your role...</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="qc">Quality Control</option>
-                <option value="live-dashboard">Live Dashboard</option>
-              </select>
+                                  <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="role">
+                        Select Your Role
+                    </label>
+                    <select
+                        name="role"
+                        value={form.role}
+                        onChange={handleChange}
+                        className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        required
+                    >
+                        <option value="">Choose your role...</option>
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="qc">Quality Control</option>
+                        <option value="live-dashboard">Live Dashboard</option>
+                    </select>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center">
