@@ -5,29 +5,27 @@ import FormField from './FormField';
 const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
     rfidNumber: '',
-    unit: '',
-    workplace: '',
+    empName: '',
+    empId: '',
     status: 'ACTIVE'
   });
 
   const [errors, setErrors] = useState({});
 
-  const units = ['UNIT 1', 'UNIT 2', 'UNIT 3'];
-  const workplaces = ['LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         rfidNumber: initialData.rfidNumber,
-        unit: initialData.unit,
-        workplace: initialData.workplace,
+        empName: initialData.empName,
+        empId: initialData.empId,
         status: initialData.status
       });
     } else {
       setFormData({
         rfidNumber: '',
-        unit: '',
-        workplace: '',
+        empName: '',
+        empId: '',
         status: 'ACTIVE'
       });
     }
@@ -43,12 +41,12 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
       newErrors.rfidNumber = 'RFID Number must be at least 5 characters';
     }
 
-    if (!formData.unit) {
-      newErrors.unit = 'Unit is required';
+    if (!formData.empName) {
+      newErrors.empName = 'Unit is required';
     }
 
-    if (!formData.workplace) {
-      newErrors.workplace = 'Workplace is required';
+    if (!formData.empId) {
+      newErrors.empId = 'Workplace is required';
     }
 
     setErrors(newErrors);
@@ -96,23 +94,21 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
         />
 
         <FormField
-          label="Unit"
-          type="select"
-          value={formData.unit}
-          onChange={(value) => handleInputChange('unit', value)}
-          options={units}
+          label="Employee Name"
+          type="text"
+          value={formData.empName}
+          onChange={(value) => handleInputChange('empName', value)}
           required
-          error={errors.unit}
+          error={errors.empName}
         />
 
         <FormField
-          label="Workplace"
-          type="select"
-          value={formData.workplace}
-          onChange={(value) => handleInputChange('workplace', value)}
-          options={workplaces}
+          label="Employee ID"
+          type="text"
+          value={formData.empId}
+          onChange={(value) => handleInputChange('empId', value)}
           required
-          error={errors.workplace}
+          error={errors.empId}
         />
 
         <FormField
