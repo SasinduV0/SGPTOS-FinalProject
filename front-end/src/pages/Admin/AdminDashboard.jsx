@@ -2,52 +2,34 @@ import React from 'react'
 import SideBar from '../../components/SideBar'
 import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
 import {adminLinks} from '../Data/SidebarNavlinks'
-import AdminNav from '../../components/AdminNav'
-import EmployeeDetails from '../Admin/Forms/EmployeeDetails'
-import { useState } from 'react';
+import ProductRfidMan from './ProductRfidMan';
+import UserRegistration from './UserRegistration';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import EmployeeRfidMan from './EmployeeRfidMan';
 
 function AdminDashboard() {
 
-  const [step, setStep] = useState(1);
+return(
 
-  const handleCancel = ()=>{
-    setStep(1);
-  }
+  <div className='ml-70 mt-20'>
+        <SideBar title="Admin Panal" links={adminLinks} />
 
-  return (
-    <>
+  <div className='flex-1 p-5'>
+    <Routes>
+
+      <Route index element={<Navigate to='UserRegistration'/>}/>
+      <Route path='UserRegistration' element={<UserRegistration/>}/>
+      <Route path='ProductRfidMan' element={<ProductRfidMan/>}/>
+      <Route path='EmployeeRfidMan' element={<EmployeeRfidMan/>}/>
+      {/*<Route path='UserManagment' element={<UserManagment/>}/>*/}
+
+        
+
+    </Routes>
+  </div>
    
 
-    <SideBar title="Admin Panel" links={adminLinks} />
-
-     <div className="pl-165 pt-20 pb-0 item-center"> 
-        <AdminNav />
-      </div>
-
-      
-
-      <div className='min-h-screen w-full flex items-center justify-center gap-4 bg-gray-300 pl-64 mt-16'>
-        
-        <div className ="mt-4">
-          {step === 1 && <EmployeeDetails nextStep={()=>  //when you click "next" button from employee details form
-            setStep(2)}
-            prevStep={()=> setStep(1)}
-            cancel={handleCancel}/>
-          
-          }
-
-          {/*{step === 2 && (
-            <Security nextStep={()=> setStep (3)} prevStep={()=> setStep(1)} cancel={handleCancel}/>   //when you click "next" or "Previous"button from security form
-          )}
-
-          {step ===3 && <Review prevStep={()=> setStep(2)} cancel={handleCancel}/>}*/}
-
-
-        </div>
-
-      </div>
-    </>
-  )
-}
+</div>
+)};
 
 export default AdminDashboard
