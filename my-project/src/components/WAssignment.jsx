@@ -1,155 +1,181 @@
-import React, { useState } from 'react';
-import { ChevronDown, User } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  User,
+  MessageSquare,
+  UserCheck,
+  Eye,
+  FilePenLine,
+  XCircle,
+} from "lucide-react";
 
-const DashboardBody = () => {
-  const [selectedLine, setSelectedLine] = useState('Line 1');
-  const [isLineDropdownOpen, setIsLineDropdownOpen] = useState(false);
-  const [openOperationDropdown, setOpenOperationDropdown] = useState(null);
+const WAssignment = () => {
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  const lines = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
-  
-  const operations = [
-    'Operation A', 'Operation B', 'Operation C', 
-    'Operation D', 'Operation E', 'Operation F', 
-    'Operation G', 'Operation H'
+  const stats = [
+    {
+      title: "Present",
+      value: "8/8",
+      color: "text-green-600",
+      icon: <User className="w-5 h-5 text-green-500" />,
+    },
+    {
+      title: "On Break",
+      value: "1",
+      color: "text-yellow-600",
+      icon: <User className="w-5 h-5 text-yellow-500" />,
+    },
+    {
+      title: "Avg Performance",
+      value: "101%",
+      color: "text-blue-600",
+      icon: <User className="w-5 h-5 text-blue-500" />,
+    },
+    {
+      title: "Tasks Done",
+      value: "53",
+      color: "text-purple-600",
+      icon: <User className="w-5 h-5 text-purple-500" />,
+    },
   ];
 
-  const [workers, setWorkers] = useState([
-    { id: 1, name: 'Name 1', workerId: '101', operation: 'Operation A' },
-    { id: 2, name: 'Name 2', workerId: '102', operation: 'Operation B' },
-    { id: 3, name: 'Name 3', workerId: '103', operation: 'Operation C' },
-    { id: 4, name: 'Name 4', workerId: '104', operation: 'Operation D' },
-    { id: 5, name: 'Name 5', workerId: '105', operation: 'Operation E' },
-    { id: 6, name: 'Name 6', workerId: '106', operation: 'Operation F' },
-    { id: 7, name: 'Name 7', workerId: '107', operation: 'Operation G' },
-    { id: 8, name: 'Name 8', workerId: '108', operation: 'Operation H' },
-  ]);
+  const team = [
+    {
+      id: "W001",
+      name: "John Doe",
+      line: "Line 1",
+      position: "Assembly Operator",
+      station: "Station 1",
+      shiftStart: "06:00",
+      skills: ["Assembly", "Quality Check"],
+      notes: "Consistently high performer",
+    },
+    {
+      id: "W002",
+      name: "Jane Smith",
+      line: "Line 2",
+      position: "QC Inspector",
+      station: "QC Station",
+      shiftStart: "09:00",
+      skills: ["Quality Check", "Reporting"],
+      notes: "Excellent attention to detail",
+    },
+    {
+      id: "W003",
+      name: "Mike Johnson",
+      line: "Line 1",
+      position: "Packer",
+      station: "Packaging",
+      shiftStart: "08:30",
+      skills: ["Packing", "Inventory"],
+      notes: "Quick and efficient",
+    },
+    {
+      id: "W004",
+      name: "Lisa Brown",
+      line: "Line 2",
+      position: "Supervisor",
+      station: "Line Control",
+      shiftStart: "07:30",
+      skills: ["Leadership", "Planning"],
+      notes: "Great leadership skills",
+    },
+  ];
 
-  const handleLineSelect = (line) => {
-    setSelectedLine(line);
-    setIsLineDropdownOpen(false);
-  };
-
-  const handleOperationChange = (workerId, newOperation) => {
-    setWorkers(workers.map(worker => 
-      worker.id === workerId 
-        ? { ...worker, operation: newOperation }
-        : worker
-    ));
-    setOpenOperationDropdown(null);
-  };
-
-  const toggleOperationDropdown = (workerId) => {
-    setOpenOperationDropdown(
-      openOperationDropdown === workerId ? null : workerId
-    );
+  const handleEditClick = (worker) => {
+    setSelectedWorker(worker);
+    setShowEditModal(true);
   };
 
   return (
-    <div className="flex-1 bg-white p-8">
-      {/* Select Line Section */}
-      <div className="mb-8">
-        <div className="flex items-center">
-          <span className="text-base font-medium text-gray-800 mr-4">
-            Select Line:
-          </span>
-          <div className="relative">
-            <button
-              onClick={() => setIsLineDropdownOpen(!isLineDropdownOpen)}
-              className="inline-flex items-center justify-between gap-3 bg-white border border-gray-300 rounded px-4 py-2 text-sm text-gray-700 hover:border-gray-400 focus:outline-none focus:border-blue-500 min-w-[120px]"
-            >
-              {selectedLine}
-              <ChevronDown size={16} className={`transition-transform ${isLineDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Line Dropdown */}
-            {isLineDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg z-10">
-                {lines.map((line) => (
-                  <button
-                    key={line}
-                    onClick={() => handleLineSelect(line)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 focus:bg-blue-50"
-                  >
-                    {line}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">
+          Worker Assignment
+        </h1>
+        
       </div>
 
-      {/* Workers Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((s, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-lg shadow-md p-6 flex items-center justify-between hover:shadow-lg transition"
+          >
+            <div>
+              <p className="text-sm text-gray-600">{s.title}</p>
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+            </div>
+            {s.icon}
+          </div>
+        ))}
+      </div>
+
+      {/* Workers Details table*/}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800"> Daily Worker Assignment</h2>
+        </div>
+        <div classNmae="overflow-x-audio">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-700">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 w-16">
-                  
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Worker Name
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Worker ID
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                  Operation
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {workers.map((worker) => (
-                <tr key={worker.id} className="hover:bg-gray-50 transition-colors">
-                  {/* First Column - Worker Avatar */}
+
+            <tbody className="divide-y divide-gray-200">
+              {team.map((m) => (
+                <tr
+                  key={m.id}
+                  className="border-t hover:bg-gray-50 transition-colors"
+                >
+                  {/* Name */}
                   <td className="px-6 py-4">
-                    <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
-                      <User size={18} className="text-gray-500" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <User className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <p className="font-medium text-gray-900">{m.name}</p>
                     </div>
                   </td>
 
-                  {/* Worker Name */}
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {worker.name}
-                  </td>
+                  {/* ID */}
+                  <td className="px-6 py-4 ">{m.id}</td>
 
-                  {/* Worker ID */}
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {worker.workerId}
-                  </td>
-
-                  {/* Operation Dropdown */}
+                  {/* Line */}
                   <td className="px-6 py-4">
-                    <div className="relative">
-                      <button
-                        onClick={() => toggleOperationDropdown(worker.id)}
-                        className="inline-flex items-center justify-between gap-2 text-blue-600 hover:text-blue-700 focus:outline-none font-medium text-sm min-w-[120px]"
-                      >
-                        {worker.operation}
-                        <ChevronDown size={14} className={`transition-transform text-gray-400 ${openOperationDropdown === worker.id ? 'rotate-180' : ''}`} />
-                      </button>
+                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                    {m.line}
+                    </span>
+                  </td>
 
-                      {/* Operation Dropdown Menu */}
-                      {openOperationDropdown === worker.id && (
-                        <div className="absolute top-full left-0 mt-1 w-44 bg-white border border-gray-300 rounded shadow-lg z-20">
-                          {operations.map((operation) => (
-                            <button
-                              key={operation}
-                              onClick={() => handleOperationChange(worker.id, operation)}
-                              className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 transition-colors ${
-                                worker.operation === operation 
-                                  ? 'bg-blue-50 text-blue-700 font-medium' 
-                                  : 'text-gray-700'
-                              }`}
-                            >
-                              {operation}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                  {/* Position */}
+                  <td className="px-6 py-4">{m.position}</td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4 flex gap-2">
+                    <button
+                      onClick={() => setSelectedWorker(m)}
+                      className="p-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:shadow transition"
+                      title="Show Details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEditClick(m)}
+                      className="p-2 rounded-md bg-green-50 text-green-600 hover:bg-green-100 hover:shadow transition"
+                      title="Edit Details"
+                    >
+                      <FilePenLine className="w-4 h-4" />
+                    </button>
+  
                   </td>
                 </tr>
               ))}
@@ -157,8 +183,126 @@ const DashboardBody = () => {
           </table>
         </div>
       </div>
+
+
+      {/* Show Details Modal */}
+      {selectedWorker && !showEditModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96 relative border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">{selectedWorker.name}</h3>
+              <button
+                onClick={() => setSelectedWorker(null)}
+                className="text-gray-500 hover:text-gray-700"
+               >
+                 <XCircle size={20} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600">Position</p>
+                <p className="font-medium">{selectedWorker.position}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Current Station</p>
+                <p className="font-medium">{selectedWorker.station}</p>
+              </div>
+             <div>
+                <p className="text-sm text-gray-600">Shift Start</p>
+                <p className="font-medium">{selectedWorker.shiftStart}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Skills</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedWorker.skills.map((skill, index) => (
+                    <span
+                     key={index}
+                    className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md focus:ring-2 focus:ring-green-400"
+                    >
+                   {skill}
+                   </span>
+                    ))}
+                 </div>
+               </div>
+             <div>
+               <p className="text-sm text-gray-600">Notes</p>
+               <p className="font-medium">{selectedWorker.notes}</p>
+             </div>
+           </div>
+        </div>
+      </div>
+      )}
+      
+
+      {/* Edit Modal */}
+      {showEditModal && selectedWorker && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-96 relative border-gray-200">
+            
+            {/* Close button (X) */}
+            <button
+              onClick={() => {
+                setShowEditModal(false);
+                setSelectedWorker(null);
+              }}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              <XCircle size={20} />
+            </button>
+
+            <h2 className="text-lg font-bold mb-4">Edit Worker Assignment</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Editing details for{" "}
+              <span className="font-medium">{selectedWorker.name}</span>
+            </p>
+
+            {/* Simple form */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-gray-700">Line</label>
+                <input
+                  type="text"
+                  defaultValue={selectedWorker.line}
+                  className="w-full mt-1 border rounded-md p-2 text-sm focus:ring-green-400"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-700">Position</label>
+                <input
+                  type="text"
+                  defaultValue={selectedWorker.position}
+                  className="w-full mt-1 border rounded-md p-2 text-sm focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedWorker(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedWorker(null);
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default DashboardBody;
+export default WAssignment;
+
