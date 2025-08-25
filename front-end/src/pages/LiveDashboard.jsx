@@ -3,11 +3,12 @@ import React from 'react'
 // import {Bar, Doughut, Line} from 'react-chartjs-2'
 
 import LeadingLineCard from '../components/live-dashboard/LeadingLineCard'
-import FastestEmployees from '../components/live-dashboard/FastestEmployees'
+
 import OverallTargetChart from '../components/Charts/Live-Dashboard/OverallTargetChart'
 import FollowingLine from '../components/live-dashboard/FollowingLine'
 import Greetings from '../components/live-dashboard/Greeting'
 import TopEmployees from '../components/live-dashboard/TopEmployees'
+import LineTargetChart from '../components/live-dashboard/LineTargetChart'
 
 function LiveDashboard() {
   return (
@@ -27,10 +28,12 @@ function LiveDashboard() {
 
         {/* Middle-section */}
         <div className="w-[30%]">
-          <div className="bg-white rounded-xl shadow-2xl p-4 h-[930px] flex items-center justify-center gap-25 flex-col">
+          <div className="bg-gray-400 rounded-xl shadow-2xl p-4 h-[930px] flex items-center justify-center gap-25 flex-col">
             <Greetings/>
             <OverallTargetChart />
-            <OverallTargetChart />
+             <div className="">
+      <     LineTargetChart />
+    </div>
           </div>
         </div>
 
