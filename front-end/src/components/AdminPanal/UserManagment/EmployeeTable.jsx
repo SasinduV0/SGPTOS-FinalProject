@@ -1,4 +1,4 @@
-import employeeData, { initialEmployee } from '../../../pages/Data/employeeData'
+import { employeeData, initialEmployee } from '../../../pages/Data/employeeData';
 import React from 'react'
 import { Edit, Trash2 } from 'lucide-react';
 

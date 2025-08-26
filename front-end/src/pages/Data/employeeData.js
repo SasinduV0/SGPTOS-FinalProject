@@ -1,4 +1,4 @@
-export const initialEmployee = [
+export const employeeData = [
     {
         id: '1',
         firstName: 'S.N',
@@ -31,4 +31,15 @@ export const initialEmployee = [
         email: 'kamal2002@gmail.com',
         employeeId: 'EMP-101',
     }
-]
+];
+
+export const initialEmployee = {
+  id: '',
+  firstName: '',
+  lastName: '',
+  section: '',
+  email: '',
+  employeeId: ''
+};
+
+export default employeeData;
