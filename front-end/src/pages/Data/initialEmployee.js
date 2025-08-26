@@ -1,4 +1,4 @@
-export const employeeData = [
+export const initialEmployee = [
     {
         id: '1',
         firstName: 'S.N',
@@ -33,13 +33,3 @@ export const employeeData = [
     }
 ];
 
-export const initialEmployee = {
-  id: '',
-  firstName: '',
-  lastName: '',
-  section: '',
-  email: '',
-  employeeId: ''
-};
-
-export default employeeData;

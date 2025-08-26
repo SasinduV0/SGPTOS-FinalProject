@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { X } from 'lucide-react';
 
-function EditUserModel({isOpen, employee, onClose, onUpdate}) {
+const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
 
     const [editingEmployee, setEditingEmployee] = useState(employee || {});
     const [activeTab, setActiveTab] = useState('Profile');
@@ -216,4 +216,4 @@ function EditUserModel({isOpen, employee, onClose, onUpdate}) {
   )
 }
 
-export default EditUserModel
+export default EditUserModal

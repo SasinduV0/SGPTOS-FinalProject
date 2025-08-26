@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import EmployeeTable from '../../components/AdminPanal/UserManagment/EmployeeTable'
 import SearchFilter from '../../components/AdminPanal/UserManagment/SearchFilter';
-import EditUserModel from '../../components/AdminPanal/UserManagment/EditUserModel';
-import { initialEmployee } from '../Data/employeeData'
+import EditUserModal from '../../components/AdminPanal/UserManagment/EditUserModal';
+import { initialEmployee } from '../Data/initialEmployee'
 
 function UserManagment() {
 
@@ -76,7 +76,7 @@ function UserManagment() {
     </div>
 
     {/*Edit user modal*/}
-    <EditUserModel
+    <EditUserModal
       isOpen={isEditModalOpen}
       employee={editingEmployee}
       onClose={handleCloseModal}
