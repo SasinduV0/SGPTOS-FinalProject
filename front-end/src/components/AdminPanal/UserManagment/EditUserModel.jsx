@@ -16,9 +16,6 @@ function EditUserModel({isOpen, employee, onClose, onUpdate}) {
         setEditingEmployee(prev => ({...prev, [field]: value}))
     };
 
-    const handleUpdate = () => {
-        setEditingEmployee(prev => ({...prev,[field]: value}));
-    };
 
     const handleUpdate=()=>{
         onUpdate(editingEmployee);
