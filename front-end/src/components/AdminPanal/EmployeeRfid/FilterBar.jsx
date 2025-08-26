@@ -16,7 +16,7 @@ const FilterBar = ({
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 w-80 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 transition-colors"
+            className="pl-10 w-80 pr-4 py-2 border border-gray-300 rounded-lg  focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 transition-colors"
           />
         </div>
       </div>

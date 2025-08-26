@@ -2,7 +2,7 @@ import employeeData, { initialEmployee } from '../../../pages/Data/employeeData'
 import React from 'react'
 import { Edit, Trash2 } from 'lucide-react';
 
-function EmployeeTable({onEdit}) {
+function EmployeeTable({onEdit, employees}) {
   return (
     <div className='bg-white rounded-lg shadow-sm overflow-hidden'>
         <table className='w-full'>
@@ -18,8 +18,8 @@ function EmployeeTable({onEdit}) {
 
             <tbody className='bg-white divide-y divide-gray-200'>
 
-            {initialEmployee.map((employee)=>(
-              <tr key={initialEmployee.id} className='hover:bg-gray-50 transition-colors duration-200'>
+            {employees.map((employee)=>(
+              <tr key={employee.id} className='hover:bg-gray-50 transition-colors duration-200'>
                 <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>
                   {employee.firstName} {employee.lastName}
                 </td>
@@ -58,7 +58,7 @@ function EmployeeTable({onEdit}) {
           </tbody>
         </table>
 
-        {initialEmployee.length === 0 && (
+        {employees.length === 0 && (
           <div className='text-center py-8 text-gray-500'>
             <p>No employee found matching your search criteria.</p>
           </div>
