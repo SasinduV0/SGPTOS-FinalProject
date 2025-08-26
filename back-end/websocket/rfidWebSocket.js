@@ -1,176 +1,87 @@
-const WebSocket = require('ws');
-const { RFIDScan } = require('../models/iot');
+const WebSocket = require("ws");
+const { RFIDTagScan } = require("../models/iot"); // Updated import
 
 class RFIDWebSocketServer {
-    constructor(server) {
-        this.wss = new WebSocket.Server({ 
-            server,
-            path: '/rfid-ws'
-        });
-        
-        this.setupWebSocketServer();
-        console.log('<-> RFID WebSocket server initialized on path: /rfid-ws');
-    }
+  constructor(server) {
+    this.wss = new WebSocket.Server({ 
+      server: server,
+      path: '/rfid-ws'
+    });
 
-    setupWebSocketServer() {
-        this.wss.on('connection', (ws, req) => {
-            const clientIP = req.socket.remoteAddress;
-            console.log(`-> ESP32 connected from: ${clientIP}`);
-            
-            // Send connection confirmation
-            ws.send(JSON.stringify({
-                type: 'connection',
-                status: 'success',
-                message: 'Connected to RFID WebSocket server',
-                timestamp: Date.now()
-            }));
+    console.log('-> WebSocket server available at: ws://localhost:8000/rfid-ws');
+    console.log('-> Ready to receive RFID data from ESP32');
 
-            ws.on('message', async (data) => {
-                try {
-                    await this.handleMessage(ws, data);
-                } catch (error) {
-                    console.error('!! WebSocket message error:', error);
-                    this.sendError(ws, 'Message processing failed', error.message);
-                }
-            });
+    this.wss.on('connection', (ws) => {
+      console.log('ESP32 client connected to WebSocket');
+      
+      // Send connection confirmation
+      ws.send(JSON.stringify({
+        type: 'connection',
+        status: 'success',
+        message: 'WebSocket connected successfully'
+      }));
 
-            ws.on('close', (code, reason) => {
-                console.log(`!! ESP32 disconnected: ${clientIP} - Code: ${code}, Reason: ${reason}`);
-            });
-
-            ws.on('error', (error) => {
-                console.error('!! WebSocket error:', error);
-            });
-        });
-    }
-
-    async handleMessage(ws, data) {
-        let message;
-        
+      ws.on('message', async (message) => {
         try {
-            message = JSON.parse(data.toString());
-        } catch (error) {
-            return this.sendError(ws, 'Invalid JSON format', error.message);
-        }
-
-        console.log('<> Received from ESP32:', message);
-
-        switch (message.action) {
-            case 'rfid_scan':
-                await this.handleRFIDScan(ws, message.data);
-                break;
-            
-            case 'ping':
-                this.sendResponse(ws, 'pong', { timestamp: Date.now() });
-                break;
-            
-            default:
-                this.sendError(ws, 'Unknown action', `Action '${message.action}' not supported`);
-        }
-    }
-
-    async handleRFIDScan(ws, scanData) {
-        try {
-            // Validate required fields
-            const requiredFields = ['ID', 'Tag_UID', 'Station_ID', 'Time_Stamp'];
-            const missingFields = requiredFields.filter(field => !scanData[field]);
-            
-            if (missingFields.length > 0) {
-                return this.sendError(ws, 'Validation Error', `Missing fields: ${missingFields.join(', ')}`);
-            }
-
-            // Create new RFID scan document
-            const newScan = new RFIDScan({
-                ID: scanData.ID,
-                Tag_UID: scanData.Tag_UID,
-                Station_ID: scanData.Station_ID,
-                Time_Stamp: parseInt(scanData.Time_Stamp)
+          const data = JSON.parse(message);
+          
+          if (data.action === 'rfid_scan') {
+            // Save RFID scan data to MongoDB using new model
+            const newScan = new RFIDTagScan({
+              ID: data.data.ID,
+              Tag_UID: data.data.Tag_UID,
+              Station_ID: data.data.Station_ID,
+              Time_Stamp: data.data.Time_Stamp
             });
 
-            // Save to MongoDB
             const savedScan = await newScan.save();
             
-            console.log(`-> RFID scan saved: ${scanData.ID} - Station: ${scanData.Station_ID} - UID: ${scanData.Tag_UID}`);
-            
             // Send success response
-            this.sendResponse(ws, 'rfid_scan_success', {
+            ws.send(JSON.stringify({
+              type: 'rfid_scan_success',
+              status: 'success',
+              data: {
                 scanId: savedScan._id,
-                ID: savedScan.ID,
-                message: '<> RFID scan data saved successfully',
-                timestamp: Date.now()
+                message: 'RFID scan data saved successfully'
+              }
+            }));
+
+            console.log(`RFID scan saved: ${data.data.ID} - Station: ${data.data.Station_ID}`);
+            
+            // Broadcast to all connected clients (for real-time dashboard)
+            this.wss.clients.forEach((client) => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'new_scan',
+                  data: savedScan
+                }));
+              }
             });
-
-            // Broadcast to other connected clients (for real-time dashboard)
-            this.broadcastScanData(savedScan, ws);
-
+          }
         } catch (error) {
-            if (error.code === 11000) {
-                // Duplicate ID error
-                this.sendError(ws, 'Duplicate Error', `Scan ID '${scanData.ID}' already exists`);
-            } else {
-                console.error('!! Database error:', error);
-                this.sendError(ws, 'Database Error', 'Failed to save scan data');
+          console.error('Error processing WebSocket message:', error);
+          
+          // Send error response
+          ws.send(JSON.stringify({
+            type: 'error',
+            status: 'error',
+            error: {
+              type: error.name,
+              message: error.message
             }
+          }));
         }
-    }
+      });
 
-    sendResponse(ws, type, data) {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-                type: type,
-                status: 'success',
-                data: data,
-                timestamp: Date.now()
-            }));
-        }
-    }
+      ws.on('close', () => {
+        console.log('ESP32 client disconnected from WebSocket');
+      });
 
-    sendError(ws, errorType, message) {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-                type: 'error',
-                status: 'error',
-                error: {
-                    type: errorType,
-                    message: message
-                },
-                timestamp: Date.now()
-            }));
-        }
-    }
-
-    broadcastScanData(scanData, excludeWs) {
-        const broadcastMessage = JSON.stringify({
-            type: 'rfid_scan_broadcast',
-            status: 'info',
-            data: {
-                ID: scanData.ID,
-                Tag_UID: scanData.Tag_UID,
-                Station_ID: scanData.Station_ID,
-                Time_Stamp: scanData.Time_Stamp,
-                createdAt: scanData.createdAt
-            },
-            timestamp: Date.now()
-        });
-
-        this.wss.clients.forEach((client) => {
-            if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
-                client.send(broadcastMessage);
-            }
-        });
-    }
-
-    // Get connected clients count
-    getConnectedClients() {
-        return this.wss.clients.size;
-    }
-
-    // Close all connections
-    closeAll() {
-        this.wss.clients.forEach((client) => {
-            client.close();
-        });
-    }
+      ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+      });
+    });
+  }
 }
 
 module.exports = RFIDWebSocketServer;
