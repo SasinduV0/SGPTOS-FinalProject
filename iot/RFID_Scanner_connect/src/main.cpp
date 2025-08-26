@@ -1,22 +1,3 @@
-/*
- * ESP32 Multi-RFID Scanner with FreeRTOS Dual-Core Architecture
- * 
- * Core 0 (Pro Core): WiFi, NTP synchronization, connectivity tasks
- * Core 1 (App Core): RFID scanning, queue operations (time-critical)
- * 
- * Features:
- * - Supports 3 MFRC522 RFID scanners via shared SPI
- * - WiFi connectivity with NTP time synchronization (Sri Lanka timezone)
- * - FreeRTOS queue for thread-safe data passing between cores
- * - Automatic NTP re-synchronization every 2 hours
- * - Dual-core architecture for uninterrupted RFID scanning
- * 
- * Data Structure: ScannedData contains timestamp, station number, UID, and UID size
- * Queue: Thread-safe FreeRTOS queue with configurable size (default: 50 items)
- * 
- * Modified by: GitHub Copilot
- * Date: August 17, 2025
- */
 
 #include <SPI.h>
 #include <MFRC522.h>
@@ -618,11 +599,5 @@ void rfidScanningTask(void *parameter) {
 }
 
 void loop() {
-    // Main loop is now empty as tasks handle everything
-    // Tasks are running on both cores independently
-    
-    // Optional: Add any main loop monitoring or watchdog feeding here
-    // Keep this minimal to avoid interfering with core tasks
-    
     delay(1000); // Prevent tight loop
 }
