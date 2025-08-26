@@ -2,7 +2,7 @@ import employeeData, { initialEmployee } from '../../../pages/Data/employeeData'
 import React from 'react'
 import { Edit, Trash2 } from 'lucide-react';
 
-function EmployeeTable({onEdit, employees}) {
+function EmployeeTable({onEdit, employees, onDelete}) {
   return (
     <div className='bg-white rounded-lg shadow-sm overflow-hidden'>
         <table className='w-full'>
@@ -44,7 +44,7 @@ function EmployeeTable({onEdit, employees}) {
                       </button>
 
                       <button
-                        onClick={()=>onEdit(employee)}
+                        onClick={()=>onDelete(employee)}
                         className='text-blue-600 hover:text-blue-900 transition-colors duration-200 p-1 rounded hover:bg-blue-50'
                         title='Delete Employee'>
 

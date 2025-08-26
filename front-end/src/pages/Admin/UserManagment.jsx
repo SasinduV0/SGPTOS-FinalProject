@@ -6,7 +6,13 @@ function UserManagment() {
 
   const [employees, setEmployees ] = useState(initialEmployee);
   return (
-    <div>UserManagment</div>
+    <div className='p-6'>
+      {/*Employee Table*/}
+      <EmployeeTable
+      employees={''}  //should add props
+      onEdit={''}
+      onDelete={''}/>
+    </div>
   )
 }
 
