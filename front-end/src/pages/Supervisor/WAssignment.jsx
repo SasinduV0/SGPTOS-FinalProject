@@ -1,8 +1,8 @@
 import React, { useState } from "react";
+import SideBar from '../../components/SideBar'
+import {SupervisorLinks} from '../../pages/Data/SidebarNavlinks';
 import {
   User,
-  MessageSquare,
-  UserCheck,
   Eye,
   FilePenLine,
   XCircle,
@@ -88,13 +88,14 @@ const WAssignment = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className='ml-70 mt-20 p-9 space-y-9'>
+      <SideBar title="Manager Panel" links={SupervisorLinks} />
+      
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">
           Worker Assignment
-        </h1>
-        
+        </h1> 
       </div>
 
       {/* Stats Cards */}
@@ -122,11 +123,11 @@ const WAssignment = () => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                <th className="px-15 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-8 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                <th className="px-8 py-3 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
+                <th className="px-10 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
+                <th className="px-10 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
               </tr>
             </thead>
 
@@ -160,7 +161,7 @@ const WAssignment = () => {
                   <td className="px-6 py-4">{m.position}</td>
 
                   {/* Actions */}
-                  <td className="px-6 py-4 flex gap-2">
+                  <td className="px-6 py-4 flex gap-6">
                     <button
                       onClick={() => setSelectedWorker(m)}
                       className="p-2 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 hover:shadow transition"

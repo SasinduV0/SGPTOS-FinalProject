@@ -15,6 +15,8 @@ import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
 
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import WAssignment from './pages/Supervisor/WAssignment';
+import LineProd from './pages/Supervisor/LineProd';
 
 function AppWrapper() {
   const location = useLocation();
@@ -64,11 +66,30 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
             </ProtectedRoute>
           }
         />
+
+        {/* Supervisor */}
+
         <Route
           path="/supervisor"
           element={
             <ProtectedRoute allowedRoles={['supervisor']}>
               <SupervisorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/worker-assignment"
+          element={
+            <ProtectedRoute allowedRoles={['supervisor']}>
+              <WAssignment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/lineProd"
+          element={
+            <ProtectedRoute allowedRoles={['supervisor']}>
+              <LineProd />
             </ProtectedRoute>
           }
         />

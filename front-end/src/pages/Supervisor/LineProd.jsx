@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import SideBar from '../../components/SideBar'
+import {SupervisorLinks} from '../../pages/Data/SidebarNavlinks';
 import { TrendingUp, Target, BarChart3, Activity, ChevronDown, ChevronUp } from "lucide-react";
 
 const LineProd = () => {
@@ -20,10 +22,11 @@ const LineProd = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className='ml-70 mt-20 p-9 space-y-9'>
+      <SideBar title="Line Supervisor" links={SupervisorLinks} />
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Line Productivity</h1>
+        <h1 className="text-2xl font-bold text-gray-800 ">Line Productivity</h1>
       </div>
 
       {/* Select Line Button */}
