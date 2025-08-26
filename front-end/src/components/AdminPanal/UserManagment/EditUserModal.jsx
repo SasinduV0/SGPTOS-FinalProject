@@ -25,7 +25,7 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
     if (!isOpen || !employee) return null;
 
   return (
-    <div className='fixed inset-0 bg-black bg-opacity-50 flex item-center justify-center z-50'>
+    <div className='fixed inset-0 backdrop-blur bg-opacity-50 flex item-center justify-center z-50'>
         <div className='bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto'>
 
             {/*Modal Header*/}
@@ -198,7 +198,7 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
 
                 <button
                     onClick={onClose}
-                    className='px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200'>
+                    className='px-4 py-2 text-gray-700 bg-red-400 hover:bg-red-700 rounded-lg transition-colors duration-200'>
 
                         cancel
 
@@ -206,7 +206,7 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
 
                 <button
                     onClick={handleUpdate}
-                    className='px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200'>
+                    className='px-4 py-2 text-gray-700 bg-green-400 hover:bg-green-700 rounded-lg transition-colors duration-200'>
 
                         Update User
                     </button>

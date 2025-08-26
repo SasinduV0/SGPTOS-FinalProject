@@ -7,13 +7,13 @@ function SearchFilter({searchTerm, setSearchTerm, selectedDepartments, setSelect
   const departments = ['All Departments', 'Production', 'sawing', 'Quality Control'];
 
   return (
-    <div className='bg-white shadow-sm p-4 mb-6'>
-      <div className='flex justify-between item-center'>
+    <div className='p-6 border-b bg-gray-50'>
+      <div className='flex items-center gap-4'>
 
         {/*Search input with an icon*/}
         <div className='relative flex-1 max-w-md'>
 
-          <Search size={20} className='absolute left-3 top-1/2 transform-translate-y-1/2 text-gray-400'/>
+          <Search size={20} className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'/>
 
           <input
             type='text'
@@ -24,7 +24,6 @@ function SearchFilter({searchTerm, setSearchTerm, selectedDepartments, setSelect
         </div>
 
         {/*Department selection dropdown*/}
-        <div className='relative flex-1'>
           <select
             value={selectedDepartments}
             onChange={(e)=>setSelectedDepartment(e.target.value)}
@@ -37,7 +36,7 @@ function SearchFilter({searchTerm, setSearchTerm, selectedDepartments, setSelect
             </select>
         </div>
       </div>
-    </div>
+    
   )
 }
 
