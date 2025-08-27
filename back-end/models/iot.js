@@ -7,6 +7,34 @@ const defectSchema = new mongoose.Schema({
   default: { type: String, default: "none" },
 });
 
+// RFID Scan Schema for ESP32 WebSocket
+const rfidScanSchema = new mongoose.Schema({
+  ID: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    index: true // For faster queries
+  },
+  Tag_UID: { 
+    type: String, 
+    required: true,
+    index: true // For faster UID searches
+  },
+  Station_ID: { 
+    type: String, 
+    required: true 
+  },
+  Time_Stamp: { 
+    type: Number, 
+    required: true,
+    index: true // For time-based queries
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
 const iotDataSchema = new mongoose.Schema({
   userRFID: { type: String, required: true },
   garmentRFID: { type: String, required: true },
@@ -15,4 +43,7 @@ const iotDataSchema = new mongoose.Schema({
   defects: { type: defectSchema, required: true },
 });
 
-module.exports = mongoose.model("IOTData", iotDataSchema);
+const RFIDScan = mongoose.model("RFIDScan", rfidScanSchema);
+const IOTData = mongoose.model("IOTData", iotDataSchema);
+
+module.exports = { RFIDScan, IOTData };
