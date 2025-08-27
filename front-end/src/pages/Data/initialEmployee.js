@@ -5,7 +5,7 @@ export const initialEmployee = [
         lastName: 'Fernando',
         section : 'Cutting',
         email: 'fdo12@gmail.com',
-        employeeId: 'EMP-006',
+        empId: 'EMP-006',
     },
     {
         id: '2',
@@ -13,7 +13,7 @@ export const initialEmployee = [
         lastName: 'Perera',
         section : 'Packing',
         email: 'Hdd67@gmail.com',
-        employeeId: 'EMP-110',
+        empId: 'EMP-110',
     },
     {
         id: '3',
@@ -21,7 +21,7 @@ export const initialEmployee = [
         lastName: 'Perera',
         section : 'Cutting',
         email: 'peReRapk12@gmail.com',
-        employeeId: 'EMP-066',
+        empId: 'EMP-066',
     },
     {
         id: '4',
@@ -29,7 +29,7 @@ export const initialEmployee = [
         lastName: 'kamal',
         section : 'Sewing',
         email: 'kamal2002@gmail.com',
-        employeeId: 'EMP-101',
+        empId: 'EMP-101',
     }
 ];
 

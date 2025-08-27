@@ -1,5 +1,4 @@
 import React from 'react';
-import ActionButton from './ActionButton';
 
 const EmployeeTable = ({ columns, data, emptyMessage = "No employees found" }) => {
   return (

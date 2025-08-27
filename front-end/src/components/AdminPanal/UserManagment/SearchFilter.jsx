@@ -1,43 +1,36 @@
-import React from 'react'
-import { Search } from 'lucide-react';
+import React from 'react';
 
-function SearchFilter({searchTerm, setSearchTerm, selectedDepartments, setSelectedDepartment}) {
-
-//list of departments to display in the dropdown
-  const departments = ['All Departments', 'Production', 'sawing', 'Quality Control'];
+const SearchFilter = ({ 
+  searchTerm, 
+  setSearchTerm, 
+  selectedDepartment, // Changed from selectedDepartments (array)
+  setSelectedDepartment  // Changed from setSelectedDepartments
+}) => {
+  const departments = ['All Departments', 'IT', 'HR', 'Finance', 'Marketing'];
 
   return (
-    <div className='p-6 border-b bg-gray-50'>
-      <div className='flex items-center gap-4'>
+    <div className="flex gap-4 mb-6">
+      <input
+        type="text"
+        placeholder="Search employees..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      
+      <select
+        value={selectedDepartment} // Changed from selectedDepartments
+        onChange={(e) => setSelectedDepartment(e.target.value)}
+        className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {departments.map((dept) => (
+          <option key={dept} value={dept}>
+            {dept}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
-        {/*Search input with an icon*/}
-        <div className='relative flex-1 max-w-md'>
-
-          <Search size={20} className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400'/>
-
-          <input
-            type='text'
-            placeholder='Search by name, email or employee ID'
-            value={searchTerm}
-            onChange={(e)=>setSearchTerm(e.target.value)}
-            className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'/>
-        </div>
-
-        {/*Department selection dropdown*/}
-          <select
-            value={selectedDepartments}
-            onChange={(e)=>setSelectedDepartment(e.target.value)}
-            className='ml-4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'>
-
-              {departments.map((dept)=>(
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-
-            </select>
-        </div>
-      </div>
-    
-  )
-}
-
-export default SearchFilter
+export default SearchFilter;
