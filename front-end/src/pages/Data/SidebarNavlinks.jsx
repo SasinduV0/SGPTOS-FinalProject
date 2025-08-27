@@ -17,7 +17,14 @@ export const adminLinks = [
   { label: 'Product RFID Update', href: '/admin/ProductRfid/RFIDManagement', icon: <RiRfidLine /> },
 ];
 
+export const QCManagerLinks = [
+  { label: 'Dashboard', href: '/qc', icon: <FaTachometerAlt /> },
+  { label: 'DefectRate', href: '/qc/DefectRate', icon: <FaCog /> },
+  { label: 'Employee Management', href: '/qc/Employee', icon: <FaUser /> },
+];
 export const ProfileLinks = [
   
 ];
+
+
 

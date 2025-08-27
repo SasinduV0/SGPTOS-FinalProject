@@ -6,15 +6,16 @@ import Manager from './pages/Manager/Manager';
 import SupervisorDashboard from './pages/Supervisor/SupervisorDashboard';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QualityControl from './pages/QC/QualityControl';
+import DefectRate from './pages/QC/DefectRate';
+import QCEmployeeManagement from './pages/QC/QCEmployeeManagement';
 import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
 import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
-
-
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+
 
 function AppWrapper() {
   const location = useLocation();
@@ -87,6 +88,23 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
               <QualityControl />
             </ProtectedRoute>
           }
+        />
+         <Route
+          path="/qc/DefectRate"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <DefectRate />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/qc/Employee"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <QCEmployeeManagement />
+            </ProtectedRoute>
+          } 
+
         />
         <Route
           path="/live-dashboard"
