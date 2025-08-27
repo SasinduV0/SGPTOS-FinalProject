@@ -2,87 +2,69 @@ import React, { useState } from 'react'
 import EmployeeTable from '../../components/AdminPanal/UserManagment/EmployeeTable'
 import SearchFilter from '../../components/AdminPanal/UserManagment/SearchFilter';
 import EditUserModal from '../../components/AdminPanal/UserManagment/EditUserModal';
+import Header from '../../components/AdminPanal/UserManagment/Header';
+import ActionButton from '../../components/AdminPanal/UserManagment/ActionButton';
 import { initialEmployee } from '../Data/initialEmployee'
 
 function UserManagment() {
 
-  const [employees, setEmployees ] = useState(initialEmployee);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartments, setSelectedDepartment]= useState('All Departments');
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
+  const columns = [
+    {
+      header: 'Employee Name',
+      key: 'fullName',
+      render: (row) => `${row.firstName} ${row.lastName}`,
+      className: 'font-mono text-sm text-gray-800'
+    },
+    {
+      header: 'Section',
+      key: 'section',
+      className: 'text-gray-800'
+    },
+    {
+      header: 'Employee ID',
+      key: 'employeeId',
+      className: 'text-gray-800'
+    },
+    {
+      header: 'Actions',
+      key: 'actions',
+      render: (row) => (
+        <ActionButton
+          onEdit={() => handleEdit(row)}
+          onDelete={() => handleDelete(row.id)}
+          editTooltip="Edit Employee"
+          deleteTooltip="Delete Employee"
+        />
+      )
+    }
+  ];
 
- //Filter employees based on serach term and departmet
-
- const filteredEmployees = employees.filter(employee =>{
-  const matchesSearch =
-
-  employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
-
-  const matchesDepartment = selectedDepartments === 'All Departments' || employee.department === selectedDepartments;
-
-  return matchesSearch && matchesDepartment;
- });
-
- //Handle edit employee
- const handleEdit = (employee) => {
-  setEditingEmployee({...employee});
-  setIsEditModalOpen(true);
- };
-
- //Handle delete employee
- const handleDelete = (employeeId) => {
-  if (window.confirm('Are you sure you want to delete this employee? This action cannot be undone.'))  {
-    setEmployees(employees.filter(emp=>emp.id !== employeeId));
-  }
- };
-
- //Handle update employee
- const handleUpdateEmployee = (updatedEmployee) => {
-  setEmployees(employees.map(emp =>
-    emp.id === updatedEmployee.id 
-    ? updatedEmployee
-    :emp
-  ));
-  setIsEditModalOpen(false);
-  setEditingEmployee(null);
- }
-
- //Handle close modal
- const handleCloseModal = () =>{
-  setIsEditModalOpen(false);
-  setEditingEmployee(null)
- };
+  // handler functions...
 
   return (
-    <div>
     <div className='p-6'>
+      <Header/>
 
-      {/*Serch and dropdown*/}
       <SearchFilter
-      searchTerm={searchTerm}
-      setSearchTerm={setSearchTerm}
-      selectedDepartments={selectedDepartments}
-      setSelectedDepartment={setSelectedDepartment}/>
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedDepartments={selectedDepartments}
+        setSelectedDepartment={setSelectedDepartment}
+      />
 
-      {/*Employee Table*/}
-      <EmployeeTable
-      employees={filteredEmployees}  //should add props
-      onEdit={handleEdit}
-      onDelete={handleDelete}/>
-    </div>
+      <EmployeeTable 
+        columns={columns}
+        data={filteredEmployees}
+        emptyMessage="Add employees to see them listed here"
+      />
 
-    {/*Edit user modal*/}
-    <EditUserModal
-      isOpen={isEditModalOpen}
-      employee={editingEmployee}
-      onClose={handleCloseModal}
-      onUpdate={handleUpdateEmployee}/>
+      <EditUserModal
+        isOpen={isEditModalOpen}
+        employee={editingEmployee}
+        onClose={handleCloseModal}
+        onUpdate={handleUpdateEmployee}
+      />
     </div>
-    
   )
 }
 

@@ -4,10 +4,12 @@ import ActionButton from './ActionButton';
 const DataTable = ({ columns, data, emptyMessage = "No data found" }) => {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full">   {/*Render table*/}
         <thead>
           <tr className="border-b border-gray-200">
-            {columns.map((column, index) => (
+
+            {/*render array loop for UI*/}
+            {columns.map((column, index) => (      
               <th key={index} className="text-left py-3 px-4 font-medium text-gray-600 uppercase text-sm">
                 {column.header}
               </th>
