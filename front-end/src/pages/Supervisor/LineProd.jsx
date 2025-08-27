@@ -9,16 +9,18 @@ const LineProd = () => {
 
   const stats = [
     { title: "Total Target", value: "500", color: "text-blue-600", icon: <Target className="w-5 h-5 text-blue-500" /> },
-    { title: "Total Output", value: "508", color: "text-green-600", icon: <TrendingUp className="w-5 h-5 text-green-500" /> },
-    { title: "Efficiency", value: "101.6%", color: "text-purple-600", icon: <Activity className="w-5 h-5 text-purple-500" /> },
-    { title: "Variance", value: "+8", color: "text-green-600", icon: <BarChart3 className="w-5 h-5 text-green-500" /> },
+    { title: "Total Output", value: "495", color: "text-green-600", icon: <TrendingUp className="w-5 h-5 text-green-500" /> },
+    { title: "Variance", value: "-5", color: "text-green-600", icon: <BarChart3 className="w-5 h-5 text-green-500" /> },
+    { title: "Efficiency", value: "99%", color: "text-purple-600", icon: <Activity className="w-5 h-5 text-purple-500" /> },
+    
   ];
 
   const dailyData = [
-    { date: "2025-08-16", target: 500, actual: 508, efficiency: 101.6 },
-    { date: "2025-08-17", target: 500, actual: 495, efficiency: 99 },
-    { date: "2025-08-18", target: 500, actual: 520, efficiency: 104 },
-    { date: "2025-08-19", target: 500, actual: 480, efficiency: 96 },
+    { date: "2025-08-20", target: 500, actual: 450, efficiency: 75 },
+    { date: "2025-08-19", target: 500, actual: 500, efficiency: 100 },
+    { date: "2025-08-18", target: 500, actual: 495, efficiency: 99 },
+    { date: "2025-08-17", target: 500, actual: 520, efficiency: 104 },
+    { date: "2025-08-16", target: 500, actual: 480, efficiency: 96 },
   ];
 
   return (
@@ -47,7 +49,7 @@ const LineProd = () => {
         {/* Dropdown menu */}
         {dropdownOpen && (
           <div className="absolute top-12 left-0 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-            {["Line 1", "Line 2", "Line 3"].map((line) => (
+            {["Line 1", "Line 2", "Line 3", "Line 4"].map((line) => (
               <button
                 key={line}
                 onClick={() => {

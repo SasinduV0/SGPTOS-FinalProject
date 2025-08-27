@@ -7,7 +7,7 @@ function SupervisorDashboard() {
 
     const lineStats = [
     { title: "Current Workers", value: "8/8", change: "All present", trend: "neutral" },
-    { title: "Daily Target", value: "125", change: "units/hr", trend: "neutral" },
+    { title: "Daily Target", value: "125", change: "units/day", trend: "neutral" },
     { title: "Current Output", value: "100", change: "-25", trend: "down" },
     { title: "Line Efficiency", value: "80%", change: "-20", trend: "down" },
   ];
