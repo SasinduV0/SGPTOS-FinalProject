@@ -8,6 +8,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
 // WiFi credentials - Replace with your network credentials
 const char* ssid = "Redmi Note 9 Pro";
@@ -25,6 +27,26 @@ const int daylightOffset_sec = 0;   // Sri Lanka doesn't use daylight saving tim
 
 // WebSocket client
 WebSocketsClient webSocket;
+
+// LCD configuration
+const uint8_t LCD_I2C_ADDR = 0x27;
+const uint8_t LCD_COLS = 16;
+const uint8_t LCD_ROWS = 2;
+LiquidCrystal_I2C lcd(LCD_I2C_ADDR, LCD_COLS, LCD_ROWS);
+
+// Individual station scan counters
+volatile uint32_t station1ScanCount = 0;
+volatile uint32_t station2ScanCount = 0;
+volatile uint32_t qcScanCount = 0;
+
+// Station access control - tracks which employee is logged in to each station
+bool station1Active = false;
+bool station2Active = false;
+bool qcActive = false;
+
+String station1Employee = "";
+String station2Employee = "";
+String qcEmployee = "";
 
 // Daily scan counter for ID generation
 volatile uint16_t dailyScanCount = 0;
@@ -45,7 +67,7 @@ struct ScannedData {
 
 // FreeRTOS Queue handle
 QueueHandle_t scannedDataQueue;
-const int QUEUE_SIZE = 50;      // Maximum number of scanned data items in queue
+const int QUEUE_SIZE = 100;      // Increased to 100 for better offline storage
 
 // FreeRTOS Task handles
 TaskHandle_t connectivityTaskHandle = NULL;
@@ -63,6 +85,10 @@ volatile bool timeInitialized = false;
 void connectivityTask(void *parameter);
 void rfidScanningTask(void *parameter);
 
+// Forward declarations for LCD functions
+void initLCD();
+void updateRFIDDisplay(const char* uid, uint32_t scanCount);
+
 // Helper function to repeat a string
 String repeatString(const char* str, int count) {
     String result = "";
@@ -79,9 +105,9 @@ const struct {
 }
 
 SCANNER_PINS[] = {
-    {5, 27},   // Scanner 1
-    {4, 32},   // Scanner 2
-    {2, 34}    // Scanner 3
+    {5, 27},   // Station 1
+    {4, 32},   // Station 2
+    {2, 34}    // QC Station
 };
 
 // Shared SPI pins on ESP32
@@ -226,6 +252,118 @@ void handleWebSocketMessage(const char* message) {
     }
 }
 
+//These are the RFID card UIDs of employees that have been assigned to each station
+String qcSta = "E9EB3903";       //QC station employee card
+String emp1Sta = "F5A628A1";     //Employee 1 station card  
+String emp2Sta = "E5B79BA1";     //Employee 2 station card
+
+// Function to check if a scanned UID matches an employee card
+bool isEmployeeCard(String scannedUID) {
+    return (scannedUID == qcSta || scannedUID == emp1Sta || scannedUID == emp2Sta);
+}
+
+// Function to get employee name from UID
+String getEmployeeName(String uid) {
+    if (uid == qcSta) return "QC_Employee";
+    if (uid == emp1Sta) return "Employee_1";
+    if (uid == emp2Sta) return "Employee_2";
+    return "Unknown";
+}
+
+// Function to get the assigned station number for an employee
+uint8_t getAssignedStation(String uid) {
+    if (uid == emp1Sta) return 1;  // Employee 1 -> Station 1
+    if (uid == emp2Sta) return 2;  // Employee 2 -> Station 2
+    if (uid == qcSta) return 3;    // QC Employee -> QC Station
+    return 0; // Unknown
+}
+
+// Function to get station name
+String getStationName(uint8_t stationNumber) {
+    switch(stationNumber) {
+        case 1: return "Station 1";
+        case 2: return "Station 2"; 
+        case 3: return "QC Station";
+        default: return "Unknown";
+    }
+}
+
+// Function to display message on LCD (for Station 2 only)
+void displayLCDMessage(String line1, String line2) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(line1.substring(0, 16)); // Truncate to 16 chars
+    lcd.setCursor(0, 1);
+    lcd.print(line2.substring(0, 16)); // Truncate to 16 chars
+}
+
+// Function to handle employee login/logout with station assignment validation
+void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
+    String employeeName = getEmployeeName(scannedUID);
+    uint8_t assignedStation = getAssignedStation(scannedUID);
+    String stationName = getStationName(stationNumber);
+    String assignedStationName = getStationName(assignedStation);
+    
+    // Check if employee is trying to access their assigned station
+    if (assignedStation != stationNumber) {
+        String message = "Wrong station, Go to " + assignedStationName;
+        Serial.println(employeeName + " tried to access " + stationName + " - " + message);
+        
+        // Display message on LCD for Station 2
+        if (stationNumber == 2) {
+            displayLCDMessage("Wrong Station!", "Go to " + assignedStationName);
+            delay(3000); // Show message for 3 seconds
+            displayLCDMessage("Station 2", "Scan your card");
+        }
+        return;
+    }
+    
+    // Employee is at their correct station
+    switch(stationNumber) {
+        case 1: // Station 1 - Employee 1
+            if (!station1Active) {
+                station1Active = true;
+                station1Employee = employeeName;
+                Serial.println("Station 1: Shift starting... - " + employeeName);
+            } else if (station1Employee == employeeName) {
+                station1Active = false;
+                station1Employee = "";
+                Serial.println("Station 1: Shift ended - " + employeeName);
+            }
+            break;
+            
+        case 2: // Station 2 - Employee 2
+            if (!station2Active) {
+                station2Active = true;
+                station2Employee = employeeName;
+                Serial.println("Station 2: Shift starting... - " + employeeName);
+                displayLCDMessage("Shift starting...", employeeName);
+                delay(2000); // Show message for 2 seconds
+                displayLCDMessage("Station 2", "Ready to scan");
+            } else if (station2Employee == employeeName) {
+                station2Active = false;
+                station2Employee = "";
+                Serial.println("Station 2: Shift ended - " + employeeName);
+                displayLCDMessage("Shift ended", employeeName);
+                delay(2000); // Show message for 2 seconds
+                displayLCDMessage("Station 2", "Scan your card");
+            }
+            break;
+            
+        case 3: // QC Station - QC Employee
+            if (!qcActive) {
+                qcActive = true;
+                qcEmployee = employeeName;
+                Serial.println("QC Station: Shift starting... - " + employeeName);
+            } else if (qcEmployee == employeeName) {
+                qcActive = false;
+                qcEmployee = "";
+                Serial.println("QC Station: Shift ended - " + employeeName);
+            }
+            break;
+    }
+}
+
 // WebSocket event handler
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
@@ -262,6 +400,51 @@ void initWebSocket() {
     Serial.println("<- WebSocket client initialized ->");
 }
 
+// Initialize LCD display
+void initLCD() {
+    Wire.begin();
+    lcd.init();
+    lcd.backlight();
+    
+    // Display startup message
+    lcd.setCursor(0, 0);
+    lcd.print("ESP32 RFID");
+    lcd.setCursor(0, 1);
+    lcd.print("Scanner Ready");
+    delay(2000);
+    
+    // Clear and show initial state
+    lcd.clear();
+    displayLCDMessage("Station 2", "Scan your card");
+}
+
+// Update LCD with latest RFID UID and scan count from Station 2 only
+void updateRFIDDisplay(const char* uid, uint32_t scanCount) {
+    char line1[17];
+    char line2[17];
+    
+    // Format UID for display (truncate if too long)
+    if (strlen(uid) <= 12) {
+        snprintf(line1, sizeof(line1), "S2: %s", uid);
+    } else {
+        // Show first 10 chars if longer (accounting for "S2: " prefix)
+        char truncatedUid[11];
+        strncpy(truncatedUid, uid, 10);
+        truncatedUid[10] = '\0';
+        snprintf(line1, sizeof(line1), "S2: %s..", truncatedUid);
+    }
+    
+    // Format scan count for Station 2
+    snprintf(line2, sizeof(line2), "Count: %lu", scanCount);
+    
+    // Update display
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(line1);
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+}
+
 // Generate unique scan ID (format: YYMMDDSA# where A# is hex counter)
 String generateScanID() {
     struct tm timeinfo;
@@ -284,9 +467,14 @@ String generateScanID() {
     return scanID;
 }
 
-// Generate station ID (format: UAss where U=Unit, A=Line, ss=Station)
+// Generate station ID based on station type
 String generateStationID(uint8_t stationNumber) {
-    return "1A0" + String(stationNumber);
+    switch(stationNumber) {
+        case 1: return "1A01";  // Station 1
+        case 2: return "1A02";  // Station 2
+        case 3: return "1AQC";  // QC Station
+        default: return "1A00"; // Unknown
+    }
 }
 
 // Convert UID bytes to hex string
@@ -336,7 +524,8 @@ void connectivityTask(void *parameter) {
         initWebSocket();
     } else {
         Serial.println("!! Skipping NTP and WebSocket due to WiFi failure");
-        Serial.println("RFID scanning will work in offline mode");
+        Serial.println("RFID scanning will work in OFFLINE mode - scans will be queued");
+        Serial.println("Data will be sent when WiFi/WebSocket connection is restored");
     }
     
     // Signal that connectivity task is ready
@@ -373,34 +562,57 @@ void connectivityTask(void *parameter) {
                 static unsigned long lastReconnectAttempt = 0;
                 if (millis() - lastReconnectAttempt >= 30000) {
                     Serial.println("Attempting WiFi reconnection...");
-                    initWiFi();
+                    WiFi.disconnect();
+                    delay(1000);
+                    WiFi.begin(ssid, password);
                     lastReconnectAttempt = millis();
                 }
             }
         }
         
-        // Process queue and send data via WebSocket
-        ScannedData queueData;
-        while (xQueueReceive(scannedDataQueue, &queueData, 0) == pdTRUE) {
-            // Try to send data via WebSocket
-            if (sendRFIDDataViaWebSocket(queueData)) {
-                Serial.println("Core 0: Data sent via WebSocket successfully");
-            } else {
-                Serial.println("Core 0: Failed to send data, re-queuing...");
-                // Re-queue the data if sending failed
-                xQueueSendToFront(scannedDataQueue, &queueData, pdMS_TO_TICKS(10));
-                break; // Stop processing queue if WebSocket issues
+        // Process queue and send data via WebSocket (only when connected)
+        if (wsConnected) {
+            ScannedData queueData;
+            // Try to send one item from queue per loop iteration
+            if (xQueueReceive(scannedDataQueue, &queueData, 0) == pdTRUE) {
+                // Try to send data via WebSocket
+                if (sendRFIDDataViaWebSocket(queueData)) {
+                    Serial.println("Core 0: Data sent via WebSocket successfully");
+                } else {
+                    Serial.println("Core 0: Failed to send data, will retry next cycle");
+                    // Put the failed item back at front of queue to retry later
+                    xQueueSendToFront(scannedDataQueue, &queueData, 0);
+                    // Don't break - let scanning continue
+                }
             }
         }
+        // If WebSocket not connected, just let the queue fill up - scanning continues
         
         // Optional: Print status periodically (every 30 seconds)
         static unsigned long lastStatus = 0;
         if (millis() - lastStatus >= 30000) {
             int queueCount = uxQueueMessagesWaiting(scannedDataQueue);
-            Serial.printf("Core 0 - Queue: %d/%d | WiFi: %s | WebSocket: %s\n", 
+            uint32_t totalScans = station1ScanCount + station2ScanCount + qcScanCount;
+            Serial.printf("Core 0 - Queue: %d/%d | WiFi: %s | WebSocket: %s | Total: %lu (S1:%lu S2:%lu QC:%lu)\n", 
                          queueCount, QUEUE_SIZE,
                          wifiConnected ? "OK" : "Not-OK",
-                         wsConnected ? "OK" : "Not-OK");
+                         wsConnected ? "OK" : "Not-OK",
+                         totalScans, station1ScanCount, station2ScanCount, qcScanCount);
+            
+            // Show station status
+            Serial.printf("Station Status - S1: %s%s | S2: %s%s | QC: %s%s\n",
+                         station1Active ? "ACTIVE" : "INACTIVE",
+                         station1Active ? (" (" + station1Employee + ")").c_str() : "",
+                         station2Active ? "ACTIVE" : "INACTIVE", 
+                         station2Active ? (" (" + station2Employee + ")").c_str() : "",
+                         qcActive ? "ACTIVE" : "INACTIVE",
+                         qcActive ? (" (" + qcEmployee + ")").c_str() : "");
+            
+            // Warn if queue is getting full
+            if (queueCount > QUEUE_SIZE * 0.8) {
+                Serial.printf("!! WARNING: Queue is %d%% full - %d items pending\n", 
+                             (queueCount * 100) / QUEUE_SIZE, queueCount);
+            }
             lastStatus = millis();
         }
         
@@ -411,6 +623,52 @@ void connectivityTask(void *parameter) {
 
 // Process scanned RFID card and add to queue (Core 1 task)
 bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
+    // Convert UID to string for comparison
+    String uidString = uidToString((uint8_t*)rfid.uid.uidByte, rfid.uid.size);
+    
+    // Check if this is an employee card
+    if (isEmployeeCard(uidString)) {
+        // Handle employee login/logout
+        handleEmployeeAccess(uidString, stationNumber);
+        return false; // Don't queue employee cards
+    }
+    
+    // Check if station is active before scanning regular cards
+    bool stationActive = false;
+    String stationName = "";
+    volatile uint32_t* stationCounter = nullptr;
+    
+    switch(stationNumber) {
+        case 1:
+            stationActive = station1Active;
+            stationName = "Station 1";
+            stationCounter = &station1ScanCount;
+            break;
+        case 2:
+            stationActive = station2Active;
+            stationName = "Station 2";
+            stationCounter = &station2ScanCount;
+            break;
+        case 3:
+            stationActive = qcActive;
+            stationName = "QC Station";
+            stationCounter = &qcScanCount;
+            break;
+    }
+    
+    if (!stationActive) {
+        String message = stationName + " is not active - First scan your card";
+        Serial.println(message);
+        
+        // Display message on LCD for Station 2
+        if (stationNumber == 2) {
+            displayLCDMessage("First scan", "your card");
+            delay(2000); // Show message for 2 seconds
+            displayLCDMessage("Station 2", "Scan your card");
+        }
+        return false;
+    }
+    
     // Get current timestamp (only if time is initialized)
     time_t now = 0;
     if (timeInitialized) {
@@ -438,8 +696,14 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     // Try to add to queue (non-blocking for maximum speed)
     if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
         // Successfully added to queue
-        Serial.print("Core 1 - Card queued - Station ");
-        Serial.print(stationNumber);
+        (*stationCounter)++; // Increment respective station counter
+        
+        // Update LCD display only for Station 2 scans
+        if (stationNumber == 2) {
+            updateRFIDDisplay(uidString.c_str(), station2ScanCount);
+        }
+        
+        Serial.print("Core 1 - Card queued - " + stationName);
         Serial.print(" (");
         Serial.print(stationID);
         Serial.print("), ID: ");
@@ -461,10 +725,34 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         } else {
             Serial.println(", Time: Not synchronized");
         }
+        
+        // Show queue status and station counters
+        int queueCount = uxQueueMessagesWaiting(scannedDataQueue);
+        Serial.printf("Queue: %d/%d | S1: %lu | S2: %lu | QC: %lu\n", 
+                     queueCount, QUEUE_SIZE, station1ScanCount, station2ScanCount, qcScanCount);
+        
         return true;
     } else {
-        // Queue is full
-        Serial.println("Core 1 - Warning: Queue is full, card data discarded!");
+        // Queue is full - remove oldest item to make space for new scan
+        ScannedData oldestData;
+        if (xQueueReceive(scannedDataQueue, &oldestData, 0) == pdTRUE) {
+            Serial.println("Core 1 - Queue full! Removed oldest scan to make space");
+            // Now try to add the new scan
+            if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
+                (*stationCounter)++;
+                if (stationNumber == 2) {
+                    updateRFIDDisplay(uidString.c_str(), station2ScanCount);
+                }
+                Serial.println("Core 1 - New scan added after removing oldest");
+                return true;
+            }
+        }
+        
+        // If we still can't add, show error but don't block scanning
+        if (stationNumber == 2) {
+            updateRFIDDisplay("Queue Error", station2ScanCount);
+        }
+        Serial.println("Core 1 - Queue management failed, but continuing to scan...");
         return false;
     }
 }
@@ -513,6 +801,11 @@ void setup() {
         Serial.println(ver, HEX);
         delay(50);
     }
+    
+    // Initialize LCD display
+    Serial.print("Initializing LCD display... ");
+    initLCD();
+    Serial.println("<> Done!");
     
     Serial.println("\n" + repeatString("=", 50));
     Serial.println("<> Hardware setup complete!");
@@ -573,8 +866,10 @@ void rfidScanningTask(void *parameter) {
     vTaskDelay(pdMS_TO_TICKS(3000)); // Increased to 3 seconds
     
     Serial.println("> Core 1: RFID scanning task ready!");
-    Serial.println("> Ready to scan RFID cards on all 3 readers!");
-    Serial.println("> Place an RFID card near any scanner to test...");
+    Serial.println("> Ready to scan RFID cards on all 3 stations!");
+    Serial.println("> Station 1, Station 2, and QC Station");
+    Serial.println("> First scan employee cards to activate stations");
+    Serial.println("> LCD will show only Station 2 scans");
     
     // Main RFID scanning loop - optimized for maximum speed
     while (true) {
