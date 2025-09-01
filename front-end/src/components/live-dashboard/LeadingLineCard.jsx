@@ -133,7 +133,7 @@ const LeadingLine = () => {
 
   return (
     <div className="p-2">
-      <div className="text-white rounded-2xl p-3">
+      <div className="text-white rounded-2xl px-3">
         <h2 className="text-lg font-bold text-center">Leading Line</h2>
 
         {leadingLine !== null && (
