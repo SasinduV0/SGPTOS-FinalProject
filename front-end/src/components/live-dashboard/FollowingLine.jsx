@@ -79,7 +79,7 @@ const FollowingLine = () => {
           </p>
         )}
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-1">
           {lowestEmployees.map((emp) => (
             <div
               key={emp._id}
