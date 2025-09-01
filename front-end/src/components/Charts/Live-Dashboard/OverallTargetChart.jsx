@@ -100,11 +100,11 @@ const OverallTargetChart = () => {
   };
 
   return (
-    <div className="relative flex flex-col items-center bg-white rounded-2xl p-4 w-[300px]">
+    <div className="relative flex flex-col items-center bg-white rounded-2xl p-4 w-[280px]">
       <h2 className="text-center text-black font-bold text-2xl mb-4">
         Overall Target
       </h2>
-      <Doughnut data={data} options={options} className="w-48" />
+      <Doughnut data={data} options={options} className="w-45" />
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
         <div className="text-xl font-bold text-black">{totalCompleted} Pcs</div>
         <div className="text-sm text-gray-700">{completionPercentage}%</div>
