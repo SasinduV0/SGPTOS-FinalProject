@@ -9,6 +9,8 @@ import FollowingLine from '../components/live-dashboard/FollowingLine'
 import Greetings from '../components/live-dashboard/Greeting'
 import TopEmployees from '../components/live-dashboard/TopEmployees'
 import LineTargetChart from '../components/live-dashboard/LineTargetChart'
+import RemainingTime from '../components/live-dashboard/RemainingTime'
+import DefectRateChart from '../components/live-dashboard/DefectRateChart'
 
 function LiveDashboard({ lineData }) {
 
@@ -41,7 +43,8 @@ function LiveDashboard({ lineData }) {
         {/* Middle-section */}
         <div className="w-[35%]">
           <div className="bg-white rounded-xl shadow-lg  h-[830px] flex items-center justify-center flex-col shadow-gray-500">
-              <Greetings/>
+              {/* <Greetings/> */}
+              <RemainingTime/>
                <OverallTargetChart lineTargets={lineTargets} />
              <div className="">
       <     LineTargetChart />
@@ -58,7 +61,11 @@ function LiveDashboard({ lineData }) {
           <div className='bg-yellow-300 rounded-xl shadow-lg p-4 h-[250px] shadow-gray-500'>
             chart 3
           </div>
-          <div className='bg-white rounded-xl shadow-lg p-4 h-[240px] shadow-gray-500'>chart 3</div>
+          <div className='bg-white rounded-xl shadow-lg p-4 h-[240px] shadow-gray-500'>
+              <div className='flex items-center justify-center'>
+                <DefectRateChart defects={80} total={500} />
+              </div>
+          </div>
         </div>
       </div>
     </div>
