@@ -40,17 +40,17 @@ const TopEmployees = () => {
 
   return (
     <div className="p-2">
-      <div className="text-white rounded-2xl p-3">
+      <div className="text-black rounded-2xl p-3">
         <h2 className="text-lg font-bold text-center">Top 4 Employees (All Lines)</h2>
 
         <div className="mt-3 space-y-2">
           {topEmployees.map((emp, index) => (
             <div
               key={emp._id}
-              className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+              className="flex justify-between items-center px-3 py-1 rounded-lg hover:bg-gray-700 transition"
             >
               <div className="flex items-center gap-4">
-                <FaUser className="text-green-400" />
+                <FaUser className="text-yellow-700" />
                 <span>
                   {index + 1}. {emp.name} (Line {emp.line})
                 </span>
