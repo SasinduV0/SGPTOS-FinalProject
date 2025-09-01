@@ -69,8 +69,8 @@ const FollowingLine = () => {
 
   return (
     <div className="p-2">
-      <div className="text-white rounded-2xl p-3">
-        <h2 className="text-lg font-bold text-center">Following Line</h2>
+      <div className="text-white rounded-2xl px-3">
+        <h2 className="text-lg font-bold text-center">Delayed Line</h2>
 
         {lowestLine !== null && (
           <p className="text-center text-sm text-gray-300">
