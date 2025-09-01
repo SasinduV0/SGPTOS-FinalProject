@@ -22,13 +22,10 @@ function Greetings() {
     ).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}`;
 
   return (
-    <div className='flex justify-between items-center px-8 mt-5'>
-      {/* <div>
-        <h1 className='text-gray-800 text-2xl font-semibold tracking-wide'>Good Morning!</h1>
-      </div> */}
+    <div className='flex justify-between items-center px-8'>
       <div>
         <h1 className="text-gray-800 text-3xl font-bold tracking-wide w-[130px]">{formatTime(dateTime)}</h1>
-        <p className="text-gray-800 text-sm">{formatDate(dateTime)}</p>
+        <p className="text-gray-800 text-sm flex items-center justify-center">{formatDate(dateTime)}</p>
       </div>
     </div>
   );
