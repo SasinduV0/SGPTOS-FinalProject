@@ -146,7 +146,7 @@ const LeadingLine = () => {
           {topEmployees.map((emp) => (
             <div
               key={emp._id}
-              className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+              className="flex justify-between items-center px-3 py-1 rounded-lg hover:bg-gray-700 transition"
             >
               <div className="flex items-center gap-4">
                 <FaUser className="text-blue-400" />
