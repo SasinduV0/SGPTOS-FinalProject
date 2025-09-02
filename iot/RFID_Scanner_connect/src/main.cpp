@@ -28,11 +28,17 @@ const int daylightOffset_sec = 0;   // Sri Lanka doesn't use daylight saving tim
 // WebSocket client
 WebSocketsClient webSocket;
 
-// LCD configuration
-const uint8_t LCD_I2C_ADDR = 0x27;
-const uint8_t LCD_COLS = 16;
-const uint8_t LCD_ROWS = 2;
-LiquidCrystal_I2C lcd(LCD_I2C_ADDR, LCD_COLS, LCD_ROWS);
+// LCD configuration for Station 2 (1602A)
+const uint8_t LCD_S2_I2C_ADDR = 0x27;
+const uint8_t LCD_S2_COLS = 16;
+const uint8_t LCD_S2_ROWS = 2;
+LiquidCrystal_I2C lcdStation2(LCD_S2_I2C_ADDR, LCD_S2_COLS, LCD_S2_ROWS);
+
+// LCD configuration for QC Station (1604A)
+const uint8_t LCD_QC_I2C_ADDR = 0x26;
+const uint8_t LCD_QC_COLS = 16;
+const uint8_t LCD_QC_ROWS = 4;
+LiquidCrystal_I2C lcdQC(LCD_QC_I2C_ADDR, LCD_QC_COLS, LCD_QC_ROWS);
 
 // Individual station scan counters
 volatile uint32_t station1ScanCount = 0;
@@ -86,8 +92,11 @@ void connectivityTask(void *parameter);
 void rfidScanningTask(void *parameter);
 
 // Forward declarations for LCD functions
-void initLCD();
-void updateRFIDDisplay(const char* uid, uint32_t scanCount);
+void initLCDs();
+void updateStation2Display(const char* uid, uint32_t scanCount);
+void updateQCDisplay(const char* uid, uint32_t scanCount);
+void displayStation2Message(String line1, String line2);
+void displayQCMessage(String line1, String line2, String line3 = "", String line4 = "");
 
 // Helper function to repeat a string
 String repeatString(const char* str, int count) {
@@ -288,13 +297,30 @@ String getStationName(uint8_t stationNumber) {
     }
 }
 
-// Function to display message on LCD (for Station 2 only)
-void displayLCDMessage(String line1, String line2) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(line1.substring(0, 16)); // Truncate to 16 chars
-    lcd.setCursor(0, 1);
-    lcd.print(line2.substring(0, 16)); // Truncate to 16 chars
+// Function to display message on Station 2 LCD
+void displayStation2Message(String line1, String line2) {
+    lcdStation2.clear();
+    lcdStation2.setCursor(0, 0);
+    lcdStation2.print(line1.substring(0, 16)); // Truncate to 16 chars
+    lcdStation2.setCursor(0, 1);
+    lcdStation2.print(line2.substring(0, 16)); // Truncate to 16 chars
+}
+
+// Function to display message on QC LCD (supports up to 4 lines)
+void displayQCMessage(String line1, String line2, String line3, String line4) {
+    lcdQC.clear();
+    lcdQC.setCursor(0, 0);
+    lcdQC.print(line1.substring(0, 16)); // Truncate to 16 chars
+    lcdQC.setCursor(0, 1);
+    lcdQC.print(line2.substring(0, 16)); // Truncate to 16 chars
+    if (line3.length() > 0) {
+        lcdQC.setCursor(0, 2);
+        lcdQC.print(line3.substring(0, 16)); // Truncate to 16 chars
+    }
+    if (line4.length() > 0) {
+        lcdQC.setCursor(0, 3);
+        lcdQC.print(line4.substring(0, 16)); // Truncate to 16 chars
+    }
 }
 
 // Function to handle employee login/logout with station assignment validation
@@ -311,9 +337,15 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
         
         // Display message on LCD for Station 2
         if (stationNumber == 2) {
-            displayLCDMessage("Wrong Station!", "Go to " + assignedStationName);
+            displayStation2Message("Wrong Station!", "Go to " + assignedStationName);
             delay(3000); // Show message for 3 seconds
-            displayLCDMessage("Station 2", "Scan your card");
+            displayStation2Message("Station 2", "Scan your card");
+        }
+        // Display message on LCD for QC Station
+        else if (stationNumber == 3) {
+            displayQCMessage("Wrong Station!", "Go to " + assignedStationName, "Access Denied", "");
+            delay(3000); // Show message for 3 seconds
+            displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return;
     }
@@ -337,16 +369,16 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                 station2Active = true;
                 station2Employee = employeeName;
                 Serial.println("Station 2: Shift starting... - " + employeeName);
-                displayLCDMessage("Shift starting...", employeeName);
+                displayStation2Message("Shift starting...", employeeName);
                 delay(2000); // Show message for 2 seconds
-                displayLCDMessage("Station 2", "Ready to scan");
+                displayStation2Message("Station 2", "Ready to scan");
             } else if (station2Employee == employeeName) {
                 station2Active = false;
                 station2Employee = "";
                 Serial.println("Station 2: Shift ended - " + employeeName);
-                displayLCDMessage("Shift ended", employeeName);
+                displayStation2Message("Shift ended", employeeName);
                 delay(2000); // Show message for 2 seconds
-                displayLCDMessage("Station 2", "Scan your card");
+                displayStation2Message("Station 2", "Scan your card");
             }
             break;
             
@@ -355,10 +387,16 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                 qcActive = true;
                 qcEmployee = employeeName;
                 Serial.println("QC Station: Shift starting... - " + employeeName);
+                displayQCMessage("QC Station", "Shift starting...", employeeName, "Ready to scan");
+                delay(2000); // Show message for 2 seconds
+                displayQCMessage("QC Station", "Ready to scan", "", "");
             } else if (qcEmployee == employeeName) {
                 qcActive = false;
                 qcEmployee = "";
                 Serial.println("QC Station: Shift ended - " + employeeName);
+                displayQCMessage("QC Station", "Shift ended", employeeName, "");
+                delay(2000); // Show message for 2 seconds
+                displayQCMessage("QC Station", "Scan your card", "", "");
             }
             break;
     }
@@ -400,26 +438,35 @@ void initWebSocket() {
     Serial.println("<- WebSocket client initialized ->");
 }
 
-// Initialize LCD display
-void initLCD() {
+// Initialize both LCD displays
+void initLCDs() {
     Wire.begin();
-    lcd.init();
-    lcd.backlight();
     
-    // Display startup message
-    lcd.setCursor(0, 0);
-    lcd.print("ESP32 RFID");
-    lcd.setCursor(0, 1);
-    lcd.print("Scanner Ready");
+    // Initialize Station 2 LCD (1602A)
+    lcdStation2.init();
+    lcdStation2.backlight();
+    lcdStation2.setCursor(0, 0);
+    lcdStation2.print("Station 2 LCD");
+    lcdStation2.setCursor(0, 1);
+    lcdStation2.print("Ready");
+    
+    // Initialize QC LCD (1604A)
+    lcdQC.init();
+    lcdQC.backlight();
+    lcdQC.setCursor(0, 0);
+    lcdQC.print("QC Station LCD");
+    lcdQC.setCursor(0, 1);
+    lcdQC.print("Ready");
+    
     delay(2000);
     
     // Clear and show initial state
-    lcd.clear();
-    displayLCDMessage("Station 2", "Scan your card");
+    displayStation2Message("Station 2", "Scan your card");
+    displayQCMessage("QC Station", "Scan your card", "", "");
 }
 
-// Update LCD with latest RFID UID and scan count from Station 2 only
-void updateRFIDDisplay(const char* uid, uint32_t scanCount) {
+// Update Station 2 LCD with latest RFID UID and scan count
+void updateStation2Display(const char* uid, uint32_t scanCount) {
     char line1[17];
     char line2[17];
     
@@ -438,11 +485,51 @@ void updateRFIDDisplay(const char* uid, uint32_t scanCount) {
     snprintf(line2, sizeof(line2), "Count: %lu", scanCount);
     
     // Update display
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(line1);
-    lcd.setCursor(0, 1);
-    lcd.print(line2);
+    lcdStation2.clear();
+    lcdStation2.setCursor(0, 0);
+    lcdStation2.print(line1);
+    lcdStation2.setCursor(0, 1);
+    lcdStation2.print(line2);
+}
+
+// Update QC LCD with latest RFID UID and scan count
+void updateQCDisplay(const char* uid, uint32_t scanCount) {
+    char line1[17];
+    char line2[17];
+    char line3[17];
+    
+    // Format UID for display (truncate if too long)
+    if (strlen(uid) <= 13) {
+        snprintf(line1, sizeof(line1), "QC: %s", uid);
+    } else {
+        // Show first 11 chars if longer (accounting for "QC: " prefix)
+        char truncatedUid[12];
+        strncpy(truncatedUid, uid, 11);
+        truncatedUid[11] = '\0';
+        snprintf(line1, sizeof(line1), "QC: %s..", truncatedUid);
+    }
+    
+    // Format scan count and timestamp
+    snprintf(line2, sizeof(line2), "Count: %lu", scanCount);
+    
+    // Get current time if available
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        strftime(line3, sizeof(line3), "%H:%M:%S", &timeinfo);
+    } else {
+        snprintf(line3, sizeof(line3), "Time: N/A");
+    }
+    
+    // Update display
+    lcdQC.clear();
+    lcdQC.setCursor(0, 0);
+    lcdQC.print(line1);
+    lcdQC.setCursor(0, 1);
+    lcdQC.print(line2);
+    lcdQC.setCursor(0, 2);
+    lcdQC.print(line3);
+    lcdQC.setCursor(0, 3);
+    lcdQC.print("QC Active");
 }
 
 // Generate unique scan ID (format: YYMMDDSA# where A# is hex counter)
@@ -662,9 +749,15 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         
         // Display message on LCD for Station 2
         if (stationNumber == 2) {
-            displayLCDMessage("First scan", "your card");
+            displayStation2Message("First scan", "your card");
             delay(2000); // Show message for 2 seconds
-            displayLCDMessage("Station 2", "Scan your card");
+            displayStation2Message("Station 2", "Scan your card");
+        }
+        // Display message on LCD for QC Station
+        else if (stationNumber == 3) {
+            displayQCMessage("First scan", "your card", "", "");
+            delay(2000); // Show message for 2 seconds
+            displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return false;
     }
@@ -698,9 +791,11 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         // Successfully added to queue
         (*stationCounter)++; // Increment respective station counter
         
-        // Update LCD display only for Station 2 scans
+        // Update LCD display for Station 2 and QC scans
         if (stationNumber == 2) {
-            updateRFIDDisplay(uidString.c_str(), station2ScanCount);
+            updateStation2Display(uidString.c_str(), station2ScanCount);
+        } else if (stationNumber == 3) {
+            updateQCDisplay(uidString.c_str(), qcScanCount);
         }
         
         Serial.print("Core 1 - Card queued - " + stationName);
@@ -740,17 +835,22 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
             // Now try to add the new scan
             if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
                 (*stationCounter)++;
+                // Update display for respective stations
                 if (stationNumber == 2) {
-                    updateRFIDDisplay(uidString.c_str(), station2ScanCount);
+                    updateStation2Display(uidString.c_str(), station2ScanCount);
+                } else if (stationNumber == 3) {
+                    updateQCDisplay(uidString.c_str(), qcScanCount);
                 }
                 Serial.println("Core 1 - New scan added after removing oldest");
                 return true;
             }
         }
         
-        // If we still can't add, show error but don't block scanning
+        // Show error on appropriate display
         if (stationNumber == 2) {
-            updateRFIDDisplay("Queue Error", station2ScanCount);
+            updateStation2Display("Queue Error", station2ScanCount);
+        } else if (stationNumber == 3) {
+            updateQCDisplay("Queue Error", qcScanCount);
         }
         Serial.println("Core 1 - Queue management failed, but continuing to scan...");
         return false;
@@ -802,9 +902,9 @@ void setup() {
         delay(50);
     }
     
-    // Initialize LCD display
-    Serial.print("Initializing LCD display... ");
-    initLCD();
+    // Initialize LCD displays
+    Serial.print("Initializing LCD displays... ");
+    initLCDs();
     Serial.println("<> Done!");
     
     Serial.println("\n" + repeatString("=", 50));
