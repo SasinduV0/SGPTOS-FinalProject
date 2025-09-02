@@ -6,6 +6,7 @@ import ProductRfidMan from './ProductRfidMan';
 import UserRegistration from './UserRegistration';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import EmployeeRfidMan from './EmployeeRfidMan';
+import UserManagment from './UserManagment';
 
 function AdminDashboard() {
 
@@ -21,7 +22,7 @@ return(
       <Route path='UserRegistration' element={<UserRegistration/>}/>
       <Route path='ProductRfidMan' element={<ProductRfidMan/>}/>
       <Route path='EmployeeRfidMan' element={<EmployeeRfidMan/>}/>
-      {/*<Route path='UserManagment' element={<UserManagment/>}/>*/}
+      <Route path='UserManagment' element={<UserManagment/>}/>
 
         
 
