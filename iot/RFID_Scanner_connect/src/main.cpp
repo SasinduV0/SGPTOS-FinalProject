@@ -1,4 +1,3 @@
-
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFi.h>
@@ -54,6 +53,18 @@ String station1Employee = "";
 String station2Employee = "";
 String qcEmployee = "";
 
+// Shift confirmation states
+enum ShiftState {
+    WAITING_FOR_CARD,
+    WAITING_START_CONFIRMATION,
+    ACTIVE_SCANNING,
+    WAITING_END_CONFIRMATION
+};
+
+volatile ShiftState station1State = WAITING_FOR_CARD;
+volatile ShiftState station2State = WAITING_FOR_CARD;
+volatile ShiftState qcState = WAITING_FOR_CARD;
+
 // Daily scan counter for ID generation
 volatile uint16_t dailyScanCount = 0;
 String lastDateString = "";
@@ -98,6 +109,13 @@ void updateQCDisplay(const char* uid, uint32_t scanCount);
 void displayStation2Message(String line1, String line2);
 void displayQCMessage(String line1, String line2, String line3 = "", String line4 = "");
 
+// Forward declarations for button functions
+void initButtons();
+bool isOKPressed(uint8_t stationNumber);
+bool isCancelPressed(uint8_t stationNumber);
+void waitForButtonRelease(uint8_t stationNumber);
+bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs = 30000);
+
 // Helper function to repeat a string
 String repeatString(const char* str, int count) {
     String result = "";
@@ -108,15 +126,20 @@ String repeatString(const char* str, int count) {
 }
 
 // RFID Scanner pins
-const struct {
-    uint8_t ss;    // SDA
-    uint8_t rst;
-}
+const uint8_t SCANNER_SS_PINS[] = {
+    5,   // Station 1
+    4,   // Station 2
+    2    // QC Station
+};
 
-SCANNER_PINS[] = {
-    {5, 27},   // Station 1
-    {4, 32},   // Station 2
-    {2, 34}    // QC Station
+// Button pins for shift confirmation
+const struct {
+    uint8_t ok;
+    uint8_t cancel;
+} BUTTON_PINS[] = {
+    {32, 34},  // Station 1 - OK: 32, Cancel: 34
+    {13, 14},  // Station 2 - OK: 13, Cancel: 14
+    {27, 26}   // QC Station - OK: 27, Cancel: 26
 };
 
 // Shared SPI pins on ESP32
@@ -126,9 +149,9 @@ const uint8_t MISO_PIN = 19;
 
 // Create RFID instances
 MFRC522 readers[] = {
-    MFRC522(SCANNER_PINS[0].ss, SCANNER_PINS[0].rst),
-    MFRC522(SCANNER_PINS[1].ss, SCANNER_PINS[1].rst),
-    MFRC522(SCANNER_PINS[2].ss, SCANNER_PINS[2].rst)
+    MFRC522(SCANNER_SS_PINS[0], 0), // RST pin not used
+    MFRC522(SCANNER_SS_PINS[1], 0),
+    MFRC522(SCANNER_SS_PINS[2], 0)
 };
 
 void initRFID(MFRC522& rfid) {
@@ -323,7 +346,7 @@ void displayQCMessage(String line1, String line2, String line3, String line4) {
     }
 }
 
-// Function to handle employee login/logout with station assignment validation
+// Function to handle employee login/logout with station assignment validation and button confirmation
 void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
     String employeeName = getEmployeeName(scannedUID);
     uint8_t assignedStation = getAssignedStation(scannedUID);
@@ -350,53 +373,147 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
         return;
     }
     
-    // Employee is at their correct station
+    // Employee is at their correct station - handle state-based logic
     switch(stationNumber) {
         case 1: // Station 1 - Employee 1
-            if (!station1Active) {
-                station1Active = true;
-                station1Employee = employeeName;
-                Serial.println("Station 1: Shift starting... - " + employeeName);
-            } else if (station1Employee == employeeName) {
-                station1Active = false;
-                station1Employee = "";
-                Serial.println("Station 1: Shift ended - " + employeeName);
+            if (station1State == WAITING_FOR_CARD && !station1Active) {
+                // Request confirmation to start shift
+                Serial.println("Station 1: " + employeeName + " requesting to start shift");
+                station1State = WAITING_START_CONFIRMATION;
+                
+                // Wait for button press (OK to start, Cancel to postpone)
+                if (waitForButtonPress(1, 30000)) { // 30 second timeout
+                    // OK pressed - start shift
+                    station1Active = true;
+                    station1Employee = employeeName;
+                    station1State = ACTIVE_SCANNING;
+                    Serial.println("Station 1: Shift starting... - " + employeeName);
+                } else {
+                    // Cancel pressed or timeout - postpone
+                    station1State = WAITING_FOR_CARD;
+                    Serial.println("Station 1: Shift postponed - " + employeeName);
+                }
+            } else if (station1State == ACTIVE_SCANNING && station1Employee == employeeName) {
+                // Request confirmation to end shift
+                Serial.println("Station 1: " + employeeName + " requesting to end shift");
+                station1State = WAITING_END_CONFIRMATION;
+                
+                // Wait for button press (OK to end, Cancel to continue)
+                if (waitForButtonPress(1, 30000)) { // 30 second timeout
+                    // OK pressed - end shift
+                    station1Active = false;
+                    station1Employee = "";
+                    station1State = WAITING_FOR_CARD;
+                    Serial.println("Station 1: Shift ended - " + employeeName);
+                } else {
+                    // Cancel pressed or timeout - continue working
+                    station1State = ACTIVE_SCANNING;
+                    Serial.println("Station 1: Shift ending denied - " + employeeName);
+                }
             }
             break;
             
         case 2: // Station 2 - Employee 2
-            if (!station2Active) {
-                station2Active = true;
-                station2Employee = employeeName;
-                Serial.println("Station 2: Shift starting... - " + employeeName);
-                displayStation2Message("Shift starting...", employeeName);
-                delay(2000); // Show message for 2 seconds
-                displayStation2Message("Station 2", "Ready to scan");
-            } else if (station2Employee == employeeName) {
-                station2Active = false;
-                station2Employee = "";
-                Serial.println("Station 2: Shift ended - " + employeeName);
-                displayStation2Message("Shift ended", employeeName);
-                delay(2000); // Show message for 2 seconds
-                displayStation2Message("Station 2", "Scan your card");
+            if (station2State == WAITING_FOR_CARD && !station2Active) {
+                // Request confirmation to start shift
+                Serial.println("Station 2: " + employeeName + " requesting to start shift");
+                station2State = WAITING_START_CONFIRMATION;
+                displayStation2Message("Press OK to", "Start the Shift");
+                
+                // Wait for button press (OK to start, Cancel to postpone)
+                if (waitForButtonPress(2, 30000)) { // 30 second timeout
+                    // OK pressed - start shift
+                    station2Active = true;
+                    station2Employee = employeeName;
+                    station2State = ACTIVE_SCANNING;
+                    Serial.println("Station 2: Shift starting... - " + employeeName);
+                    displayStation2Message("Shift starting...", employeeName);
+                    delay(2000);
+                    displayStation2Message("Station 2", "Ready to scan");
+                } else {
+                    // Cancel pressed or timeout - postpone
+                    station2State = WAITING_FOR_CARD;
+                    Serial.println("Station 2: Shift postponed - " + employeeName);
+                    displayStation2Message("Postponed Shift!", "Scan again to start");
+                    delay(3000);
+                    displayStation2Message("Station 2", "Scan your card");
+                }
+            } else if (station2State == ACTIVE_SCANNING && station2Employee == employeeName) {
+                // Request confirmation to end shift
+                Serial.println("Station 2: " + employeeName + " requesting to end shift");
+                station2State = WAITING_END_CONFIRMATION;
+                displayStation2Message("Press OK to", "End the Shift");
+                
+                // Wait for button press (OK to end, Cancel to continue)
+                if (waitForButtonPress(2, 30000)) { // 30 second timeout
+                    // OK pressed - end shift
+                    station2Active = false;
+                    station2Employee = "";
+                    station2State = WAITING_FOR_CARD;
+                    Serial.println("Station 2: Shift ended - " + employeeName);
+                    displayStation2Message("Shift Ending...", employeeName);
+                    delay(2000);
+                    displayStation2Message("Station 2", "Scan your card");
+                } else {
+                    // Cancel pressed or timeout - continue working
+                    station2State = ACTIVE_SCANNING;
+                    Serial.println("Station 2: Shift ending denied - " + employeeName);
+                    displayStation2Message("Denied ending!", "Back to Tag scanning");
+                    delay(3000);
+                    displayStation2Message("Station 2", "Ready to scan");
+                }
             }
             break;
             
         case 3: // QC Station - QC Employee
-            if (!qcActive) {
-                qcActive = true;
-                qcEmployee = employeeName;
-                Serial.println("QC Station: Shift starting... - " + employeeName);
-                displayQCMessage("QC Station", "Shift starting...", employeeName, "Ready to scan");
-                delay(2000); // Show message for 2 seconds
-                displayQCMessage("QC Station", "Ready to scan", "", "");
-            } else if (qcEmployee == employeeName) {
-                qcActive = false;
-                qcEmployee = "";
-                Serial.println("QC Station: Shift ended - " + employeeName);
-                displayQCMessage("QC Station", "Shift ended", employeeName, "");
-                delay(2000); // Show message for 2 seconds
-                displayQCMessage("QC Station", "Scan your card", "", "");
+            if (qcState == WAITING_FOR_CARD && !qcActive) {
+                // Request confirmation to start shift
+                Serial.println("QC Station: " + employeeName + " requesting to start shift");
+                qcState = WAITING_START_CONFIRMATION;
+                displayQCMessage("Press OK to", "Start the Shift", "", "");
+                
+                // Wait for button press (OK to start, Cancel to postpone)
+                if (waitForButtonPress(3, 30000)) { // 30 second timeout
+                    // OK pressed - start shift
+                    qcActive = true;
+                    qcEmployee = employeeName;
+                    qcState = ACTIVE_SCANNING;
+                    Serial.println("QC Station: Shift starting... - " + employeeName);
+                    displayQCMessage("QC Station", "Shift starting...", employeeName, "Ready to scan");
+                    delay(2000);
+                    displayQCMessage("QC Station", "Ready to scan", "", "");
+                } else {
+                    // Cancel pressed or timeout - postpone
+                    qcState = WAITING_FOR_CARD;
+                    Serial.println("QC Station: Shift postponed - " + employeeName);
+                    displayQCMessage("Postponed Shift!", "Scan again to start", "", "");
+                    delay(3000);
+                    displayQCMessage("QC Station", "Scan your card", "", "");
+                }
+            } else if (qcState == ACTIVE_SCANNING && qcEmployee == employeeName) {
+                // Request confirmation to end shift
+                Serial.println("QC Station: " + employeeName + " requesting to end shift");
+                qcState = WAITING_END_CONFIRMATION;
+                displayQCMessage("Press OK to", "End the Shift", "", "");
+                
+                // Wait for button press (OK to end, Cancel to continue)
+                if (waitForButtonPress(3, 30000)) { // 30 second timeout
+                    // OK pressed - end shift
+                    qcActive = false;
+                    qcEmployee = "";
+                    qcState = WAITING_FOR_CARD;
+                    Serial.println("QC Station: Shift ended - " + employeeName);
+                    displayQCMessage("QC Station", "Shift Ending...", employeeName, "");
+                    delay(2000);
+                    displayQCMessage("QC Station", "Scan your card", "", "");
+                } else {
+                    // Cancel pressed or timeout - continue working
+                    qcState = ACTIVE_SCANNING;
+                    Serial.println("QC Station: Shift ending denied - " + employeeName);
+                    displayQCMessage("Denied ending!", "Back to Tag scanning", "", "");
+                    delay(3000);
+                    displayQCMessage("QC Station", "Ready to scan", "", "");
+                }
             }
             break;
     }
@@ -463,6 +580,58 @@ void initLCDs() {
     // Clear and show initial state
     displayStation2Message("Station 2", "Scan your card");
     displayQCMessage("QC Station", "Scan your card", "", "");
+}
+
+// Initialize button pins with internal pull-up resistors
+void initButtons() {
+    for (int i = 0; i < 3; i++) {
+        pinMode(BUTTON_PINS[i].ok, INPUT_PULLUP);
+        pinMode(BUTTON_PINS[i].cancel, INPUT_PULLUP);
+    }
+}
+
+// Check if OK button is pressed (LOW when pressed due to pull-up)
+bool isOKPressed(uint8_t stationNumber) {
+    if (stationNumber < 1 || stationNumber > 3) return false;
+    return digitalRead(BUTTON_PINS[stationNumber - 1].ok) == LOW;
+}
+
+// Check if Cancel button is pressed (LOW when pressed due to pull-up)
+bool isCancelPressed(uint8_t stationNumber) {
+    if (stationNumber < 1 || stationNumber > 3) return false;
+    return digitalRead(BUTTON_PINS[stationNumber - 1].cancel) == LOW;
+}
+
+// Wait for button to be released (for debouncing)
+void waitForButtonRelease(uint8_t stationNumber) {
+    if (stationNumber < 1 || stationNumber > 3) return;
+    
+    while (digitalRead(BUTTON_PINS[stationNumber - 1].ok) == LOW || 
+           digitalRead(BUTTON_PINS[stationNumber - 1].cancel) == LOW) {
+        delay(50);
+    }
+    delay(100); // Additional debounce delay
+}
+
+// Wait for button press with timeout, returns true if OK pressed, false if Cancel or timeout
+bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs) {
+    if (stationNumber < 1 || stationNumber > 3) return false;
+    
+    unsigned long startTime = millis();
+    
+    while (millis() - startTime < timeoutMs) {
+        if (isOKPressed(stationNumber)) {
+            waitForButtonRelease(stationNumber);
+            return true;
+        }
+        if (isCancelPressed(stationNumber)) {
+            waitForButtonRelease(stationNumber);
+            return false;
+        }
+        delay(50); // Small delay to prevent tight loop
+    }
+    
+    return false; // Timeout - treat as cancel
 }
 
 // Update Station 2 LCD with latest RFID UID and scan count
@@ -695,6 +864,11 @@ void connectivityTask(void *parameter) {
                          qcActive ? "ACTIVE" : "INACTIVE",
                          qcActive ? (" (" + qcEmployee + ")").c_str() : "");
             
+            // Show shift states
+            const char* stateNames[] = {"WAITING_CARD", "WAIT_START_CONF", "ACTIVE_SCAN", "WAIT_END_CONF"};
+            Serial.printf("Shift States - S1: %s | S2: %s | QC: %s\n",
+                         stateNames[station1State], stateNames[station2State], stateNames[qcState]);
+            
             // Warn if queue is getting full
             if (queueCount > QUEUE_SIZE * 0.8) {
                 Serial.printf("!! WARNING: Queue is %d%% full - %d items pending\n", 
@@ -724,26 +898,30 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     bool stationActive = false;
     String stationName = "";
     volatile uint32_t* stationCounter = nullptr;
+    ShiftState currentState;
     
     switch(stationNumber) {
         case 1:
             stationActive = station1Active;
             stationName = "Station 1";
             stationCounter = &station1ScanCount;
+            currentState = station1State;
             break;
         case 2:
             stationActive = station2Active;
             stationName = "Station 2";
             stationCounter = &station2ScanCount;
+            currentState = station2State;
             break;
         case 3:
             stationActive = qcActive;
             stationName = "QC Station";
             stationCounter = &qcScanCount;
+            currentState = qcState;
             break;
     }
     
-    if (!stationActive) {
+    if (!stationActive || currentState != ACTIVE_SCANNING) {
         String message = stationName + " is not active - First scan your card";
         Serial.println(message);
         
@@ -878,11 +1056,16 @@ void setup() {
     Serial.println("<> Success!");
     
     // Configure all SS pins as OUTPUT and HIGH
-    Serial.print("Configuring RFID scanner pins... ");
-    for (auto& pin : SCANNER_PINS) {
-        pinMode(pin.ss, OUTPUT);
-        digitalWrite(pin.ss, HIGH);
+    Serial.print("Configuring RFID scanner SS pins... ");
+    for (int i = 0; i < 3; i++) {
+        pinMode(SCANNER_SS_PINS[i], OUTPUT);
+        digitalWrite(SCANNER_SS_PINS[i], HIGH);
     }
+    Serial.println("<> Done!");
+    
+    // Initialize button pins
+    Serial.print("Configuring button pins... ");
+    initButtons();
     Serial.println("<> Done!");
     
     // Initialize SPI
@@ -969,7 +1152,8 @@ void rfidScanningTask(void *parameter) {
     Serial.println("> Ready to scan RFID cards on all 3 stations!");
     Serial.println("> Station 1, Station 2, and QC Station");
     Serial.println("> First scan employee cards to activate stations");
-    Serial.println("> LCD will show only Station 2 scans");
+    Serial.println("> Use OK/Cancel buttons to confirm shift start/end");
+    Serial.println("> LCD will show Station 2 and QC scans");
     
     // Main RFID scanning loop - optimized for maximum speed
     while (true) {
@@ -977,14 +1161,14 @@ void rfidScanningTask(void *parameter) {
         for (int i = 0; i < 3; i++) {
             // Set current reader's SS pin LOW, others HIGH
             for (int j = 0; j < 3; j++) {
-                digitalWrite(SCANNER_PINS[j].ss, j == i ? LOW : HIGH);
+                digitalWrite(SCANNER_SS_PINS[j], j == i ? LOW : HIGH);
             }
             delayMicroseconds(10000);  // 10ms delay in microseconds for precision
             
             // Use the optimized scanCard function
             scanCard(readers[i], i + 1);  // Station numbers are 1-based
             
-            digitalWrite(SCANNER_PINS[i].ss, HIGH);
+            digitalWrite(SCANNER_SS_PINS[i], HIGH);
             delayMicroseconds(50000);  // 50ms delay between readers for stability
         }
         
