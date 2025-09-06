@@ -140,18 +140,6 @@ const EmployeeRfidMan = () => {
     }
   ];
 
-  {/*const filters = [
-    {
-      value: unitFilter,
-      onChange: setUnitFilter,
-      options: units
-    },
-    {
-      value: workplaceFilter,
-      onChange: setWorkplaceFilter,
-      options: workplaces
-    }
-  ];*/}
 
   return (
     <div className="flex min-h-screen bg-gray-50">
