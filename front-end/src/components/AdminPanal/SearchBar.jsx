@@ -1,11 +1,8 @@
 import React from 'react';
 import { Search} from 'lucide-react';
 
-const FilterBar = ({ 
-  searchTerm, 
-  onSearchChange, 
-  searchPlaceholder = "Search..." 
-}) => {
+const SearchBar = ({ searchTerm, onSearchChange, searchPlaceholder = "Search..." }) => {
+
   return (
     <div className="p-6 border-b bg-gray-50">
       <div className="flex items-center gap-4">
@@ -26,4 +23,4 @@ const FilterBar = ({
   );
 };
 
-export default FilterBar;
+export default SearchBar;

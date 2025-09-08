@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import Header from '../../components/AdminPanal/EmployeeRfid/header';
-import FilterBar from '../../components/AdminPanal/EmployeeRfid/FilterBar';
-import DataTable from '../../components/AdminPanal/EmployeeRfid/DataTable';
-import StatusBadge from '../../components/AdminPanal/EmployeeRfid/StatusBadge';
-import ActionButton from '../../components/AdminPanal/EmployeeRfid/ActionButton';
-import RfidModal from '../../components/AdminPanal/EmployeeRfid/RfidModal';
-import Modal from '../../components/AdminPanal/EmployeeRfid/Modal';
+import { User } from 'lucide-react';
+import Header from '../../components/AdminPanal/Header';
+import SearchBar from '../../components/AdminPanal/SearchBar';
+import DataTable from '../../components/AdminPanal/DataTable';
+import StatusBadge from '../../components/AdminPanal/StatusBadge';
+import ActionButton from '../../components/AdminPanal/ActionButton';
+import RfidModal from '../../components/AdminPanal/RfidModal';
+import Modal from '../../components/AdminPanal/Modal';
+import AddButton from '../../components/AdminPanal/AddButton';
 
 const EmployeeRfidMan = () => {
   const [rfidEntries, setRfidEntries] = useState([
@@ -150,14 +152,13 @@ const EmployeeRfidMan = () => {
         {/* Page Content */}
         <div className="flex-1 p-6">
           <div className="bg-white rounded-lg shadow-sm">
-            <Header
-              title="Employee RFID Management"
-              onAddClick={handleAddEntry}
-              addButtonText="Add RFID Entry"
-              icon={<div className="w-4 h-4 bg-white rounded-sm"></div>}
-            />
+            
+            <div className="flex items-center justify-between p-6 border-b">
+              <Header title="Employee RFID Managment" icon={<User />} />
+              <AddButton onClick={handleAddEntry} text="Add User" />
+            </div>
 
-            <FilterBar
+            <SearchBar
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               searchPlaceholder="Search RFID, Name or Employee ID"
