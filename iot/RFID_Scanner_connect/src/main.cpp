@@ -65,6 +65,13 @@ volatile ShiftState station1State = WAITING_FOR_CARD;
 volatile ShiftState station2State = WAITING_FOR_CARD;
 volatile ShiftState qcState = WAITING_FOR_CARD;
 
+// QC Parts selection variables
+const String QC_PARTS[] = {"Body", "Hand", "Collar", "Upper Back"};
+const int QC_PARTS_COUNT = 4;
+volatile int qcSelectedPart = 0;
+volatile int qcScrollOffset = 0;
+volatile bool qcInPartsSelection = false;
+
 // Daily scan counter for ID generation
 volatile uint16_t dailyScanCount = 0;
 String lastDateString = "";
@@ -116,6 +123,13 @@ bool isCancelPressed(uint8_t stationNumber);
 void waitForButtonRelease(uint8_t stationNumber);
 bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs = 30000);
 
+// Forward declarations for QC navigation functions
+bool isQCUpPressed();
+bool isQCDownPressed();
+void waitForQCButtonRelease();
+void displayQCPartsList();
+bool handleQCPartsSelection();
+
 // Helper function to repeat a string
 String repeatString(const char* str, int count) {
     String result = "";
@@ -141,6 +155,10 @@ const struct {
     {13, 14},  // Station 2 - OK: 13, Cancel: 14
     {27, 26}   // QC Station - OK: 27, Cancel: 26
 };
+
+// QC Navigation button pins
+const uint8_t QC_UP_BUTTON = 25;
+const uint8_t QC_DOWN_BUTTON = 33;
 
 // Shared SPI pins on ESP32
 const uint8_t SCK_PIN = 18;
@@ -588,6 +606,10 @@ void initButtons() {
         pinMode(BUTTON_PINS[i].ok, INPUT_PULLUP);
         pinMode(BUTTON_PINS[i].cancel, INPUT_PULLUP);
     }
+    
+    // Initialize QC navigation buttons
+    pinMode(QC_UP_BUTTON, INPUT_PULLUP);
+    pinMode(QC_DOWN_BUTTON, INPUT_PULLUP);
 }
 
 // Check if OK button is pressed (LOW when pressed due to pull-up)
@@ -632,6 +654,127 @@ bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs) {
     }
     
     return false; // Timeout - treat as cancel
+}
+
+// Check if QC Up button is pressed
+bool isQCUpPressed() {
+    return digitalRead(QC_UP_BUTTON) == LOW;
+}
+
+// Check if QC Down button is pressed
+bool isQCDownPressed() {
+    return digitalRead(QC_DOWN_BUTTON) == LOW;
+}
+
+// Wait for QC navigation buttons to be released
+void waitForQCButtonRelease() {
+    while (digitalRead(QC_UP_BUTTON) == LOW || digitalRead(QC_DOWN_BUTTON) == LOW) {
+        delay(50);
+    }
+    delay(100); // Additional debounce delay
+}
+
+// Display QC parts selection list
+void displayQCPartsList() {
+    lcdQC.clear();
+    
+    // First line: Title at index 3
+    lcdQC.setCursor(3, 0);
+    lcdQC.print("-SECTION-");
+    
+    // Display 3 items starting from scroll offset
+    for (int i = 0; i < 3; i++) {
+        int partIndex = qcScrollOffset + i;
+        if (partIndex < QC_PARTS_COUNT) {
+            int row = i + 1;
+            
+            // Selected item indented by 1 space, others at index 0
+            if (partIndex == qcSelectedPart) {
+                lcdQC.setCursor(1, row); // Selected item at index 1
+                lcdQC.print(QC_PARTS[partIndex]);
+            } else {
+                lcdQC.setCursor(0, row); // Non-selected items at index 0
+                lcdQC.print(QC_PARTS[partIndex]);
+            }
+        }
+    }
+}
+
+// Handle QC parts selection navigation, returns true if selection confirmed, false if cancelled
+bool handleQCPartsSelection() {
+    qcInPartsSelection = true;
+    qcSelectedPart = 0;
+    qcScrollOffset = 0;
+    
+    Serial.println("QC: Starting parts selection");
+    displayQCPartsList();
+    
+    unsigned long startTime = millis();
+    const unsigned long selectionTimeout = 60000; // 60 seconds timeout
+    
+    while (millis() - startTime < selectionTimeout) {
+        // Check navigation buttons
+        if (isQCUpPressed()) {
+            waitForQCButtonRelease();
+            qcSelectedPart--;
+            if (qcSelectedPart < 0) {
+                qcSelectedPart = QC_PARTS_COUNT - 1; // Wrap to bottom
+            }
+            
+            // Adjust scroll offset if needed
+            if (qcSelectedPart < qcScrollOffset) {
+                qcScrollOffset = qcSelectedPart;
+            } else if (qcSelectedPart >= qcScrollOffset + 3) {
+                qcScrollOffset = qcSelectedPart - 2;
+            }
+            
+            Serial.println("QC: Navigation UP - Selected: " + QC_PARTS[qcSelectedPart]);
+            displayQCPartsList();
+            startTime = millis(); // Reset timeout
+        }
+        
+        if (isQCDownPressed()) {
+            waitForQCButtonRelease();
+            qcSelectedPart++;
+            if (qcSelectedPart >= QC_PARTS_COUNT) {
+                qcSelectedPart = 0; // Wrap to top
+                qcScrollOffset = 0;
+            }
+            
+            // Adjust scroll offset if needed
+            if (qcSelectedPart >= qcScrollOffset + 3) {
+                qcScrollOffset = qcSelectedPart - 2;
+            } else if (qcSelectedPart < qcScrollOffset) {
+                qcScrollOffset = qcSelectedPart;
+            }
+            
+            Serial.println("QC: Navigation DOWN - Selected: " + QC_PARTS[qcSelectedPart]);
+            displayQCPartsList();
+            startTime = millis(); // Reset timeout
+        }
+        
+        // Check OK/Cancel buttons
+        if (isOKPressed(3)) {
+            waitForButtonRelease(3);
+            Serial.println("QC: Part selected - " + QC_PARTS[qcSelectedPart]);
+            qcInPartsSelection = false;
+            return true;
+        }
+        
+        if (isCancelPressed(3)) {
+            waitForButtonRelease(3);
+            Serial.println("QC: Parts selection cancelled");
+            qcInPartsSelection = false;
+            return false;
+        }
+        
+        delay(50); // Small delay to prevent tight loop
+    }
+    
+    // Timeout
+    Serial.println("QC: Parts selection timeout");
+    qcInPartsSelection = false;
+    return false;
 }
 
 // Update Station 2 LCD with latest RFID UID and scan count
@@ -938,6 +1081,29 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
             displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return false;
+    }
+    
+    // Special handling for QC Station - show parts selection
+    if (stationNumber == 3) {
+        Serial.println("QC: Product tag scanned - " + uidString);
+        displayQCMessage("Product scanned!", "UID: " + uidString.substring(0, 12), "Select section", "Use UP/DOWN + OK");
+        delay(2000);
+        
+        // Show parts selection and wait for user choice
+        bool selectionConfirmed = handleQCPartsSelection();
+        
+        if (!selectionConfirmed) {
+            // User cancelled or timeout
+            displayQCMessage("Selection", "Cancelled", "Scan next product", "");
+            delay(2000);
+            displayQCMessage("QC Station", "Ready to scan", "", "");
+            return false;
+        }
+        
+        // User confirmed selection - continue with normal processing
+        Serial.println("QC: Processing scan with selected part - " + QC_PARTS[qcSelectedPart]);
+        displayQCMessage("Processing...", "Part: " + QC_PARTS[qcSelectedPart], "UID: " + uidString.substring(0, 12), "");
+        delay(1500);
     }
     
     // Get current timestamp (only if time is initialized)
