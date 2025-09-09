@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import { FaUser, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
+import zz from '../assets/zz.png'
 
 const Navbar = () => {
   const [user, setUser] = useState(null);
@@ -67,7 +68,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <h1 className="text-xl font-bold text-gray-800">
-                Smart Garment System
+                <img src={zz} alt="" className='w-20 h-8'/>
               </h1>
             </div>
           </div>
