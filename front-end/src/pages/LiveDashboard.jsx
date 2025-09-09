@@ -26,7 +26,7 @@ function LiveDashboard({ lineData }) {
 };
 
   return (
-    <div>
+    <div className='px-7 bg-gray-100'>
       <div className='p-5 w-full flex items-center justify-center gap-6 bg-gray-100 '>
         {/* Left-section */}
         <div className='w-[30%] flex flex-col gap-4'>
