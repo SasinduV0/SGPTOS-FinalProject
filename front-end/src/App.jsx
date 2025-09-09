@@ -3,7 +3,8 @@ import Login from './pages/login'
 import ProtectedRoute from './components/ProtectedRoute';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Manager from './pages/Manager/Manager';
-import SupervisorDashboard from './pages/Supervisor/SupervisorDashboard';
+import HomePage from './pages/Supervisor/HomePage';
+import { dashboardData } from './pages/Data/dashboardData';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QualityControl from './pages/QC/QualityControl';
 import LiveDashboard from './pages/LiveDashboard';
@@ -15,8 +16,9 @@ import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
 
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import WAssignment from './pages/Supervisor/WAssignment';
-import LineProd from './pages/Supervisor/LineProd';
+import AssignmentPage from './pages/Supervisor/AssignmentPage';
+// import SupervisorAssignmentWrapper from './pages/Supervisor/SupervisorAssignmentWrapper';
+import ProductivityPage from './pages/Supervisor/ProductivityPage';
 
 function AppWrapper() {
   const location = useLocation();
@@ -73,7 +75,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           path="/supervisor"
           element={
             <ProtectedRoute allowedRoles={['supervisor']}>
-              <SupervisorDashboard />
+              <HomePage dashboardData={dashboardData} />
             </ProtectedRoute>
           }
         />
@@ -81,7 +83,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           path="/supervisor/worker-assignment"
           element={
             <ProtectedRoute allowedRoles={['supervisor']}>
-              <WAssignment />
+              <AssignmentPage />
             </ProtectedRoute>
           }
         />
@@ -89,7 +91,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           path="/supervisor/lineProd"
           element={
             <ProtectedRoute allowedRoles={['supervisor']}>
-              <LineProd />
+              <ProductivityPage dashboardData={dashboardData} />
             </ProtectedRoute>
           }
         />

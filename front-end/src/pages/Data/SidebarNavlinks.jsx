@@ -19,7 +19,7 @@ export const ManagerLinks = [
 export const SupervisorLinks = [
   { label: 'Home', href: '/supervisor', icon: <IoHomeOutline /> },
   { label: 'Worker Assignment', href: '/supervisor/worker-assignment', icon: <FiUsers /> },
-  { label: 'Line Productivity', href: '/supervisor/lineProd', icon: <BsBarChartLine /> },
+  { label: 'Productivity', href: '/supervisor/lineProd', icon: <BsBarChartLine /> },
   { label: 'Live Dashboard', href: '/live-dashboard', icon: <MdOutlineSpaceDashboard /> },
 ];
 
