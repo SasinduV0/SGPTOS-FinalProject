@@ -1,9 +1,15 @@
 import React from 'react';
 import { CheckCircle, User, Mail, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import UserRegistration from '../UserRegistration';
 
-function Final({ formData }) {
+function Final({ formData,handleBack }) {
+
+  const navigate = useNavigate();
+
   return (
     <div className="max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg">
+
       {/* Success Message */}
       <div className="text-center space-y-4 mb-8">
         <div className="flex justify-center">
@@ -42,10 +48,14 @@ function Final({ formData }) {
 
       {/* Action Buttons */}
       <div className="mt-8 flex justify-center gap-4">
-        <button className="px-6 py-2 bg-blue-500 rounded-lg text-white hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2">
+
+        <button 
+          onClick={handleBack}
+          className="px-6 py-2 bg-blue-500 rounded-lg text-white hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2">
           Back
           <ArrowRight size={18} />
         </button>
+
       </div>
     </div>
   );

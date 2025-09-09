@@ -31,7 +31,7 @@ const [currentStep, setCurrentStep] = useState(1);
       case 2:
         return <Security formData={formData} setFormData={setFormData}/>
       case 3:
-        return <Final formData={formData} setFormData={setFormData}/>
+        return <Final formData={formData} setFormData={setFormData} handleBack={()=> handleClick(".prev")}/>
       default:
         return null;
     }
@@ -72,7 +72,24 @@ const handleClick = (direction) => {
     if(!validateStep()) return;   //stop if validation fail
     newStep++;
   } else{
-    newStep--;
+    //if on step 3 and going back, reset form and go to step 1
+    if (currentStep===3) {
+      setFormData({
+        firstname:'',
+        lastname:'',
+        email:'',
+        phoneNumber:'',
+        employeeId:'',
+        department:'',
+        password:'',
+        confirmPassword:'',
+
+      });
+
+      newStep = 1;
+    }else{
+      newStep--;
+    }
   }
 
   if (newStep > 0 && newStep <= steps.length){
