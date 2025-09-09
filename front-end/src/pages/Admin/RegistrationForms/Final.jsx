@@ -2,10 +2,36 @@ import React from 'react';
 import { CheckCircle, User, Mail, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import UserRegistration from '../UserRegistration';
+import axios from 'axios';
 
 function Final({ formData,handleBack }) {
 
   const navigate = useNavigate();
+
+  const handleSubmit = async () => {
+    try{
+      const response = await axios.post('http://localhost:8000/api/user/register', formData);
+
+      alert(response.data.message);
+
+      //reset form after success
+
+      setFormData({
+        firstname:'',
+        lastname:'',
+        email:'',
+        phoneNumber:'',
+        employeeId:'',
+        department:'',
+        password:'',
+        confirmPassword:'',
+      });
+
+      handleBack();   //Go back to step 1
+    } catch(err) {
+      alert(err.response.data.message || 'Registration failes');
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg">
