@@ -63,7 +63,7 @@ function LiveDashboard({ lineData }) {
           </div>
           <div className='bg-white rounded-xl shadow-lg p-4 h-[240px] shadow-gray-500'>
               <div className='flex items-center justify-center'>
-                <DefectRateChart defects={80} total={500} />
+                <DefectRateChart defects={20} total={500} />
               </div>
           </div>
         </div>
