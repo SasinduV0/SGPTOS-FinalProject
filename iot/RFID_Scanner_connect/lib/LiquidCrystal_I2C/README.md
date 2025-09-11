@@ -20,3 +20,5 @@ This is a custom version of the LiquidCrystal_I2C library for 16x4 LCDs with the
 
 ---
 **This version is for use with 16x4 LCDs that show a 4-character indent on lines 2 and 3.**
+
+Library name = marcoschwartz/LiquidCrystal_I2C@^1.1.4
