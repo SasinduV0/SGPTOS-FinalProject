@@ -13,7 +13,7 @@ import {
 import io from "socket.io-client";
 import axios from "axios";
 
-const socket = io("http://localhost:8000", { transports: ["websocket"] });
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 const LineTargetChart = () => {
   const [lineData, setLineData] = useState([]);
@@ -33,7 +33,7 @@ const LineTargetChart = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const { data } = await axios.get("http://localhost:8000/api/employees");
+  const { data } = await axios.get("http://localhost:8001/api/employees");
         updateChartData(data);
         setLoading(false);
       } catch (err) {
