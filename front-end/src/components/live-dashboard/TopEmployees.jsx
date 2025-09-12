@@ -4,7 +4,7 @@ import axios from "axios";
 import { FaUser } from "react-icons/fa";
 
 // WebSocket connection
-const socket = io("http://localhost:8000", { transports: ["websocket"] });
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 const TopEmployees = () => {
   const [employees, setEmployees] = useState([]);

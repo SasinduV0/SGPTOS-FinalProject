@@ -10,11 +10,11 @@ import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
-import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
-
-
+import Production from './pages/Manager/Production';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ReportAnalytics from './pages/Manager/ReportAnalytics';
+
 
 function AppWrapper() {
   const location = useLocation();
@@ -49,7 +49,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/manager/em"
+          path="/manager/employee-management"
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <EmployeeManagement />
@@ -57,10 +57,18 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/manager/ee"
+          path="/manager/production"
           element={
             <ProtectedRoute allowedRoles={['manager']}>
-              <EmployeeEfficiency />
+              <Production/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manager/report-analytics"
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <ReportAnalytics />
             </ProtectedRoute>
           }
         />
@@ -73,7 +81,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
