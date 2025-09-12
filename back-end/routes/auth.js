@@ -19,8 +19,8 @@ router.post("/signup", async (req, res) => {
             role
         } = req.body;
 
-        // Check if user already exists by email or employeeId
-        const userExist = await User.findOne({ $or: [{ email }, { employeeId }] });
+        // Check if user already exists by email or userID
+        const userExist = await User.findOne({ $or: [{ email }, { userID }] });
         if (userExist) {
             return res.status(400).json({ msg: "User already exists!" });
         }
@@ -57,14 +57,27 @@ router.post("/login", async (req, res) => {
     try {
         const { userID, password, role } = req.body;
 
+        console.log("Login attempt:", { userID, role, passwordLength: password?.length });
+
         // Find the user
         const user = await User.findOne({ userID });
         if (!user) {
+            console.log("User not found for userID:", userID);
             return res.status(400).json({ msg: "User not found" });
         }
 
+        console.log("Found user:", { 
+            userID: user.userID, 
+            role: user.role, 
+            hasPassword: !!user.password,
+            passwordStart: user.password.substring(0, 10) + "..."
+        });
+
         // Verify password
+        console.log("Comparing password:", password, "with hash:", user.password.substring(0, 10) + "...");
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log("Password match:", isMatch);
+        
         if (!isMatch) {
             return res.status(400).json({ msg: "Invalid credentials" });
         }

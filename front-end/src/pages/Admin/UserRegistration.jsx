@@ -15,7 +15,7 @@ const [currentStep, setCurrentStep] = useState(1);
     lastname: "",
     email:"",
     phoneNumber:"",
-    employeeId:"",
+    userID:"",
     department:"",
     password:"",
     confirmPassword:"",
@@ -41,7 +41,7 @@ const [currentStep, setCurrentStep] = useState(1);
 
   const validateStep = () => {
     if(currentStep===1){
-      if(!formData.firstname || !formData.lastname || !formData.email || !formData.phoneNumber || !formData.phoneNumber || !formData.employeeId || !formData.department){
+      if(!formData.firstname || !formData.lastname || !formData.email || !formData.phoneNumber || !formData.phoneNumber || !formData.userID || !formData.department){
         alert("Please fill all fields.");
         return false;
       }
@@ -80,7 +80,7 @@ const handleClick = (direction) => {
         lastname:'',
         email:'',
         phoneNumber:'',
-        employeeId:'',
+        userID:'',
         department:'',
         password:'',
         confirmPassword:'',

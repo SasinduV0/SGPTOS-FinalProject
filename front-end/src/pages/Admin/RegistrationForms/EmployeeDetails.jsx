@@ -113,16 +113,16 @@ function EmployeeDetails({formData, setFormData}) {
           {/*Employee ID*/}
 
           <div className="relative">
-            <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-2">
-              Employee ID
+            <label htmlFor="userID" className="block text-sm font-medium text-gray-700 mb-2">
+              User ID
             </label>
             <div className="relative">
               <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
-                name="employeeId"
-                value={formData.employeeId}
-                onChange={e => setFormData({ ...formData, employeeId: e.target.value})}
+                name="userID"
+                value={formData.userID}
+                onChange={e => setFormData({ ...formData, userID: e.target.value})}
                 className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 placeholder="Enter employee ID"
               />
