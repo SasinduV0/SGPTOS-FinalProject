@@ -155,7 +155,7 @@ const EmployeeRfidMan = () => {
             
             <div className="flex items-center justify-between p-6 border-b">
               <Header title="Employee RFID Managment" icon={<User />} />
-              <AddButton onClick={handleAddEntry} text="Add User" />
+              <AddButton handleAddEntry={handleAddEntry} text="Add User" />
             </div>
 
             <SearchBar

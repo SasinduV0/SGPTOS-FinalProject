@@ -1,7 +1,7 @@
-const mongoose = require ('mongoose');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const registerSchema = new mongoose.Schema({
+const registerUserSchema = new mongoose.Schema({
     firstname:{
         type: String,
         required: true,
@@ -25,6 +25,10 @@ const registerSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    department:{
+        type: String,
+        required: true,
+    },
     password:{
         type: String,
         required: true,
@@ -32,7 +36,7 @@ const registerSchema = new mongoose.Schema({
 });
 
 //Hash when password save (for security)
-registerSchema.pre("save", async function (next){
+registerUserSchema.pre("save", async function (next){
     if (!this.isModified("password")) 
         return next();
 
@@ -40,4 +44,5 @@ registerSchema.pre("save", async function (next){
     next();
 });
 
-module.exports = mongoose.model("RegisterUser", registerSchema)
+const RegisterUser = mongoose.model('RegisterUser', registerUserSchema);
+module.exports = RegisterUser;

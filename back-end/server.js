@@ -20,7 +20,7 @@ app.use(cors())
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
-app.use('/api/user', userProfileRoutes);
+app.use('/api/user/profile', userProfileRoutes);
 app.use("/api", iotRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
 app.use("/api/user", userRoute)

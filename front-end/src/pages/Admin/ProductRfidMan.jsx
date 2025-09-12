@@ -179,7 +179,7 @@ const ProductRfidMan = () => {
 
             <div className="flex items-center justify-between p-6 border-b">
               <Header title="Product RFID Managment" icon={<User />} />
-              <AddButton onClick={handleAddEntry} text="Add User" />
+              <AddButton handleAddEntry={handleAddEntry} text="Add User" />
             </div>
 
             <div className='flex items-center gap-6 p-6 bg-gray-50'>

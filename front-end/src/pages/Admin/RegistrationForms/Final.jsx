@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import UserRegistration from '../UserRegistration';
 import axios from 'axios';
 
-function Final({ formData,handleBack }) {
+function Final({ formData,handleBack, setFormData }) {
 
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
+    console.log('Sending data:', formData)
     try{
-      const response = await axios.post('http://localhost:8000/api/user/register', formData);
+      const response = await axios.post('http://localhost:8000/api/auth/signup', formData);
 
       alert(response.data.message);
 
@@ -29,7 +30,8 @@ function Final({ formData,handleBack }) {
 
       handleBack();   //Go back to step 1
     } catch(err) {
-      alert(err.response.data.message || 'Registration failes');
+      console.error(err);
+      alert(err.response?.data?.message || 'Registration failes');
     }
   };
 
@@ -74,6 +76,12 @@ function Final({ formData,handleBack }) {
 
       {/* Action Buttons */}
       <div className="mt-8 flex justify-center gap-4">
+
+        <button
+          onClick={handleSubmit}
+          className='px-6 py-2 bg-green-500 rounded-lg text-white hover:bg-green-600 transition-colors duration-200 flex items-center gap-2 '>
+            Complete Registration
+          </button>
 
         <button 
           onClick={handleBack}

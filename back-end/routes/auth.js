@@ -4,37 +4,54 @@ const jwt = require("jsonwebtoken");
 const User = require('../models/user');
 const router = express.Router();
 
-//sign-up
-router.post("/signup", async (req,res) =>{
-    try{
-        const { username, userID, password, role } = req.body; 
+//register
+router.post("/signup", async (req, res) => {
+    try {
+        const {
+            firstname,
+            lastname,
+            email,
+            employeeId,
+            username,
+            phoneNumber,
+            department,
+            password,
+            role
+        } = req.body;
 
-    const userExist = await User.findOne({ $or: [{ userID }, { email }] });
-    if (userExist) {
-      return res.status(400).json({ msg: "User already exists!" });
+        // Check if user already exists by email or employeeId
+        const userExist = await User.findOne({ $or: [{ email }, { employeeId }] });
+        if (userExist) {
+            return res.status(400).json({ msg: "User already exists!" });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(password, salt);
+
+        // Create new user
+        const newUser = new User({
+            firstname,
+            lastname,
+            email,
+            employeeId,
+            username,
+            phoneNumber,
+            department,
+            password: hashPassword,
+            role: role || "qc"
+        });
+
+        await newUser.save();
+
+        res.status(201).json({ msg: "User created successfully" });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: "Server error" });
     }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new User({
-      username,
-      userID,
-      password: hashPassword,
-      role: role || 'user', 
-    });
-
-    await newUser.save();
-
-    res.status(201).json({ msg: "User created successfully" });
-    }catch(err){
-        console.error(err.message)
-        res.status(500).json({error:"Server error"});
-    }
-}); 
+});
 
 //Login
-// ...existing code...
 
 router.post("/login", async (req, res) => {
     try {

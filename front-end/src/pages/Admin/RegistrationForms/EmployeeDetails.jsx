@@ -13,6 +13,9 @@ function EmployeeDetails({formData, setFormData}) {
 
         {/*Input field*/}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/*First name*/}
+
           <div className="relative">
             <label htmlFor="firstname" className="block text-sm font-medium text-gray-700 mb-2">
               First Name
@@ -29,6 +32,8 @@ function EmployeeDetails({formData, setFormData}) {
               />
             </div>
           </div>
+
+          {/*Last name*/}
 
           <div className="relative">
 
@@ -50,6 +55,8 @@ function EmployeeDetails({formData, setFormData}) {
             </div>
           </div>
 
+          {/*Email*/}
+
           <div className="relative">
 
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -69,6 +76,8 @@ function EmployeeDetails({formData, setFormData}) {
               />
             </div>
           </div>
+
+          {/*Phone number*/}
 
           <div className="relative">
 
@@ -100,6 +109,9 @@ function EmployeeDetails({formData, setFormData}) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/*Employee ID*/}
+
           <div className="relative">
             <label htmlFor="employeeId" className="block text-sm font-medium text-gray-700 mb-2">
               Employee ID
@@ -117,10 +129,14 @@ function EmployeeDetails({formData, setFormData}) {
             </div>
           </div>
 
+          {/*Departments*/}
+
           <div className="relative">
+
             <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
               Department
             </label>
+
             <div className="relative">
               <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <select
