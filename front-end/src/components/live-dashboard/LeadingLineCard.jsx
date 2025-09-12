@@ -78,7 +78,7 @@ import axios from "axios";
 import { FaUser } from "react-icons/fa";
 
 // ✅ Always use websocket transport
-const socket = io("http://localhost:8000", { transports: ["websocket"] });
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 const LeadingLine = () => {
   const [employees, setEmployees] = useState([]);
@@ -88,7 +88,7 @@ const LeadingLine = () => {
   // fetch all employees initially
   useEffect(() => {
     const fetchData = async () => {
-      const res = await axios.get(`http://localhost:8000/api/employees`);
+  const res = await axios.get(`http://localhost:8001/api/employees`);
       updateLeadingLine(res.data);
     };
     fetchData();

@@ -22,7 +22,7 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/forgot-password", form);
+  const res = await axios.post("http://localhost:8001/api/auth/forgot-password", form);
       setMessage(res.data.message);
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");

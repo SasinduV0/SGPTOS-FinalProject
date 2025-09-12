@@ -45,46 +45,31 @@ const rfidScanSchema = new mongoose.Schema({
 });
 
 const iotDataSchema = new mongoose.Schema({
+
   ID: { 
     type: String, 
-    required: true 
-  },
-  tagUID: {
+    required: true },
+
+  tagUID:{
     type: String,
-    required: true
+    required:true
   },
+
   stationID: { 
     type: String, 
-    required: true 
-  },
+    required: true },
+    
   timeStamp: { 
     type: Date, 
-    default: Date.now 
-  },
+    default: Date.now },
+
 });
 
-const stationSchema = new mongoose.Schema({
-  stationID: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  stationName: {
-    type: String,
-    required: true
-  },
-  location: {
-    type: String,
-    required: false
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-});
+const stationSchema =  new mongoose.Schema({
+  
+})
 
 const RFIDScan = mongoose.model("RFIDScan", rfidScanSchema);
 const IOTData = mongoose.model("IOTData", iotDataSchema);
-const Station = mongoose.model("Station", stationSchema);
 
-module.exports = { RFIDScan, IOTData, Station };
+module.exports = { RFIDScan, IOTData };
