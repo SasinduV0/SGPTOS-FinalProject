@@ -13,7 +13,28 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-
+  username: { 
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+  },
+  userID:{
+      type: String,
+      required: true,
+      unique: true
+  },
+  password:{
+      type: String,
+      required: true,
+      minlength: 6
+  },
+  role: {
+      type: String,
+      required: true,
+      enum: ["qc", "supervisor", "manager", "admin", "live-dashboard"],
+      
+  },
   // Login & ID
   email: {
     type: String,
@@ -21,16 +42,6 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
-  employeeId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  username: {        // optional if you want to use
-    type: String,
-    trim: true
-  },
-
   // Contact & Department
   phoneNumber: {
     type: String,
@@ -41,28 +52,6 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
-  // Authentication
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  role: {
-    type: String,
-    enum: ["qc", "supervisor", "manager", "admin", "live-dashboard"],
-    default: "qc"
-  },
-  userID: {
-  type: String,
-  required: true,
-  unique: true
-},
-username: {
-  type: String,
-  required: true,
-  trim: true
-},
-
   // Password reset
   resetToken: { type: String },
   resetTokenExpire: { type: Date }
@@ -72,11 +61,11 @@ username: {
 });
 
 // Hash password before saving
-userSchema.pre("save", async function(next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+// userSchema.pre("save", async function(next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;
