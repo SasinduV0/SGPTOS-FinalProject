@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+/*
 const defectSchema = new mongoose.Schema({
   sewingDefect: { 
     type: Boolean, 
@@ -15,6 +16,7 @@ const defectSchema = new mongoose.Schema({
   },
   default: { type: String, default: "none" },
 });
+*/
 
 // RFID Tag Scan Schema for ESP32 WebSocket
 const rfidTagScanSchema = new mongoose.Schema({
@@ -40,6 +42,7 @@ const rfidTagScanSchema = new mongoose.Schema({
   }
 });
 
+/*
 const iotDataSchema = new mongoose.Schema({
 
   ID: { 
@@ -64,9 +67,9 @@ const iotDataSchema = new mongoose.Schema({
 const stationSchema =  new mongoose.Schema({
   
 })
+*/
 
-const RFIDScan = mongoose.model("RFIDScan", rfidScanSchema);
-const IOTData = mongoose.model("IOTData", iotDataSchema);
+//const IOTData = mongoose.model("IOTData", iotDataSchema);
 const RFIDTagScan = mongoose.model("RFIDTagScan", rfidTagScanSchema);
 
 module.exports = { RFIDTagScan };
