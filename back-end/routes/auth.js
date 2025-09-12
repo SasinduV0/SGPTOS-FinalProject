@@ -11,8 +11,8 @@ router.post("/signup", async (req, res) => {
             firstname,
             lastname,
             email,
-            employeeId,
             username,
+            userID,
             phoneNumber,
             department,
             password,
@@ -28,13 +28,13 @@ router.post("/signup", async (req, res) => {
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(password, salt);
-
+        
         // Create new user
         const newUser = new User({
             firstname,
             lastname,
             email,
-            employeeId,
+            userID,
             username,
             phoneNumber,
             department,
@@ -49,7 +49,7 @@ router.post("/signup", async (req, res) => {
         console.error(err.message);
         res.status(500).json({ error: "Server error" });
     }
-});
+}); 
 
 //Login
 
