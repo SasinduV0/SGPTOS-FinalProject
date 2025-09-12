@@ -13,11 +13,17 @@ import {
 import io from "socket.io-client";
 import axios from "axios";
 
-const socket = io("http://localhost:8000", { transports: ["websocket"] });
+// Enhanced socket connection
+const socket = io("http://localhost:8000", { 
+  transports: ["websocket"],
+  autoConnect: true,
+  forceNew: true
+});
 
 const LineTargetChart = () => {
   const [lineData, setLineData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
 
   const lineTargets = {
     1: 1000,
@@ -30,14 +36,40 @@ const LineTargetChart = () => {
     8: 850,
   };
 
+  // Handle socket connection events
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("✅ LineTargetChart Socket connected:", socket.id);
+      setConnectionStatus("connected");
+      socket.emit("getAllEmployees");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ LineTargetChart Socket disconnected");
+      setConnectionStatus("disconnected");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("❌ LineTargetChart Socket connection error:", error);
+      setConnectionStatus("error");
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+    };
+  }, []);
+
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         const { data } = await axios.get("http://localhost:8000/api/employees");
+        console.log("📤 LineTargetChart fetched initial data:", data.length, "employees");
         updateChartData(data);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching employees:", err);
+        console.error("❌ Error fetching employees:", err);
         setLoading(false);
       }
     };
@@ -46,6 +78,7 @@ const LineTargetChart = () => {
 
   useEffect(() => {
     socket.on("leadingLineUpdate", (updatedEmployees) => {
+      console.log("🔄 LineTargetChart received update:", updatedEmployees.length, "employees");
       updateChartData(updatedEmployees);
     });
     return () => socket.off("leadingLineUpdate");
@@ -83,6 +116,8 @@ const LineTargetChart = () => {
     <div className="bg-white rounded-2xl w-[450px] max-w-xl ">
       <h2 className="text-center text-black font-bold text-2xl mb-6">
         Line Wise Target
+        {connectionStatus === "connected" && <span className="text-green-500 text-xs ml-2">●</span>}
+        {connectionStatus === "disconnected" && <span className="text-red-500 text-xs ml-2">●</span>}
       </h2>
       <ResponsiveContainer width="100%" height={350}>
         <BarChart
