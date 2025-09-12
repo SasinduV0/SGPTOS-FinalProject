@@ -21,23 +21,23 @@ function AdminNav({steps, currentStep}) {
 
 
   return (
-    <div className="flex justify-between item-center">
+    <div className="flex items-center justify-between w-full py-6 px-4 bg-white rounded-lg shadow-sm">
 
       {newStep.map((step, index)=>(
-        <div key={index} className="flex item-center">
+        <div key={index} className="flex flex-col items-center w-full">
 
-          <div className={`rounded-full h-10 w-10 flex items-center justify-center
-            ${step.selected ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
+          {/*Step Circle*/}
+          <div className={`rounded-full h-10 w-10 flex items-center justify-center font-bold transition-colors duration-300
+            ${step.completed ? "bg-green-600 text-white" : step.selected ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-600"}
+            ${step.highlighted ? "border-4 border-blue-400":" "}`}>
 
               {index + 1}
 
           </div>
+            
+            {/*Step Description*/}
+            <div className="ml-2 text-base font-medium text-center">{step.description}</div>
 
-            <div className="ml-2">{step.description}</div>
-
-            {index !== steps.length - 1 && (
-              <div className="flex-auto border-t-2 mx-2"></div>
-            )}
         </div>
       ))}
     </div>
