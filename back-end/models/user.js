@@ -22,7 +22,7 @@ const userSchema = new Schema({
         type: String,
         required: true,
         enum: ["qc", "supervisor", "manager", "admin", "live-dashboard"],
-        default: "qc"
+        
     },
 
     // ... existing fields

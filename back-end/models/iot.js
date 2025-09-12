@@ -1,9 +1,18 @@
 const mongoose = require("mongoose");
 
 const defectSchema = new mongoose.Schema({
-  sewingDefect: { type: Boolean, default: false },
-  coloringDefect: { type: Boolean, default: false },
-  cuttingDefect: { type: Boolean, default: false },
+  sewingDefect: { 
+    type: Boolean, 
+    default: false 
+  },
+  coloringDefect: { 
+    type: Boolean, 
+    default: false 
+  },
+  cuttingDefect: { 
+    type: Boolean, 
+    default: false 
+  },
   default: { type: String, default: "none" },
 });
 
@@ -36,14 +45,46 @@ const rfidScanSchema = new mongoose.Schema({
 });
 
 const iotDataSchema = new mongoose.Schema({
-  userRFID: { type: String, required: true },
-  garmentRFID: { type: String, required: true },
-  stationRFID: { type: String, required: true },
-  time: { type: Date, default: Date.now },
-  defects: { type: defectSchema, required: true },
+  ID: { 
+    type: String, 
+    required: true 
+  },
+  tagUID: {
+    type: String,
+    required: true
+  },
+  stationID: { 
+    type: String, 
+    required: true 
+  },
+  timeStamp: { 
+    type: Date, 
+    default: Date.now 
+  },
+});
+
+const stationSchema = new mongoose.Schema({
+  stationID: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  stationName: {
+    type: String,
+    required: true
+  },
+  location: {
+    type: String,
+    required: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
 });
 
 const RFIDScan = mongoose.model("RFIDScan", rfidScanSchema);
 const IOTData = mongoose.model("IOTData", iotDataSchema);
+const Station = mongoose.model("Station", stationSchema);
 
-module.exports = { RFIDScan, IOTData };
+module.exports = { RFIDScan, IOTData, Station };
