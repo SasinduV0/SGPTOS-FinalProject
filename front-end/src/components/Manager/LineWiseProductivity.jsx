@@ -29,6 +29,8 @@ const LineWiseProductivity = () => {
   const [chartData, setChartData] = useState([]);
 
   const calculateProductivity = (employees) => {
+    console.log("📊 LineWiseProductivity: Calculating with", employees.length, "employees");
+    
     // Group pcs by line
     const lineWiseProduction = {};
     employees.forEach((emp) => {
@@ -38,6 +40,8 @@ const LineWiseProductivity = () => {
       }
     });
 
+    console.log("📈 Line totals:", lineWiseProduction);
+
     // Build chart data
     const data = Object.keys(lineTargets).map((line) => ({
       name: `Line ${line}`,
@@ -45,6 +49,7 @@ const LineWiseProductivity = () => {
       production: (lineWiseProduction[line] || 0) / 10,
     }));
 
+    console.log("📊 Chart data updated:", data);
     setChartData(data);
   };
 
