@@ -2,6 +2,10 @@ import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import SideBar from '../../components/SideBar';
 import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
+import TotalProduction from '../../components/Manager/TotalProduction';
+import EfficiencyRate from '../../components/Manager/EfficiencyRate';
+import ActiveWorkers from '../../components/Manager/ActiveWorkers';
+import LineWiseProductivity from '../../components/Manager/LineWiseProductivity';
 
 const ManagerHome = () => {
   // Sample data for charts
@@ -182,6 +186,16 @@ const ManagerHome = () => {
           </table>
         </div>
       </div>
+
+    
+      <div className="flex gap-6 w-7xl mb-10">
+          <TotalProduction/>
+          <EfficiencyRate />
+          <ActiveWorkers />
+      </div>
+              
+      
+
     </div>
   );
 };
