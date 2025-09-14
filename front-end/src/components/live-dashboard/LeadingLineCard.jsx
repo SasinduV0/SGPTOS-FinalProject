@@ -78,7 +78,7 @@ import axios from "axios";
 import { FaUser } from "react-icons/fa";
 
 // ✅ Enhanced socket connection with error handling  
-const socket = io("http://localhost:8000", { 
+const socket = io("http://localhost:8001", { 
   transports: ["websocket"],
   autoConnect: true,
   forceNew: true
@@ -119,7 +119,7 @@ const LeadingLine = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:8000/api/employees`);
+        const res = await axios.get(`http://localhost:8001/api/employees`);
         console.log("📤 Fetched initial data:", res.data.length, "employees");
         updateLeadingLine(res.data);
       } catch (error) {

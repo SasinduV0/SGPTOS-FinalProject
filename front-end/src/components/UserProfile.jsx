@@ -27,7 +27,7 @@ const UserProfile = () => {
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('No token found');
 
-                const response = await fetch('http://localhost:8000/api/user/profile', {
+                const response = await fetch('http://localhost:8001/api/user/profile', {
                     headers: { 'x-auth-token': token }
                 });
 
@@ -66,7 +66,7 @@ const UserProfile = () => {
                 updateData.newPassword = formData.newPassword;
             }
 
-            const response = await fetch('http://localhost:8000/api/user/profile', {
+            const response = await fetch('http://localhost:8001/api/user/profile', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
                 body: JSON.stringify(updateData)

@@ -6,7 +6,7 @@ import io from "socket.io-client";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 // Socket connection
-const socket = io("http://localhost:8000", { transports: ["websocket"] });
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 const OverallTargetChart = () => {
   const [lineData, setLineData] = useState([]);
@@ -28,7 +28,7 @@ const OverallTargetChart = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/employees");
+        const response = await fetch("http://localhost:8001/api/employees");
         const data = await response.json();
         updateChartData(data);
         setLoading(false);

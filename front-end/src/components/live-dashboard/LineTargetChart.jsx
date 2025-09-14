@@ -14,7 +14,7 @@ import io from "socket.io-client";
 import axios from "axios";
 
 // Enhanced socket connection
-const socket = io("http://localhost:8000", { 
+const socket = io("http://localhost:8001", { 
   transports: ["websocket"],
   autoConnect: true,
   forceNew: true
@@ -64,7 +64,7 @@ const LineTargetChart = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const { data } = await axios.get("http://localhost:8000/api/employees");
+        const { data } = await axios.get("http://localhost:8001/api/employees");
         console.log("📤 LineTargetChart fetched initial data:", data.length, "employees");
         updateChartData(data);
         setLoading(false);
