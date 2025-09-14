@@ -3,6 +3,10 @@ import { X, Download, BarChart3 } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 
+import LineWiseProductivity from '../../components/Manager/LineWiseProductivity';
+import DashboardSummary from '../../components/Manager/DashboardSummary';
+import LinePerformanceTable from '../../components/Manager/LinePerformanceTable';
+
 const ReportAnalytics = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -287,6 +291,15 @@ const ReportAnalytics = () => {
           </div>
         </div>
       )}
+
+      <div className='mt-10 flex flex-col'>
+          <LineWiseProductivity/>
+          <DashboardSummary />
+          <LinePerformanceTable/>
+
+      </div>
+
+
     </div>
   );
 };
