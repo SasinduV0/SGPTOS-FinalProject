@@ -4,7 +4,7 @@ import axios from "axios";
 import { FaUser } from "react-icons/fa";
 
 // WebSocket connection
-const socket = io("http://localhost:8000", { transports: ["websocket"] });
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 const TopEmployees = () => {
   const [employees, setEmployees] = useState([]);
@@ -13,7 +13,7 @@ const TopEmployees = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:8000/api/employees`);
+        const res = await axios.get(`http://localhost:8001/api/employees`);
         setEmployees(res.data);
       } catch (err) {
         console.error("Error fetching employees:", err);
