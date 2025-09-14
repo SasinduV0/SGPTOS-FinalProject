@@ -3,6 +3,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, Users, Clock, Target, Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
+import TotalProduction from '../../components/Manager/TotalProduction';
+import EfficiencyRate from '../../components/Manager/EfficiencyRate';
+import ActiveWorkers from '../../components/Manager/ActiveWorkers';
+import LinePerformanceTable from '../../components/Manager/LinePerformanceTable';
 
 
 const Production = () => {
@@ -180,10 +184,10 @@ const Production = () => {
   };
 
   return (
-    <div className="space-y-6 ml-70">
+    <div className="space-y-6 ml-70 mt-25 mr-5">
       <SideBar title ="Manager Panel" links={ManagerLinks}/>
       {/* Header with Time Range Selector */}
-      <div className="flex justify-between items-center">
+      {/* <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Production Overview</h2>
         <select
           value={selectedTimeRange}
@@ -194,7 +198,14 @@ const Production = () => {
           <option value="This Week">This Week</option>
           <option value="This Month">This Month</option>
         </select>
-      </div>
+      </div> */}
+
+    <div className='flex gap-5'>
+        <TotalProduction/>
+        <EfficiencyRate/>
+        <ActiveWorkers/>
+    </div>    
+      
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -374,7 +385,9 @@ const Production = () => {
       </div>
 
       {/* Line Performance Table */}
-      <div className="bg-white rounded-lg shadow">
+      <LinePerformanceTable/>
+
+      {/* <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
           <h3 className="text-lg font-semibold text-gray-800">Line Performance</h3>
         </div>
@@ -415,7 +428,7 @@ const Production = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
 
       {/* Quality Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
