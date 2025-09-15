@@ -72,6 +72,34 @@ volatile int qcSelectedPart = 0;
 volatile int qcScrollOffset = 0;
 volatile bool qcInPartsSelection = false;
 
+// QC Defect types and subtypes
+const String QC_DEFECT_TYPES[] = {"Fabric", "Stitching", "Sewing", "Other"};
+const int QC_DEFECT_TYPES_COUNT = 4;
+
+// QC Defect subtypes organized by type
+const String QC_FABRIC_SUBTYPES[] = {"Hole", "Stain", "Shading", "Slub"};
+const String QC_STITCHING_SUBTYPES[] = {"Skipped", "Broken", "Uneven", "Loose"};
+const String QC_SEWING_SUBTYPES[] = {"Pluckering", "Misalignment", "Open_seam", "Backtak", "Seam_gap"};
+const String QC_OTHER_SUBTYPES[] = {"Measurement", "Button/Button_hole", "Twisted"};
+
+const int QC_FABRIC_SUBTYPES_COUNT = 4;
+const int QC_STITCHING_SUBTYPES_COUNT = 4;
+const int QC_SEWING_SUBTYPES_COUNT = 5;
+const int QC_OTHER_SUBTYPES_COUNT = 3;
+
+// QC Selection state management
+enum QCSelectionStep {
+    QC_SELECT_SECTION,
+    QC_SELECT_TYPE,
+    QC_SELECT_SUBTYPE
+};
+
+volatile QCSelectionStep qcCurrentStep = QC_SELECT_SECTION;
+volatile int qcSelectedType = 0;
+volatile int qcSelectedSubtype = 0;
+volatile int qcTypeScrollOffset = 0;
+volatile int qcSubtypeScrollOffset = 0;
+
 // Daily scan counter for ID generation
 volatile uint16_t dailyScanCount = 0;
 String lastDateString = "";
@@ -153,12 +181,12 @@ const struct {
 } BUTTON_PINS[] = {
     {32, 34},  // Station 1 - OK: 32, Cancel: 34
     {13, 14},  // Station 2 - OK: 13, Cancel: 14
-    {27, 26}   // QC Station - OK: 27, Cancel: 26
+    {33, 25}   // QC Station - OK: 27, Cancel: 26
 };
 
 // QC Navigation button pins
-const uint8_t QC_UP_BUTTON = 25;
-const uint8_t QC_DOWN_BUTTON = 33;
+const uint8_t QC_UP_BUTTON = 26;
+const uint8_t QC_DOWN_BUTTON = 27;
 
 // Shared SPI pins on ESP32
 const uint8_t SCK_PIN = 18;
@@ -700,79 +728,311 @@ void displayQCPartsList() {
     }
 }
 
-// Handle QC parts selection navigation, returns true if selection confirmed, false if cancelled
+// Display QC defect types selection list
+void displayQCTypesList() {
+    lcdQC.clear();
+    
+    // First line: Title at index 2
+    lcdQC.setCursor(2, 0);
+    lcdQC.print("-DEFECT TYPES-");
+    
+    // Display 3 items starting from scroll offset
+    for (int i = 0; i < 3; i++) {
+        int typeIndex = qcTypeScrollOffset + i;
+        if (typeIndex < QC_DEFECT_TYPES_COUNT) {
+            int row = i + 1;
+            
+            // Selected item indented by 1 space, others at index 0
+            if (typeIndex == qcSelectedType) {
+                lcdQC.setCursor(1, row); // Selected item at index 1
+                lcdQC.print(QC_DEFECT_TYPES[typeIndex]);
+            } else {
+                lcdQC.setCursor(0, row); // Non-selected items at index 0
+                lcdQC.print(QC_DEFECT_TYPES[typeIndex]);
+            }
+        }
+    }
+}
+
+// Get subtypes array and count based on selected type
+void getSubtypesForType(int typeIndex, const String*& subtypes, int& count) {
+    switch(typeIndex) {
+        case 0: // Fabric
+            subtypes = QC_FABRIC_SUBTYPES;
+            count = QC_FABRIC_SUBTYPES_COUNT;
+            break;
+        case 1: // Stitching
+            subtypes = QC_STITCHING_SUBTYPES;
+            count = QC_STITCHING_SUBTYPES_COUNT;
+            break;
+        case 2: // Sewing
+            subtypes = QC_SEWING_SUBTYPES;
+            count = QC_SEWING_SUBTYPES_COUNT;
+            break;
+        case 3: // Other
+            subtypes = QC_OTHER_SUBTYPES;
+            count = QC_OTHER_SUBTYPES_COUNT;
+            break;
+        default:
+            subtypes = QC_FABRIC_SUBTYPES;
+            count = QC_FABRIC_SUBTYPES_COUNT;
+            break;
+    }
+}
+
+// Display QC defect subtypes selection list
+void displayQCSubtypesList() {
+    lcdQC.clear();
+    
+    // First line: Title at index 4
+    lcdQC.setCursor(4, 0);
+    lcdQC.print("-DEFECT-");
+    
+    // Get subtypes for selected type
+    const String* subtypes;
+    int subtypesCount;
+    getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+    
+    // Display 3 items starting from scroll offset
+    for (int i = 0; i < 3; i++) {
+        int subtypeIndex = qcSubtypeScrollOffset + i;
+        if (subtypeIndex < subtypesCount) {
+            int row = i + 1;
+            
+            // Selected item indented by 1 space, others at index 0
+            if (subtypeIndex == qcSelectedSubtype) {
+                lcdQC.setCursor(1, row); // Selected item at index 1
+                lcdQC.print(subtypes[subtypeIndex]);
+            } else {
+                lcdQC.setCursor(0, row); // Non-selected items at index 0
+                lcdQC.print(subtypes[subtypeIndex]);
+            }
+        }
+    }
+}
+
+// Handle QC multi-step selection navigation: Section -> Type -> Subtype
+// Returns true if complete selection confirmed, false if cancelled
 bool handleQCPartsSelection() {
     qcInPartsSelection = true;
-    qcSelectedPart = 0;
-    qcScrollOffset = 0;
+    qcCurrentStep = QC_SELECT_SECTION;
     
-    Serial.println("QC: Starting parts selection");
+    // Reset all selections and scroll offsets
+    qcSelectedPart = 0;
+    qcSelectedType = 0;
+    qcSelectedSubtype = 0;
+    qcScrollOffset = 0;
+    qcTypeScrollOffset = 0;
+    qcSubtypeScrollOffset = 0;
+    
+    Serial.println("QC: Starting multi-step selection - Section -> Type -> Subtype");
     displayQCPartsList();
     
     unsigned long startTime = millis();
-    const unsigned long selectionTimeout = 60000; // 60 seconds timeout
+    const unsigned long selectionTimeout = 120000; // 2 minutes timeout for complete selection
     
     while (millis() - startTime < selectionTimeout) {
-        // Check navigation buttons
-        if (isQCUpPressed()) {
-            waitForQCButtonRelease();
-            qcSelectedPart--;
-            if (qcSelectedPart < 0) {
-                qcSelectedPart = QC_PARTS_COUNT - 1; // Wrap to bottom
-            }
-            
-            // Adjust scroll offset if needed
-            if (qcSelectedPart < qcScrollOffset) {
-                qcScrollOffset = qcSelectedPart;
-            } else if (qcSelectedPart >= qcScrollOffset + 3) {
-                qcScrollOffset = qcSelectedPart - 2;
-            }
-            
-            Serial.println("QC: Navigation UP - Selected: " + QC_PARTS[qcSelectedPart]);
-            displayQCPartsList();
-            startTime = millis(); // Reset timeout
-        }
-        
-        if (isQCDownPressed()) {
-            waitForQCButtonRelease();
-            qcSelectedPart++;
-            if (qcSelectedPart >= QC_PARTS_COUNT) {
-                qcSelectedPart = 0; // Wrap to top
-                qcScrollOffset = 0;
-            }
-            
-            // Adjust scroll offset if needed
-            if (qcSelectedPart >= qcScrollOffset + 3) {
-                qcScrollOffset = qcSelectedPart - 2;
-            } else if (qcSelectedPart < qcScrollOffset) {
-                qcScrollOffset = qcSelectedPart;
-            }
-            
-            Serial.println("QC: Navigation DOWN - Selected: " + QC_PARTS[qcSelectedPart]);
-            displayQCPartsList();
-            startTime = millis(); // Reset timeout
-        }
-        
-        // Check OK/Cancel buttons
-        if (isOKPressed(3)) {
-            waitForButtonRelease(3);
-            Serial.println("QC: Part selected - " + QC_PARTS[qcSelectedPart]);
-            qcInPartsSelection = false;
-            return true;
-        }
-        
-        if (isCancelPressed(3)) {
-            waitForButtonRelease(3);
-            Serial.println("QC: Parts selection cancelled");
-            qcInPartsSelection = false;
-            return false;
+        // Handle navigation based on current step
+        switch(qcCurrentStep) {
+            case QC_SELECT_SECTION:
+                // Navigation UP
+                if (isQCUpPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedPart--;
+                    if (qcSelectedPart < 0) {
+                        qcSelectedPart = QC_PARTS_COUNT - 1; // Wrap to bottom
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedPart < qcScrollOffset) {
+                        qcScrollOffset = qcSelectedPart;
+                    } else if (qcSelectedPart >= qcScrollOffset + 3) {
+                        qcScrollOffset = qcSelectedPart - 2;
+                    }
+                    
+                    Serial.println("QC: Section UP - Selected: " + QC_PARTS[qcSelectedPart]);
+                    displayQCPartsList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Navigation DOWN
+                if (isQCDownPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedPart++;
+                    if (qcSelectedPart >= QC_PARTS_COUNT) {
+                        qcSelectedPart = 0; // Wrap to top
+                        qcScrollOffset = 0;
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedPart >= qcScrollOffset + 3) {
+                        qcScrollOffset = qcSelectedPart - 2;
+                    } else if (qcSelectedPart < qcScrollOffset) {
+                        qcScrollOffset = qcSelectedPart;
+                    }
+                    
+                    Serial.println("QC: Section DOWN - Selected: " + QC_PARTS[qcSelectedPart]);
+                    displayQCPartsList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // OK button - proceed to type selection
+                if (isOKPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Section confirmed - " + QC_PARTS[qcSelectedPart] + " -> Moving to Type selection");
+                    qcCurrentStep = QC_SELECT_TYPE;
+                    qcSelectedType = 0;
+                    qcTypeScrollOffset = 0;
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Cancel button - exit selection
+                if (isCancelPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Section selection cancelled");
+                    qcInPartsSelection = false;
+                    return false;
+                }
+                break;
+                
+            case QC_SELECT_TYPE:
+                // Navigation UP
+                if (isQCUpPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedType--;
+                    if (qcSelectedType < 0) {
+                        qcSelectedType = QC_DEFECT_TYPES_COUNT - 1; // Wrap to bottom
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedType < qcTypeScrollOffset) {
+                        qcTypeScrollOffset = qcSelectedType;
+                    } else if (qcSelectedType >= qcTypeScrollOffset + 3) {
+                        qcTypeScrollOffset = qcSelectedType - 2;
+                    }
+                    
+                    Serial.println("QC: Type UP - Selected: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Navigation DOWN
+                if (isQCDownPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedType++;
+                    if (qcSelectedType >= QC_DEFECT_TYPES_COUNT) {
+                        qcSelectedType = 0; // Wrap to top
+                        qcTypeScrollOffset = 0;
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedType >= qcTypeScrollOffset + 3) {
+                        qcTypeScrollOffset = qcSelectedType - 2;
+                    } else if (qcSelectedType < qcTypeScrollOffset) {
+                        qcTypeScrollOffset = qcSelectedType;
+                    }
+                    
+                    Serial.println("QC: Type DOWN - Selected: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // OK button - proceed to subtype selection
+                if (isOKPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Type confirmed - " + QC_DEFECT_TYPES[qcSelectedType] + " -> Moving to Subtype selection");
+                    qcCurrentStep = QC_SELECT_SUBTYPE;
+                    qcSelectedSubtype = 0;
+                    qcSubtypeScrollOffset = 0;
+                    displayQCSubtypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Cancel button - go back to section selection
+                if (isCancelPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Type selection cancelled - Back to Section selection");
+                    qcCurrentStep = QC_SELECT_SECTION;
+                    displayQCPartsList();
+                    startTime = millis(); // Reset timeout
+                }
+                break;
+                
+            case QC_SELECT_SUBTYPE:
+                // Get subtypes count for current type
+                const String* subtypes;
+                int subtypesCount;
+                getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+                
+                // Navigation UP
+                if (isQCUpPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedSubtype--;
+                    if (qcSelectedSubtype < 0) {
+                        qcSelectedSubtype = subtypesCount - 1; // Wrap to bottom
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedSubtype < qcSubtypeScrollOffset) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype;
+                    } else if (qcSelectedSubtype >= qcSubtypeScrollOffset + 3) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype - 2;
+                    }
+                    
+                    Serial.println("QC: Subtype UP - Selected: " + subtypes[qcSelectedSubtype]);
+                    displayQCSubtypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Navigation DOWN
+                if (isQCDownPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedSubtype++;
+                    if (qcSelectedSubtype >= subtypesCount) {
+                        qcSelectedSubtype = 0; // Wrap to top
+                        qcSubtypeScrollOffset = 0;
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedSubtype >= qcSubtypeScrollOffset + 3) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype - 2;
+                    } else if (qcSelectedSubtype < qcSubtypeScrollOffset) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype;
+                    }
+                    
+                    Serial.println("QC: Subtype DOWN - Selected: " + subtypes[qcSelectedSubtype]);
+                    displayQCSubtypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // OK button - complete selection
+                if (isOKPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Complete selection confirmed!");
+                    Serial.println("Section: " + QC_PARTS[qcSelectedPart]);
+                    Serial.println("Type: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    Serial.println("Subtype: " + subtypes[qcSelectedSubtype]);
+                    qcInPartsSelection = false;
+                    return true;
+                }
+                
+                // Cancel button - go back to type selection
+                if (isCancelPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Subtype selection cancelled - Back to Type selection");
+                    qcCurrentStep = QC_SELECT_TYPE;
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                break;
         }
         
         delay(50); // Small delay to prevent tight loop
     }
     
     // Timeout
-    Serial.println("QC: Parts selection timeout");
+    Serial.println("QC: Multi-step selection timeout");
     qcInPartsSelection = false;
     return false;
 }
@@ -1089,7 +1349,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         displayQCMessage("Product scanned!", "UID: " + uidString.substring(0, 12), "Select section", "Use UP/DOWN + OK");
         delay(2000);
         
-        // Show parts selection and wait for user choice
+        // Show multi-step selection and wait for user choice
         bool selectionConfirmed = handleQCPartsSelection();
         
         if (!selectionConfirmed) {
@@ -1100,10 +1360,20 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
             return false;
         }
         
-        // User confirmed selection - continue with normal processing
-        Serial.println("QC: Processing scan with selected part - " + QC_PARTS[qcSelectedPart]);
-        displayQCMessage("Processing...", "Part: " + QC_PARTS[qcSelectedPart], "UID: " + uidString.substring(0, 12), "");
-        delay(1500);
+        // Get selected subtype name for display
+        const String* subtypes;
+        int subtypesCount;
+        getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+        String selectedSubtype = subtypes[qcSelectedSubtype];
+        
+        // User confirmed complete selection - continue with normal processing
+        Serial.println("QC: Processing scan with complete selection:");
+        Serial.println("  Section: " + QC_PARTS[qcSelectedPart]);
+        Serial.println("  Type: " + QC_DEFECT_TYPES[qcSelectedType]); 
+        Serial.println("  Subtype: " + selectedSubtype);
+        
+        displayQCMessage("Processing...", "Sec:" + QC_PARTS[qcSelectedPart], "Typ:" + QC_DEFECT_TYPES[qcSelectedType], "Sub:" + selectedSubtype.substring(0, 12));
+        delay(2500);
     }
     
     // Get current timestamp (only if time is initialized)
