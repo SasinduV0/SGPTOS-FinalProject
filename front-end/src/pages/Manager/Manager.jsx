@@ -2,6 +2,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import SideBar from '../../components/SideBar';
 import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
+import UpdatedLineManagement from '../../components/Manager/UpdatedLineManagement';
 
 const ManagerHome = () => {
   // Sample data for charts
@@ -27,12 +28,12 @@ const ManagerHome = () => {
   ];
 
   const productionData = [
-    { brand: 'Brand 5', finished: 25, remaining: 46, dueDate: '5/02/2025', remainingDays: 5 },
-    { brand: 'Brand 2', finished: 30, remaining: 56, dueDate: '5/02/2025', remainingDays: 7 },
-    { brand: 'Brand 1', finished: 25, remaining: 33, dueDate: '5/02/2025', remainingDays: 12 },
-    { brand: 'Brand 6', finished: 16, remaining: 55, dueDate: '5/02/2025', remainingDays: 16 },
-    { brand: 'Brand 3', finished: 11, remaining: 61, dueDate: '5/02/2025', remainingDays: 25 },
-    { brand: 'Brand 4', finished: 10, remaining: 60, dueDate: '5/02/2025', remainingDays: 30 }
+    { brand: 'Brand 5', Tot: 100, finished: 25, remaining: 46, dueDate: '5/02/2025', remainingDays: 5 },
+    { brand: 'Brand 2', Tot: 100, finished: 30, remaining: 56, dueDate: '5/02/2025', remainingDays: 7 },
+    { brand: 'Brand 1', Tot: 100, finished: 25, remaining: 33, dueDate: '5/02/2025', remainingDays: 12 },
+    { brand: 'Brand 6', Tot: 100, finished: 16, remaining: 55, dueDate: '5/02/2025', remainingDays: 16 },
+    { brand: 'Brand 3', Tot: 100, finished: 11, remaining: 61, dueDate: '5/02/2025', remainingDays: 25 },
+    { brand: 'Brand 4', Tot: 100, finished: 10, remaining: 60, dueDate: '5/02/2025', remainingDays: 30 }
   ];
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -47,7 +48,7 @@ const ManagerHome = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ml-70">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-24 ml-70">
       <SideBar title ="Manager Panel" links={ManagerLinks}/>
       
       {/* Total Status Card */}
@@ -59,12 +60,12 @@ const ManagerHome = () => {
             <div className="text-xl font-bold text-red-500">21.37%</div>
           </div>
           <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">Completed units</div>
-            <div className="text-xl font-bold">196</div>
+            <div className="text-sm text-gray-600">Traget units</div>
+            <div className="text-xl font-bold">200</div>
           </div>
           <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">Units in progress</div>
-            <div className="text-xl font-bold">54</div>
+            <div className="text-sm text-gray-600">Completed units</div>
+            <div className="text-xl font-bold">130</div>
           </div>
           <div className="bg-gray-50 p-3 rounded">
             <div className="text-sm text-gray-600">Units Remaining</div>
@@ -159,6 +160,7 @@ const ManagerHome = () => {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-2">Product</th>
+                <th className="text-left p-2">Total units</th>
                 <th className="text-left p-2">Finished units</th>
                 <th className="text-left p-2">Remaining units</th>
                 <th className="text-left p-2">Due Date</th>
@@ -172,6 +174,7 @@ const ManagerHome = () => {
                     <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
                     {item.brand}
                   </td>
+                  <td className="p-2">{item.Tot}</td>
                   <td className="p-2">{item.finished}</td>
                   <td className="p-2">{item.remaining}</td>
                   <td className="p-2">{item.dueDate}</td>
@@ -182,6 +185,8 @@ const ManagerHome = () => {
           </table>
         </div>
       </div>
+
+      <UpdatedLineManagement />
     </div>
   );
 };
