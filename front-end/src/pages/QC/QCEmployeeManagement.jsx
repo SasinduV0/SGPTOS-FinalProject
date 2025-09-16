@@ -1,12 +1,10 @@
-
 import React, { useState } from 'react';
-import { Plus, Trash2, Calendar, Users, Edit3, Save, X, Search, Filter } from 'lucide-react';
+import { Calendar, Users, Edit3, Save, X, Search, Filter } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../Data/SidebarNavlinks';
 
 const QCEmployeeManagement = () => {
   const [selectedDate, setSelectedDate] = useState('2025-08-16');
-  const [showAddForm, setShowAddForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUnit, setFilterUnit] = useState('ALL');
@@ -22,53 +20,23 @@ const QCEmployeeManagement = () => {
     { id: 108, name: 'Kamal', qcUnit: 'Operation B', dateAdded: '2025-02-25', status: 'Active' }
   ]);
 
-  const [newEmployee, setNewEmployee] = useState({
-    name: '',
-    id: '',
-    qcUnit: 'Operation A',
-    status: 'Active'
-  });
-
   const [editData, setEditData] = useState({});
 
   const qcUnits = [
-    'Operation A', 'Operation B', 'Operation C', 'Operation D',
-    'Operation E', 'Operation F', 'Operation G', 'Operation H'
+    'Operation A', 'Operation B', 'Operation C'
   ];
 
-  // Validation function
+  // Only validate QC Unit and Date
   const validateEmployee = (employee) => {
-    if (!employee.name.trim()) return 'Employee name is required';
-    if (!employee.id.toString().trim()) return 'Employee ID is required';
-    if (employees.some(emp => emp.id === parseInt(employee.id) && emp.id !== editingEmployee)) {
-      return 'Employee ID already exists';
-    }
+    if (!employee.qcUnit) return 'QC Unit is required';
+    if (!employee.dateAdded) return 'Date is required';
     return null;
   };
 
-  const handleAddEmployee = () => {
-    const error = validateEmployee(newEmployee);
-    if (error) {
-      alert(error);
-      return;
-    }
-
-    const employeeToAdd = {
-      id: parseInt(newEmployee.id),
-      name: newEmployee.name.trim(),
-      qcUnit: newEmployee.qcUnit,
-      dateAdded: new Date().toISOString().split('T')[0],
-      status: newEmployee.status
-    };
-    
-    setEmployees(prev => [...prev, employeeToAdd]);
-    setNewEmployee({ name: '', id: '', qcUnit: 'Operation A', status: 'Active' });
-    setShowAddForm(false);
-  };
-
+  // Only allow editing QC Unit and Date
   const handleEditEmployee = (employeeId) => {
     const employee = employees.find(emp => emp.id === employeeId);
-    setEditData({ ...employee });
+    setEditData({ qcUnit: employee.qcUnit, dateAdded: employee.dateAdded });
     setEditingEmployee(employeeId);
   };
 
@@ -78,11 +46,10 @@ const QCEmployeeManagement = () => {
       alert(error);
       return;
     }
-
-    setEmployees(prev => 
-      prev.map(emp => 
-        emp.id === editingEmployee 
-          ? { ...editData, name: editData.name.trim() }
+    setEmployees(prev =>
+      prev.map(emp =>
+        emp.id === editingEmployee
+          ? { ...emp, qcUnit: editData.qcUnit, dateAdded: editData.dateAdded }
           : emp
       )
     );
@@ -93,12 +60,6 @@ const QCEmployeeManagement = () => {
   const handleCancelEdit = () => {
     setEditingEmployee(null);
     setEditData({});
-  };
-
-  const handleDeleteEmployee = (employeeId) => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-    }
   };
 
   const toggleStatus = (employeeId) => {
@@ -122,12 +83,10 @@ const QCEmployeeManagement = () => {
   // Helper functions
   const getMostCommonUnit = () => {
     if (employees.length === 0) return 'None';
-    
     const unitCounts = employees.reduce((acc, emp) => {
       acc[emp.qcUnit] = (acc[emp.qcUnit] || 0) + 1;
       return acc;
     }, {});
-    
     return Object.keys(unitCounts).reduce((a, b) => 
       unitCounts[a] > unitCounts[b] ? a : b
     );
@@ -138,7 +97,6 @@ const QCEmployeeManagement = () => {
   return (
     <div className="ml-70 mt-20 min-h-screen bg-gray-50">
       <SideBar title="QC Panel" links={QCManagerLinks} />
-      
       <div className="p-4 lg:p-6">
         {/* Header Controls */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
@@ -147,7 +105,6 @@ const QCEmployeeManagement = () => {
               <h1 className="text-2xl font-bold text-gray-900">QC Employee Management</h1>
               <p className="text-gray-600 mt-1">Manage Quality Control team members and their assignments</p>
             </div>
-            
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               {/* Date Selector */}
               <div className="flex items-center gap-2">
@@ -159,18 +116,8 @@ const QCEmployeeManagement = () => {
                   className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-
-              {/* Add Employee Button */}
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <Plus size={16} />
-                Add QC Employee
-              </button>
             </div>
           </div>
-
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -197,77 +144,7 @@ const QCEmployeeManagement = () => {
               </select>
             </div>
           </div>
-
-          {/* Add Employee Form */}
-          {showAddForm && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Add New QC Employee</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Employee Name *</label>
-                  <input
-                    type="text"
-                    placeholder="Enter employee name"
-                    value={newEmployee.name}
-                    onChange={(e) => setNewEmployee(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID *</label>
-                  <input
-                    type="number"
-                    placeholder="Enter employee ID"
-                    value={newEmployee.id}
-                    onChange={(e) => setNewEmployee(prev => ({ ...prev, id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">QC Unit</label>
-                  <select
-                    value={newEmployee.qcUnit}
-                    onChange={(e) => setNewEmployee(prev => ({ ...prev, qcUnit: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {qcUnits.map(unit => (
-                      <option key={unit} value={unit}>{unit}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <select
-                    value={newEmployee.status}
-                    onChange={(e) => setNewEmployee(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={handleAddEmployee}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                >
-                  Save Employee
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setNewEmployee({ name: '', id: '', qcUnit: 'Operation A', status: 'Active' });
-                  }}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
         </div>
-
         {/* Employee Table */}
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="p-6 border-b border-gray-200">
@@ -280,7 +157,6 @@ const QCEmployeeManagement = () => {
               </div>
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
@@ -303,28 +179,10 @@ const QCEmployeeManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {editingEmployee === employee.id ? (
-                        <input
-                          type="text"
-                          value={editData.name}
-                          onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      ) : (
-                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                      )}
+                      <div className="text-sm font-medium text-gray-900">{employee.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {editingEmployee === employee.id ? (
-                        <input
-                          type="number"
-                          value={editData.id}
-                          onChange={(e) => setEditData(prev => ({ ...prev, id: parseInt(e.target.value) }))}
-                          className="w-24 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      ) : (
-                        <div className="text-sm font-medium text-blue-600">{employee.id}</div>
-                      )}
+                      <div className="text-sm font-medium text-blue-600">{employee.id}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {editingEmployee === employee.id ? (
@@ -344,7 +202,16 @@ const QCEmployeeManagement = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(employee.dateAdded).toLocaleDateString()}
+                      {editingEmployee === employee.id ? (
+                        <input
+                          type="date"
+                          value={editData.dateAdded}
+                          onChange={(e) => setEditData(prev => ({ ...prev, dateAdded: e.target.value }))}
+                          className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        new Date(employee.dateAdded).toLocaleDateString()
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
@@ -382,12 +249,7 @@ const QCEmployeeManagement = () => {
                           >
                             <Edit3 size={16} />
                           </button>
-                          <button
-                            onClick={() => handleDeleteEmployee(employee.id)}
-                            className="p-1 text-red-600 hover:text-red-800 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {/* Remove Delete button */}
                         </div>
                       )}
                     </td>
@@ -396,7 +258,6 @@ const QCEmployeeManagement = () => {
               </tbody>
             </table>
           </div>
-
           {filteredEmployees.length === 0 && (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -404,7 +265,6 @@ const QCEmployeeManagement = () => {
             </div>
           )}
         </div>
-
         {/* Summary Statistics */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
