@@ -11,7 +11,8 @@ const userProfileRoutes = require('./routes/userProfile');
 const forgotPasswordRoutes = require('./routes/forgotPassword');
 //WebSocket server for the RFID scan data transfer
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
-
+const lineManagementRoutes = require('./routes/lineManagement');
+const productionRoutes = require("./routes/production");
 
 connectDB();
 
@@ -22,6 +23,8 @@ app.use("/api/auth", authRoutes);
 app.use('/api/user', userProfileRoutes);
 app.use("/api", iotRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
+app.use("/api/line-management", lineManagementRoutes);
+app.use("/api/production", productionRoutes);
 
 
 app.use("/", (req,res) => {
