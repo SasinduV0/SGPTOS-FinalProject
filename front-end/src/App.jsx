@@ -52,7 +52,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/manager/em"
+          path="/manager/employee-management"
           element={
             <ProtectedRoute allowedRoles={['manager']}>
               <EmployeeManagement />
@@ -60,10 +60,18 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/manager/ee"
+          path="/manager/production"
           element={
             <ProtectedRoute allowedRoles={['manager']}>
-              <EmployeeEfficiency />
+              <Production/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manager/report-analytics"
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <ReportAnalytics />
             </ProtectedRoute>
           }
         />
@@ -95,7 +103,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
