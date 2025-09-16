@@ -1,5 +1,17 @@
 import React from 'react';
-import { Activity } from 'lucide-react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 import { getEfficiencyColor, getEfficiencyTextColor, getAlertStyle } from '../../utils/helpers';
 import SideBar from '../../components/SideBar';
 import { SupervisorLinks } from '../Data/SidebarNavlinks';
@@ -12,7 +24,7 @@ const HomePage = ({ dashboardData }) => {
     <div className="space-y-6 ml-64 w-full pt-20 px-4 max-w-screen-xl">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        {/* Quick Overview Stats */}
+        {/* Today's Overview Stats */}
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:transform hover:scale-105 transition-all duration-300">
           <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-100">
             <h3 className="text-xl font-bold text-gray-800">Today's Overview</h3>
@@ -50,7 +62,7 @@ const HomePage = ({ dashboardData }) => {
               <div key={line.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                 <div>
                   <h4 className="font-semibold text-gray-800">{line.name}</h4>
-                  <p className="text-sm text-gray-600">{line.workers} workers • {line.product}</p>
+                  <p className="text-sm text-gray-600">{line.workers} workers  {line.product}</p>
                 </div>
                 <div className="text-right">
                   <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
@@ -93,12 +105,62 @@ const HomePage = ({ dashboardData }) => {
           <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-100">
             <h3 className="text-xl font-bold text-gray-800">Performance Trends</h3>
           </div>
-          <div className="h-72 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 italic">
-            <div className="text-center">
-              <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Performance Chart Placeholder</p>
-              <small className="block mt-2">Shows daily efficiency trends for all lines</small>
-            </div>
+          <div className="h-72 bg-gray-50 rounded-xl flex items-center justify-center">
+            <Line
+              data={{
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: dashboardData.lines.map((line, idx) => ({
+                  label: line.name,
+                  data: [
+                    line.efficiency - 8 + idx,
+                    line.efficiency - 3 + idx,
+                    line.efficiency - 2 + idx,
+                    line.efficiency + idx,
+                    line.efficiency + 2 + idx,
+                    line.efficiency + 1 + idx,
+                    line.efficiency + 3 + idx
+                  ],
+                  borderColor: [
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(16, 185, 129, 1)',
+                    'rgba(251, 191, 36, 1)',
+                    'rgba(239, 68, 68, 1)'
+                  ][idx % 4],
+                  backgroundColor: 'rgba(0,0,0,0)',
+                  tension: 0.3,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                  borderWidth: 3
+                }))
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { position: 'top' },
+                  title: {
+                    display: false,
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        return `${context.dataset.label}: ${context.parsed.y}%`;
+                      }
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                      display: true,
+                      text: 'Efficiency (%)'
+                    }
+                  }
+                }
+              }}
+              height={250}
+            />
           </div>
         </div>
 
@@ -109,6 +171,7 @@ const HomePage = ({ dashboardData }) => {
           </div>
           <div className="space-y-3">
             {dashboardData.topPerformers.map((performer, index) => {
+              
               // Try to find the worker ID from availableWorkers
               const worker = dashboardData.availableWorkers.find(w => w.name === performer.name);
               return (

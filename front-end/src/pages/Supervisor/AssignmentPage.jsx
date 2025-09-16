@@ -11,6 +11,7 @@ const AssignmentPage = () => {
   const [availableWorkers, setAvailableWorkers] = useState([...dashboardData.availableWorkers]);
   const [showOptimizeTable, setShowOptimizeTable] = useState(false);
 
+  //select one time
   const handleWorkerSelect = (workerId) => {
     setSelectedWorkers((prev) =>
       prev.includes(workerId)
@@ -19,6 +20,7 @@ const AssignmentPage = () => {
     );
   };
 
+  //worker assignment to station
   const assignWorkerToStation = (stationId) => {
     if (selectedWorkers.length === 0) return;
     const workerId = selectedWorkers[0];
@@ -30,7 +32,7 @@ const AssignmentPage = () => {
           ...station,
           worker: worker.name,
           task: worker.skills[0] || 'Assigned',
-          efficiency: 90, // Example static value
+          efficiency: 90, 
           occupied: true
         };
       }
@@ -41,18 +43,15 @@ const AssignmentPage = () => {
   };
 
   const handleReassignWorkers = () => {
-    // Unassign all workers from stations and return them to availableWorkers
+
     setAvailableWorkers(prev => {
-      // Collect all currently assigned workers from stations
       const assignedWorkers = stations
         .filter(station => station.occupied && station.worker)
         .map(station => {
-          // Try to find the original worker object by name
           const original = dashboardData.availableWorkers.find(w => w.name === station.worker);
           return original || { id: station.worker, name: station.worker, skills: ['Assigned'], experience: 0 };
         });
-      // Merge with current availableWorkers
-      // Remove duplicates by id
+
       const allWorkers = [...prev, ...assignedWorkers];
       const uniqueWorkers = allWorkers.filter((w, idx, arr) => arr.findIndex(x => x.id === w.id) === idx);
       return uniqueWorkers;
@@ -67,12 +66,14 @@ const AssignmentPage = () => {
     setSelectedWorkers([]);
   };
 
-  // Get all workers for the selected line (from dashboardData.lines and availableWorkers)
+  // Get all workers for the selected line
   const lineInfo = dashboardData.lines.find(line => line.id === selectedLine);
-  // For demo, assume all availableWorkers are for all lines (or filter if you have line info per worker)
-  // To ensure unique fallback IDs, use a Set to track used IDs
+  const lineWorkers = lineInfo ? lineInfo.workers : [];
+
+  
   const usedIds = new Set();
-  // Only show assigned workers who are in availableWorkers (i.e., assigned from the current available pool)
+
+  // Only show assigned workers who are in availableWorkers
   const assignedWorkers = stations
     .filter(s => s.occupied && s.worker && dashboardData.availableWorkers.some(w => w.name === s.worker))
     .map((station) => {
@@ -127,6 +128,7 @@ const AssignmentPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
           {/* Station Layout */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <div className="flex justify-between items-center mb-6">
@@ -172,6 +174,7 @@ const AssignmentPage = () => {
                 Reassign Workers
               </button>
             </div>
+            
             {/* Optimize Table Modal */}
             {showOptimizeTable && (
               <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">

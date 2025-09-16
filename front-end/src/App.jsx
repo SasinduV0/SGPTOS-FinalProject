@@ -13,7 +13,6 @@ import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
 import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
 
-
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AssignmentPage from './pages/Supervisor/AssignmentPage';

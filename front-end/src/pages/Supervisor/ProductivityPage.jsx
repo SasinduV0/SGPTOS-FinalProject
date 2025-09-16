@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
-import { Target, Activity } from 'lucide-react';
+import { Bar } from 'react-chartjs-2';
+import {Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
 import SideBar from '../../components/SideBar';
 import { SupervisorLinks } from '../Data/SidebarNavlinks';
 
 
 const ProductivityPage = ({ dashboardData }) => {
+  //Select line 
   const [selectedLine, setSelectedLine] = useState('all');
   const lineOptions = dashboardData.lines.map(line => line.name);
-  // Helper to get line for a worker (if you want to assign workers to lines in data, update this logic)
-    const getWorkerLine = (worker) => {
-    // If you have line info per worker, use it. Otherwise, return '-'.
-    return worker.line || '-';
+  const getWorkerLine = (worker) => {
+    const foundLine = dashboardData.lines.find(line =>
+      line.workerDetails && line.workerDetails.some(w => w.id === worker.id)
+    );
+    return foundLine ? foundLine.name : '-';
   };
+  
   return (
     <div className="flex">
       <SideBar title="Supervisor Panel" links={SupervisorLinks} />
@@ -20,32 +27,114 @@ const ProductivityPage = ({ dashboardData }) => {
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Productivity Analytics</h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          
           {/* Line Performance Chart */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Line Performance Comparison</h3>
-            <div className="h-72 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 italic">
-              <div className="text-center">
-                <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Line Performance Bar Chart</p>
-                <small className="block mt-2">Real-time efficiency comparison across all lines</small>
-              </div>
+            <div className="h-72 bg-gray-50 rounded-xl flex items-center justify-center">
+              <Bar
+                data={{
+                  labels: dashboardData.lines.map(line => line.name),
+                  datasets: [
+                    {
+                      label: 'Efficiency (%)',
+                      data: dashboardData.lines.map(line => line.efficiency),
+                      backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(16, 185, 129, 0.7)',
+                        'rgba(251, 191, 36, 0.7)',
+                        'rgba(239, 68, 68, 0.7)'
+                      ],
+                      borderRadius: 8,
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                    title: {
+                      display: false,
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          return `Efficiency: ${context.parsed.y}%`;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      max: 100,
+                      title: {
+                        display: true,
+                        text: 'Efficiency (%)'
+                      }
+                    }
+                  }
+                }}
+                height={250}
+              />
             </div>
           </div>
 
           {/* Daily Production Trends */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Daily Production Trends</h3>
-            <div className="h-72 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 italic">
-              <div className="text-center">
-                <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Production Trend Line Chart</p>
-                <small className="block mt-2">Units produced over time with target goals</small>
-              </div>
+            <div className="h-72 bg-gray-50 rounded-xl flex items-center justify-center">
+              <Bar
+                data={{
+                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                  datasets: [
+                    {
+                      label: 'Units Produced',
+                      data: [350, 420, 390, 480, 500, 470, 390],
+                      backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                      borderRadius: 8,
+                    },
+                    {
+                      label: 'Target',
+                      data: [400, 400, 400, 400, 400, 400, 400],
+                      backgroundColor: 'rgba(64, 232, 30, 0.5)',
+                      borderRadius: 8,
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: { position: 'top' },
+                    title: {
+                      display: false,
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          return `${context.dataset.label}: ${context.parsed.y} units`;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      title: {
+                        display: true,
+                        text: 'Units Produced'
+                      }
+                    }
+                  }
+                }}
+                height={250}
+              />
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
           {/* Worker Performance Table */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Individual Worker Performance</h3>
@@ -76,14 +165,20 @@ const ProductivityPage = ({ dashboardData }) => {
                 <tbody>
                   {[...dashboardData.availableWorkers]
                     .sort((a, b) => a.id.localeCompare(b.id))
-                    .filter(worker => selectedLine === 'all' || getWorkerLine(worker) === selectedLine)
+                    .filter(worker => {
+                      if (selectedLine === 'all') {
+                        
+                        return getWorkerLine(worker) !== '-';
+                      }
+                      return getWorkerLine(worker) === selectedLine;
+                    })
                     .map((worker, index) => (
                       <tr key={worker.id} className="border-b border-gray-100">
                         <td className="p-3 font-mono text-xs text-gray-500">{worker.id}</td>
                         <td className="p-3">{worker.name}</td>
                         <td className="p-3">{getWorkerLine(worker)}</td>
                         <td className="p-3">
-                          <span className="text-blue-600 font-bold">{worker.efficiency ? worker.efficiency : (80 + (index % 15))}%</span>
+                          <span className="text-blue-600 font-bold">{worker.efficiency ? worker.efficiency : 80}%</span>
                         </td>
                       </tr>
                     ))}
