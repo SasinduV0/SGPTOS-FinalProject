@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Edit3, Save, X, Plus, Trash2 } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../../pages/Data/SidebarNavlinks';
 
 const DefectRate = () => {
   const [selectedProduct, setSelectedProduct] = useState('ALL');
   const [selectedDate, setSelectedDate] = useState('05/08/2025');
-  const [editingRow, setEditingRow] = useState(null);
-  const [showAddProduct, setShowAddProduct] = useState(false);
-  const [newProductName, setNewProductName] = useState('');
-  const [editData, setEditData] = useState({});
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newDefect, setNewDefect] = useState({ defectType: '', defectCount: '' });
 
   // Local state for defect data management
   const [productCounts, setProductCounts] = useState({
@@ -23,13 +16,13 @@ const DefectRate = () => {
 
   const [products] = useState(['ALL', 'A', 'B', 'C']);
 
-  const [defectData, setDefectData] = useState([
-    { id: 1, defectType: 'Stitching errors', defectCount: 10, products: ['A'] },
-    { id: 2, defectType: 'Fabric damage', defectCount: 5, products: ['A'] },
-    { id: 3, defectType: 'Color mismatches', defectCount: 6, products: ['B'] },
-    { id: 4, defectType: 'Misaligned stickers', defectCount: 3, products: ['B'] },
-    { id: 5, defectType: 'Finishing defects', defectCount: 2, products: ['C'] },
-    { id: 6, defectType: 'Others', defectCount: 8, products: ['C'] }
+  const [defectData] = useState([
+    { id: 1, defectType: 'Stitching errors', defectCount: 10, unit: 'Unit 1', line: 'Line A1', products: ['A'] },
+    { id: 2, defectType: 'Fabric damage', defectCount: 5, unit: 'Unit 2', line: 'Line A2', products: ['A'] },
+    { id: 3, defectType: 'Color mismatches', defectCount: 6, unit: 'Unit 1', line: 'Line B1', products: ['B'] },
+    { id: 4, defectType: 'Misaligned stickers', defectCount: 3, unit: 'Unit 3', line: 'Line B2', products: ['B'] },
+    { id: 5, defectType: 'Finishing defects', defectCount: 2, unit: 'Unit 2', line: 'Line C1', products: ['C'] },
+    { id: 6, defectType: 'Others', defectCount: 8, unit: 'Unit 1', line: 'Line C2', products: ['C'] }
   ]);
 
   // Helper functions
@@ -40,93 +33,12 @@ const DefectRate = () => {
     return productCounts[product] || 0;
   };
 
-  const addProduct = (productName) => {
-    if (productName && !products.includes(productName)) {
-      setProductCounts(prev => ({ ...prev, [productName]: 0 }));
-      return true;
-    }
-    return false;
-  };
-
-  const updateProductCount = (product, count) => {
-    setProductCounts(prev => ({ ...prev, [product]: parseInt(count) || 0 }));
-  };
-
-  const addDefect = (defectInfo) => {
-    const newId = Math.max(...defectData.map(d => d.id), 0) + 1;
-    setDefectData(prev => [...prev, {
-      id: newId,
-      defectType: defectInfo.defectType,
-      defectCount: parseInt(defectInfo.defectCount),
-      products: defectInfo.products
-    }]);
-  };
-
-  const updateDefect = (id, updatedData) => {
-    setDefectData(prev => prev.map(item => 
-      item.id === id ? { ...item, ...updatedData } : item
-    ));
-  };
-
-  const deleteDefect = (id) => {
-    setDefectData(prev => prev.filter(item => item.id !== id));
-  };
-
-  const calculateDefectRate = (defectCount, productCount) => {
-    if (productCount === 0 || !productCount) return 0;
-    return (defectCount / productCount) * 100;
-  };
-
-  // Add new product
-  const handleAddProduct = () => {
-    if (addProduct(newProductName)) {
-      setNewProductName('');
-      setShowAddProduct(false);
-    }
-  };
-
-  // Handle edit defect
-  const handleEdit = (id) => {
-    const item = defectData.find(d => d.id === id);
-    setEditData({ ...item });
-    setEditingRow(id);
-  };
-
-  const handleSave = (id) => {
-    updateDefect(id, editData);
-    setEditingRow(null);
-    setEditData({});
-  };
-
-  const handleCancel = () => {
-    setEditingRow(null);
-    setEditData({});
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this defect record?')) {
-      deleteDefect(id);
-    }
-  };
-
-  const handleAddDefect = () => {
-    if (newDefect.defectType && newDefect.defectCount) {
-      addDefect({
-        defectType: newDefect.defectType,
-        defectCount: newDefect.defectCount,
-        products: selectedProduct === 'ALL' ? ['A', 'B', 'C'] : [selectedProduct]
-      });
-      setNewDefect({ defectType: '', defectCount: '' });
-      setShowAddForm(false);
-    }
-  };
-
   // Filter defects based on selected product
   const getFilteredDefects = () => {
     if (selectedProduct === 'ALL') {
       return defectData;
     }
-    return defectData.filter(item => 
+    return defectData.filter(item =>
       item.products && item.products.includes(selectedProduct)
     );
   };
@@ -134,7 +46,12 @@ const DefectRate = () => {
   // Calculate chart data with defect rates
   const currentProductCount = getCurrentProductCount(selectedProduct);
   const filteredDefects = getFilteredDefects();
-  
+
+  const calculateDefectRate = (defectCount, productCount) => {
+    if (productCount === 0 || !productCount) return 0;
+    return (defectCount / productCount) * 100;
+  };
+
   const chartData = filteredDefects.map(item => ({
     name: item.defectType.length > 15 ? item.defectType.substring(0, 15) + '...' : item.defectType,
     defects: item.defectCount,
@@ -144,19 +61,19 @@ const DefectRate = () => {
   return (
     <div className="ml-70 mt-20 min-h-screen bg-gray-50">
       <SideBar title="QC Panel" links={QCManagerLinks} />
-      
+
       <div className="p-4 lg:p-6">
         {/* Header Controls */}
         <div className="bg-white shadow-sm border rounded-lg p-6 mb-6">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">QC Defect Rate Dashboard</h1>
-            
+
             <div className="flex gap-6 items-end flex-wrap">
               {/* Product Selector */}
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-2">Product Name</label>
                 <div className="flex gap-2">
-                  <select 
+                  <select
                     value={selectedProduct}
                     onChange={(e) => setSelectedProduct(e.target.value)}
                     className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-32"
@@ -165,13 +82,6 @@ const DefectRate = () => {
                       <option key={product} value={product}>{product}</option>
                     ))}
                   </select>
-                  <button
-                    onClick={() => setShowAddProduct(true)}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    title="Add Product"
-                  >
-                    <Plus size={16} />
-                  </button>
                 </div>
               </div>
 
@@ -184,7 +94,7 @@ const DefectRate = () => {
                   <input
                     type="number"
                     value={productCounts[selectedProduct] || 0}
-                    onChange={(e) => updateProductCount(selectedProduct, e.target.value)}
+                    onChange={(e) => setProductCounts(prev => ({ ...prev, [selectedProduct]: parseInt(e.target.value) || 0 }))}
                     className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-40"
                     placeholder="Enter product count"
                   />
@@ -217,39 +127,6 @@ const DefectRate = () => {
               </div>
             </div>
 
-            {/* Add Product Form */}
-            {showAddProduct && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                <div className="flex gap-4 items-end">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-700 mb-2">New Product Name</label>
-                    <input
-                      type="text"
-                      value={newProductName}
-                      onChange={(e) => setNewProductName(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter product name"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAddProduct}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddProduct(false);
-                      setNewProductName('');
-                    }}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Product Counts Overview */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {Object.entries(productCounts).map(([product, count]) => (
@@ -265,7 +142,7 @@ const DefectRate = () => {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
+
             {/* Table Section */}
             <div className="bg-white rounded-lg shadow-sm border">
               <div className="p-6 border-b border-gray-200">
@@ -273,69 +150,15 @@ const DefectRate = () => {
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900">QC Defect Details</h2>
                     <p className="text-sm text-gray-600 mt-1">
-                      Showing data for: {selectedProduct} 
+                      Showing data for: {selectedProduct}
                       {selectedProduct !== 'ALL' && ` (${currentProductCount} units)`}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus size={16} />
-                    Add Defect
-                  </button>
                 </div>
               </div>
 
-              {/* Add Form */}
-              {showAddForm && (
-                <div className="p-4 bg-gray-50 border-b">
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <input
-                      type="text"
-                      placeholder="Defect Type"
-                      value={newDefect.defectType}
-                      onChange={(e) => setNewDefect(prev => ({ ...prev, defectType: e.target.value }))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Defect Count"
-                      value={newDefect.defectCount}
-                      onChange={(e) => setNewDefect(prev => ({ ...prev, defectCount: e.target.value }))}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-600">
-                      Defect Rate: {newDefect.defectCount ? 
-                        calculateDefectRate(parseInt(newDefect.defectCount || 0), currentProductCount).toFixed(2) + '%' : 
-                        '0.00%'
-                      }
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleAddDefect}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowAddForm(false);
-                        setNewDefect({ defectType: '', defectCount: '' });
-                      }}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Table */}
-              <div className="overflow-x-auto">
+              {/* Table without Actions column, auto-expand to fit all data */}
+              <div>
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
@@ -346,10 +169,13 @@ const DefectRate = () => {
                         Defect Count
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Defect Rate %
+                        Unit
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Line
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Defect Rate %
                       </th>
                     </tr>
                   </thead>
@@ -357,69 +183,21 @@ const DefectRate = () => {
                     {filteredDefects.map((item) => (
                       <tr key={item.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {editingRow === item.id ? (
-                            <input
-                              type="text"
-                              value={editData.defectType}
-                              onChange={(e) => setEditData(prev => ({ ...prev, defectType: e.target.value }))}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <span className="text-sm text-gray-900">{item.defectType}</span>
-                          )}
+                          <span className="text-sm text-gray-900">{item.defectType}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {editingRow === item.id ? (
-                            <input
-                              type="number"
-                              value={editData.defectCount}
-                              onChange={(e) => setEditData(prev => ({ ...prev, defectCount: parseInt(e.target.value) || 0 }))}
-                              className="w-24 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          ) : (
-                            <span className="text-sm text-gray-900">{item.defectCount}</span>
-                          )}
+                          <span className="text-sm text-gray-900">{item.defectCount}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-900">{item.unit}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-900">{item.line}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-900">
-                            {calculateDefectRate(
-                              editingRow === item.id ? editData.defectCount : item.defectCount, 
-                              currentProductCount
-                            ).toFixed(2)}%
+                            {calculateDefectRate(item.defectCount, currentProductCount).toFixed(2)}%
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {editingRow === item.id ? (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleSave(item.id)}
-                                className="p-1 text-green-600 hover:text-green-800 transition-colors"
-                              >
-                                <Save size={16} />
-                              </button>
-                              <button
-                                onClick={handleCancel}
-                                className="p-1 text-gray-600 hover:text-gray-800 transition-colors"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(item.id)}
-                                className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
-                              >
-                                <Edit3 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(item.id)}
-                                className="p-1 text-red-600 hover:text-red-800 transition-colors"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          )}
                         </td>
                       </tr>
                     ))}
@@ -440,23 +218,23 @@ const DefectRate = () => {
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="name" 
+                    <XAxis
+                      dataKey="name"
                       angle={-45}
                       textAnchor="end"
                       height={80}
                       fontSize={12}
                     />
                     <YAxis />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value, name) => [
-                        name === 'rate' ? `${value}%` : value, 
+                        name === 'rate' ? `${value}%` : value,
                         name === 'rate' ? 'Defect Rate' : 'Defect Count'
                       ]}
                       labelFormatter={(label) => `Defect Type: ${label}`}
                     />
-                    <Bar 
-                      dataKey="rate" 
+                    <Bar
+                      dataKey="rate"
                       fill="#ef4444"
                       radius={[4, 4, 0, 0]}
                     />
