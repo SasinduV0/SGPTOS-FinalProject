@@ -13,6 +13,7 @@ const forgotPasswordRoutes = require('./routes/forgotPassword');
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 
 
+
 connectDB();
 
 app.use(cors())
@@ -22,6 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use('/api/user', userProfileRoutes);
 app.use("/api", iotRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
+
 
 
 app.use("/", (req,res) => {
