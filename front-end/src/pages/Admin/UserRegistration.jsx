@@ -15,7 +15,7 @@ const [currentStep, setCurrentStep] = useState(1);
     lastname: "",
     email:"",
     phoneNumber:"",
-    employeeId:"",
+    userID:"",
     department:"",
     password:"",
     confirmPassword:"",
@@ -31,7 +31,7 @@ const [currentStep, setCurrentStep] = useState(1);
       case 2:
         return <Security formData={formData} setFormData={setFormData}/>
       case 3:
-        return <Final formData={formData} setFormData={setFormData}/>
+        return <Final formData={formData} setFormData={setFormData} handleBack={()=> handleClick("prev")}/>
       default:
         return null;
     }
@@ -41,7 +41,7 @@ const [currentStep, setCurrentStep] = useState(1);
 
   const validateStep = () => {
     if(currentStep===1){
-      if(!formData.firstname || !formData.lastname || !formData.email || !formData.phoneNumber || !formData.phoneNumber || !formData.employeeId || !formData.department){
+      if(!formData.firstname || !formData.lastname || !formData.email || !formData.phoneNumber || !formData.phoneNumber || !formData.userID || !formData.department){
         alert("Please fill all fields.");
         return false;
       }
@@ -71,8 +71,26 @@ const handleClick = (direction) => {
   if (direction=== "next"){
     if(!validateStep()) return;   //stop if validation fail
     newStep++;
+    
   } else{
-    newStep--;
+    //if on step 3 and going back, reset form and go to step 1
+    if (currentStep===3) {
+      setFormData({
+        firstname:'',
+        lastname:'',
+        email:'',
+        phoneNumber:'',
+        userID:'',
+        department:'',
+        password:'',
+        confirmPassword:'',
+
+      });
+
+      newStep = 1;
+    }else{
+      newStep--;
+    }
   }
 
   if (newStep > 0 && newStep <= steps.length){
