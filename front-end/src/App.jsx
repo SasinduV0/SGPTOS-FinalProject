@@ -3,6 +3,8 @@ import Login from './pages/login'
 import ProtectedRoute from './components/ProtectedRoute';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Manager from './pages/Manager/Manager';
+import Production from './pages/Manager/Production';
+import ReportAnalytics from './pages/Manager/ReportAnalytics';
 import HomePage from './pages/Supervisor/HomePage';
 import { dashboardData } from './pages/Data/dashboardData';
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -11,7 +13,6 @@ import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
-import EmployeeEfficiency from './pages/Manager/EmployeeEfficiency';
 
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -71,7 +72,7 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           path="/manager/report-analytics"
           element={
             <ProtectedRoute allowedRoles={['manager']}>
-              <ReportAnalytics />
+              <ReportAnalytics/>
             </ProtectedRoute>
           }
         />

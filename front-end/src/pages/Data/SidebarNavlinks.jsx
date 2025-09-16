@@ -2,7 +2,6 @@ import { FaTachometerAlt, FaUser, FaCog } from 'react-icons/fa';
 import { MdAppRegistration, MdDashboard } from 'react-icons/md';
 import { BiRfid } from "react-icons/bi";
 import { RiRfidLine } from "react-icons/ri";
-import { MdDashboard } from "react-icons/md";
 import { IoHomeOutline } from "react-icons/io5";
 import { FiUsers } from "react-icons/fi";
 import { BsBarChartLine } from "react-icons/bs";
