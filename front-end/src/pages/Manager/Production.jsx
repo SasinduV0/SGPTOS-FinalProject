@@ -1,88 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, Users, Clock, Target, Plus, Edit, Trash2, Calendar } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
+import axios from 'axios';
 
+const API_URL = "http://localhost:8000/api/production"; // Your backend endpoint
 
 const Production = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('Today');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [productionPlans, setProductionPlans] = useState([
-    {
-      id: 1,
-      product: 'Brand 5',
-      finishedUnits: 34,
-      totalStock: 80,
-      remainingUnits: 46,
-      startDate: '2025-01-20',
-      endDate: '2025-02-05',
-      dailyTarget: 2.9,
-      weeklyTarget: 20,
-      remainingDays: 5
-    },
-    {
-      id: 2,
-      product: 'Brand 2',
-      finishedUnits: 30,
-      totalStock: 86,
-      remainingUnits: 56,
-      startDate: '2025-01-15',
-      endDate: '2025-02-05',
-      dailyTarget: 8.0,
-      weeklyTarget: 56,
-      remainingDays: 7
-    },
-    {
-      id: 3,
-      product: 'Brand 1',
-      finishedUnits: 25,
-      totalStock: 58,
-      remainingUnits: 33,
-      startDate: '2025-01-10',
-      endDate: '2025-02-05',
-      dailyTarget: 2.8,
-      weeklyTarget: 19,
-      remainingDays: 12
-    },
-    {
-      id: 4,
-      product: 'Brand 6',
-      finishedUnits: 16,
-      totalStock: 71,
-      remainingUnits: 55,
-      startDate: '2025-01-05',
-      endDate: '2025-02-05',
-      dailyTarget: 3.4,
-      weeklyTarget: 24,
-      remainingDays: 16
-    },
-    {
-      id: 5,
-      product: 'Brand 3',
-      finishedUnits: 11,
-      totalStock: 72,
-      remainingUnits: 61,
-      startDate: '2025-01-01',
-      endDate: '2025-02-05',
-      dailyTarget: 2.4,
-      weeklyTarget: 17,
-      remainingDays: 25
-    },
-    {
-      id: 6,
-      product: 'Brand 4',
-      finishedUnits: 10,
-      totalStock: 70,
-      remainingUnits: 60,
-      startDate: '2024-12-25',
-      endDate: '2025-02-05',
-      dailyTarget: 2.0,
-      weeklyTarget: 14,
-      remainingDays: 30
-    }
-  ]);
-
+  const [productionPlans, setProductionPlans] = useState([]);
   const [newPlan, setNewPlan] = useState({
     product: '',
     totalStock: '',
@@ -90,7 +18,88 @@ const Production = () => {
     endDate: ''
   });
 
-  // Sample production data
+  // Load production plans from backend
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      setProductionPlans(response.data);
+    } catch (err) {
+      console.error("Error fetching plans:", err);
+    }
+  };
+
+  // Calculate targets
+  const calculateTargets = (totalStock, startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    const remainingDays = Math.max(0, Math.ceil((end - today) / (1000 * 60 * 60 * 24)) + 1);
+    const dailyTarget = remainingDays > 0 ? totalStock / remainingDays : 0;
+    const weeklyTarget = dailyTarget * 7;
+    return {
+      dailyTarget: Math.round(dailyTarget * 10) / 10,
+      weeklyTarget: Math.round(weeklyTarget),
+      remainingDays,
+      totalDays
+    };
+  };
+
+  // Add new plan
+  const handleAddPlan = async () => {
+    if (!newPlan.product || !newPlan.totalStock || !newPlan.startDate || !newPlan.endDate) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    const targets = calculateTargets(parseInt(newPlan.totalStock), newPlan.startDate, newPlan.endDate);
+
+    const planToAdd = {
+      ...newPlan,
+      totalStock: parseInt(newPlan.totalStock),
+      finishedUnits: 0,
+      remainingUnits: parseInt(newPlan.totalStock),
+      ...targets
+    };
+
+    try {
+      const response = await axios.post(API_URL, planToAdd);
+      setProductionPlans(prev => [...prev, response.data]);
+      setShowAddForm(false);
+      setNewPlan({ product: '', totalStock: '', startDate: '', endDate: '' });
+    } catch (err) {
+      console.error("Error adding plan:", err);
+    }
+  };
+
+  // Delete plan
+  const deletePlan = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      setProductionPlans(prev => prev.filter(plan => plan._id !== id));
+    } catch (err) {
+      console.error("Error deleting plan:", err);
+    }
+  };
+
+  // Helpers
+  const getStatusColor = (remainingDays) => {
+    if (remainingDays <= 5) return 'bg-red-100 text-red-800';
+    if (remainingDays <= 10) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-green-100 text-green-800';
+  };
+
+  const getColorByEfficiency = (efficiency) => {
+    if (efficiency >= 100) return 'text-green-600 bg-green-50';
+    if (efficiency >= 90) return 'text-yellow-600 bg-yellow-50';
+    return 'text-red-600 bg-red-50';
+  };
+
+  // Sample metrics & charts
   const productionMetrics = [
     { title: 'Total Production', value: '1,247', change: '+12.5%', icon: Target, color: 'blue' },
     { title: 'Efficiency Rate', value: '87.3%', change: '+5.2%', icon: TrendingUp, color: 'green' },
@@ -118,71 +127,11 @@ const Production = () => {
     { line: 'Line 6', target: 750, actual: 698, efficiency: 93 }
   ];
 
-  const calculateTargets = (totalStock, startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const today = new Date();
-    
-    // Calculate total days and remaining days
-    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    const remainingDays = Math.max(0, Math.ceil((end - today) / (1000 * 60 * 60 * 24)) + 1);
-    
-    // Calculate targets
-    const dailyTarget = remainingDays > 0 ? totalStock / remainingDays : 0;
-    const weeklyTarget = dailyTarget * 7;
-    
-    return {
-      dailyTarget: Math.round(dailyTarget * 10) / 10,
-      weeklyTarget: Math.round(weeklyTarget),
-      remainingDays,
-      totalDays
-    };
-  };
-
-  const handleAddPlan = () => {
-    if (!newPlan.product || !newPlan.totalStock || !newPlan.startDate || !newPlan.endDate) {
-      alert('Please fill all fields');
-      return;
-    }
-
-    const targets = calculateTargets(parseInt(newPlan.totalStock), newPlan.startDate, newPlan.endDate);
-    
-    const plan = {
-      id: Date.now(),
-      product: newPlan.product,
-      finishedUnits: 0,
-      totalStock: parseInt(newPlan.totalStock),
-      remainingUnits: parseInt(newPlan.totalStock),
-      startDate: newPlan.startDate,
-      endDate: newPlan.endDate,
-      ...targets
-    };
-
-    setProductionPlans([...productionPlans, plan]);
-    setNewPlan({ product: '', totalStock: '', startDate: '', endDate: '' });
-    setShowAddForm(false);
-  };
-
-  const deletePlan = (id) => {
-    setProductionPlans(productionPlans.filter(plan => plan.id !== id));
-  };
-
-  const getColorByEfficiency = (efficiency) => {
-    if (efficiency >= 100) return 'text-green-600 bg-green-50';
-    if (efficiency >= 90) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
-  };
-
-  const getStatusColor = (remainingDays) => {
-    if (remainingDays <= 5) return 'bg-red-100 text-red-800';
-    if (remainingDays <= 10) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-green-100 text-green-800';
-  };
-
   return (
-    <div className="space-y-6 ml-70">
+    <div className="space-y-6 mt-25 ml-70">
       <SideBar title ="Manager Panel" links={ManagerLinks}/>
-      {/* Header with Time Range Selector */}
+
+      {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Production Overview</h2>
         <select
@@ -204,9 +153,7 @@ const Production = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">{metric.title}</p>
                 <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
-                <p className={`text-sm ${
-                  metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <p className={`text-sm ${metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
                   {metric.change}
                 </p>
               </div>
@@ -231,7 +178,7 @@ const Production = () => {
           </button>
         </div>
 
-        {/* Add New Plan Form */}
+        {/* Add Form */}
         {showAddForm && (
           <div className="p-6 border-b bg-gray-50">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -291,6 +238,7 @@ const Production = () => {
           </div>
         )}
 
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -308,7 +256,7 @@ const Production = () => {
             </thead>
             <tbody>
               {productionPlans.map((plan) => (
-                <tr key={plan.id} className="border-b hover:bg-gray-50">
+                <tr key={plan._id} className="border-b hover:bg-gray-50">
                   <td className="p-4 font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     {plan.product}
@@ -326,7 +274,7 @@ const Production = () => {
                   <td className="p-4 font-semibold text-green-600">{plan.weeklyTarget}</td>
                   <td className="p-4">
                     <button
-                      onClick={() => deletePlan(plan.id)}
+                      onClick={() => deletePlan(plan._id)}
                       className="text-red-600 hover:text-red-800 p-1"
                       title="Delete Plan"
                     >
@@ -339,6 +287,16 @@ const Production = () => {
           </table>
         </div>
       </div>
+
+
+
+
+
+
+
+
+
+
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
