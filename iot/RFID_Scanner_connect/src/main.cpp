@@ -100,6 +100,25 @@ volatile int qcSelectedSubtype = 0;
 volatile int qcTypeScrollOffset = 0;
 volatile int qcSubtypeScrollOffset = 0;
 
+// Numeric conversion functions for defect schema
+uint8_t getSectionCode(int sectionIndex) {
+    return (uint8_t)sectionIndex; // 0=Body, 1=Hand, 2=Collar, 3=Upper Back
+}
+
+uint8_t getTypeCode(int typeIndex) {
+    return (uint8_t)typeIndex; // 0=Fabric, 1=Stitching, 2=Sewing, 3=Other
+}
+
+uint8_t getSubtypeCode(int typeIndex, int subtypeIndex) {
+    switch(typeIndex) {
+        case 0: return subtypeIndex;           // Fabric: 0-3
+        case 1: return 4 + subtypeIndex;      // Stitching: 4-7
+        case 2: return 8 + subtypeIndex;      // Sewing: 8-12
+        case 3: return 13 + subtypeIndex;     // Other: 13-15
+        default: return 0;
+    }
+}
+
 // Daily scan counter for ID generation
 volatile uint16_t dailyScanCount = 0;
 String lastDateString = "";
@@ -1169,6 +1188,32 @@ bool sendRFIDDataViaWebSocket(const ScannedData& data) {
     return true;
 }
 
+// Send Defect data via WebSocket
+bool sendDefectDataViaWebSocket(String scanID, String tagUID, String stationID, time_t timestamp, 
+                               uint8_t sectionCode, uint8_t typeCode, uint8_t subtypeCode) {
+    if (!wsConnected) {
+        Serial.println("!! WebSocket not connected, cannot send defect data");
+        return false;
+    }
+    
+    JsonDocument doc;
+    doc["action"] = "defect_scan";
+    doc["data"]["ID"] = scanID;
+    doc["data"]["Section"] = sectionCode;
+    doc["data"]["Type"] = typeCode;
+    doc["data"]["Subtype"] = subtypeCode;
+    doc["data"]["Tag_UID"] = tagUID;
+    doc["data"]["Station_ID"] = stationID;
+    doc["data"]["Time_Stamp"] = timestamp;
+    
+    String jsonString;
+    serializeJson(doc, jsonString);
+    
+    Serial.println("Sending Defect via WebSocket: " + jsonString);
+    webSocket.sendTXT(jsonString);
+    return true;
+}
+
 // Core 0 Task: Handle WiFi connectivity and time synchronization
 void connectivityTask(void *parameter) {
     Serial.println("Core 0: Starting connectivity task...");
@@ -1366,14 +1411,57 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
         String selectedSubtype = subtypes[qcSelectedSubtype];
         
-        // User confirmed complete selection - continue with normal processing
-        Serial.println("QC: Processing scan with complete selection:");
+        // User confirmed complete selection - process as defect
+        Serial.println("QC: Processing defect scan with complete selection:");
         Serial.println("  Section: " + QC_PARTS[qcSelectedPart]);
         Serial.println("  Type: " + QC_DEFECT_TYPES[qcSelectedType]); 
         Serial.println("  Subtype: " + selectedSubtype);
         
         displayQCMessage("Processing...", "Sec:" + QC_PARTS[qcSelectedPart], "Typ:" + QC_DEFECT_TYPES[qcSelectedType], "Sub:" + selectedSubtype.substring(0, 12));
         delay(2500);
+        
+        // Generate scan ID and get timestamp
+        String scanID = generateScanID();
+        String stationID = generateStationID(stationNumber);
+        time_t now = 0;
+        if (timeInitialized) {
+            time(&now);
+        }
+        
+        // Convert selections to numeric codes
+        uint8_t sectionCode = getSectionCode(qcSelectedPart);
+        uint8_t typeCode = getTypeCode(qcSelectedType);
+        uint8_t subtypeCode = getSubtypeCode(qcSelectedType, qcSelectedSubtype);
+        
+        // Send defect data immediately if connected
+        if (wsConnected) {
+            bool defectSent = sendDefectDataViaWebSocket(scanID, uidString, stationID, now, 
+                                                        sectionCode, typeCode, subtypeCode);
+            if (defectSent) {
+                qcScanCount++; // Increment QC scan counter
+                updateQCDisplay(uidString.c_str(), qcScanCount);
+                Serial.println("QC: Defect data sent successfully - ID: " + scanID);
+                
+                // Show success message
+                displayQCMessage("Defect Logged!", "ID: " + scanID, "Scan next product", "");
+                delay(3000);
+                displayQCMessage("QC Station", "Ready to scan", "", "");
+                return true;
+            } else {
+                Serial.println("QC: Failed to send defect data");
+                displayQCMessage("Send Failed!", "Try again", "", "");
+                delay(2000);
+                displayQCMessage("QC Station", "Ready to scan", "", "");
+                return false;
+            }
+        } else {
+            // If not connected, show offline message
+            Serial.println("QC: Offline - Defect data will be queued when connection restored");
+            displayQCMessage("Offline Mode", "Data will sync", "when connected", "");
+            delay(3000);
+            displayQCMessage("QC Station", "Ready to scan", "", "");
+            return false;
+        }
     }
     
     // Get current timestamp (only if time is initialized)
