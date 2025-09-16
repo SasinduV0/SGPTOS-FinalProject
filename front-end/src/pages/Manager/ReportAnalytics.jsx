@@ -108,7 +108,7 @@ const ReportAnalytics = () => {
     const maxValue = getMaxValue();
 
     return (
-      <div className="bg-white rounded-lg shadow p-6 mt-20 ml-70">
+      <div className="bg-white rounded-lg shadow p-6 mt-25 ml-70">
         <SideBar title ="Manager Panel" links={ManagerLinks}/>
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
