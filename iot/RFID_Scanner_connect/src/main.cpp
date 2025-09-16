@@ -429,13 +429,13 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
         // Display message on LCD for Station 2
         if (stationNumber == 2) {
             displayStation2Message("Wrong Station!", "Go to " + assignedStationName);
-            delay(3000); // Show message for 3 seconds
+            delay(2500); // Slightly reduced from 3000ms (kept longer as it's important)
             displayStation2Message("Station 2", "Scan your card");
         }
         // Display message on LCD for QC Station
         else if (stationNumber == 3) {
             displayQCMessage("Wrong Station!", "Go to " + assignedStationName, "Access Denied", "");
-            delay(3000); // Show message for 3 seconds
+            delay(2500); // Slightly reduced from 3000ms (kept longer as it's important)
             displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return;
@@ -496,7 +496,7 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station2State = ACTIVE_SCANNING;
                     Serial.println("Station 2: Shift starting... - " + employeeName);
                     displayStation2Message("Shift starting...", employeeName);
-                    delay(2000);
+                    delay(1500); // Reduced from 2000ms for faster login
                     displayStation2Message("Station 2", "Ready to scan");
                 } else {
                     // Cancel pressed or timeout - postpone
@@ -548,7 +548,7 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     qcState = ACTIVE_SCANNING;
                     Serial.println("QC Station: Shift starting... - " + employeeName);
                     displayQCMessage("QC Station", "Shift starting...", employeeName, "Ready to scan");
-                    delay(2000);
+                    delay(1500); // Reduced from 2000ms for faster login
                     displayQCMessage("QC Station", "Ready to scan", "", "");
                 } else {
                     // Cancel pressed or timeout - postpone
@@ -643,7 +643,7 @@ void initLCDs() {
     lcdQC.setCursor(0, 1);
     lcdQC.print("Ready");
     
-    delay(2000);
+    delay(1500); // Reduced from 2000ms for faster startup
     
     // Clear and show initial state
     displayStation2Message("Station 2", "Scan your card");
@@ -1352,11 +1352,14 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     // Check if this is an employee card
     if (isEmployeeCard(uidString)) {
         // Beep for employee card scan
-        beepBuzzer(300); // 300ms beep for employee cards
+        beepBuzzer(200); // 200ms beep for employee cards (reduced from 300ms)
         // Handle employee login/logout
         handleEmployeeAccess(uidString, stationNumber);
         return false; // Don't queue employee cards
     }
+    
+    // Beep immediately for product card detection (instant feedback)
+    beepBuzzer(100); // 100ms beep for immediate scan confirmation
     
     // Check if station is active before scanning regular cards
     bool stationActive = false;
@@ -1392,13 +1395,13 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         // Display message on LCD for Station 2
         if (stationNumber == 2) {
             displayStation2Message("First scan", "your card");
-            delay(2000); // Show message for 2 seconds
+            delay(1500); // Show message for 1.5 seconds (reduced for faster response)
             displayStation2Message("Station 2", "Scan your card");
         }
         // Display message on LCD for QC Station
         else if (stationNumber == 3) {
             displayQCMessage("First scan", "your card", "", "");
-            delay(2000); // Show message for 2 seconds
+            delay(1500); // Show message for 1.5 seconds (reduced for faster response)
             displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return false;
@@ -1408,7 +1411,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     if (stationNumber == 3) {
         Serial.println("QC: Product tag scanned - " + uidString);
         displayQCMessage("Product scanned!", "UID: " + uidString.substring(0, 12), "Select section", "Use UP/DOWN + OK");
-        delay(2000);
+        delay(1000); // Reduced from 2000ms for faster scanning
         
         // Show multi-step selection and wait for user choice
         bool selectionConfirmed = handleQCPartsSelection();
@@ -1416,7 +1419,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         if (!selectionConfirmed) {
             // User cancelled or timeout
             displayQCMessage("Selection", "Cancelled", "Scan next product", "");
-            delay(2000);
+            delay(1500); // Reduced from 2000ms for faster recovery
             displayQCMessage("QC Station", "Ready to scan", "", "");
             return false;
         }
@@ -1434,7 +1437,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         Serial.println("  Subtype: " + selectedSubtype);
         
         displayQCMessage("Processing...", "Sec:" + QC_PARTS[qcSelectedPart], "Typ:" + QC_DEFECT_TYPES[qcSelectedType], "Sub:" + selectedSubtype.substring(0, 12));
-        delay(2500);
+        delay(1500); // Reduced from 2500ms for faster processing
         
         // Generate scan ID and get timestamp
         String scanID = generateScanID();
@@ -1459,11 +1462,11 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
                 Serial.println("QC: Defect data sent successfully - ID: " + scanID);
                 
                 // Beep for successful defect scan
-                beepBuzzer(150); // 150ms beep for successful defect
+                beepBuzzer(100); // 100ms beep for successful defect (reduced from 150ms)
                 
                 // Show success message
                 displayQCMessage("Defect Logged!", "ID: " + scanID, "Scan next product", "");
-                delay(3000);
+                delay(2000); // Reduced from 3000ms for faster next scan
                 displayQCMessage("QC Station", "Ready to scan", "", "");
                 return true;
             } else {
@@ -1512,9 +1515,6 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         // Successfully added to queue
         (*stationCounter)++; // Increment respective station counter
         
-        // Beep for successful product scan
-        beepBuzzer(150); // 150ms beep for successful scan
-        
         // Update LCD display for Station 2 and QC scans
         if (stationNumber == 2) {
             updateStation2Display(uidString.c_str(), station2ScanCount);
@@ -1559,9 +1559,6 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
             // Now try to add the new scan
             if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
                 (*stationCounter)++;
-                
-                // Beep for successful scan after queue management
-                beepBuzzer(150); // 150ms beep
                 
                 // Update display for respective stations
                 if (stationNumber == 2) {
