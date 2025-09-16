@@ -28,12 +28,12 @@ function QualityControl() {
   };
 
   const defectData = [
-    { id: 1, defectType: 'Stitching errors', defectCount: 10, product: 'A' },
-    { id: 2, defectType: 'Fabric damage', defectCount: 5, product: 'A' },
-    { id: 3, defectType: 'Color mismatches', defectCount: 6, product: 'B' },
-    { id: 4, defectType: 'Misaligned stickers', defectCount: 3, product: 'B' },
-    { id: 5, defectType: 'Finishing defects', defectCount: 2, product: 'C' },
-    { id: 6, defectType: 'Others', defectCount: 8, product: 'C' }
+    { id: 1, defectType: 'Stitching errors', defectCount: 10, product: 'A', line: 'Line 1', unit: 'Unit 1' },
+    { id: 2, defectType: 'Fabric damage', defectCount: 5, product: 'A', line: 'Line 2', unit: 'Unit 1' },
+    { id: 3, defectType: 'Color mismatches', defectCount: 6, product: 'B', line: 'Line 1', unit: 'Unit 2' },
+    { id: 4, defectType: 'Misaligned stickers', defectCount: 3, product: 'B', line: 'Line 3', unit: 'Unit 2' },
+    { id: 5, defectType: 'Finishing defects', defectCount: 2, product: 'C', line: 'Line 2', unit: 'Unit 3' },
+    { id: 6, defectType: 'Others', defectCount: 8, product: 'C', line: 'Line 1', unit: 'Unit 3' }
   ];
 
   // Calculate defect rate
@@ -90,7 +90,7 @@ function QualityControl() {
           {/* Summary Cards Row */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg shadow-lg p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justif y-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Products</p>
                   <p className="text-2xl font-bold text-blue-600">{totalProductCount.toLocaleString()}</p>
@@ -152,27 +152,33 @@ function QualityControl() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-2 font-semibold text-gray-700 text-sm lg:text-base">Unit</th>
+                        <th className="text-left py-3 px-2 font-semibold text-gray-700 text-sm lg:text-base">Line</th>
                         <th className="text-left py-3 px-2 font-semibold text-gray-700 text-sm lg:text-base">Defect Type</th>
                         <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm lg:text-base">Defect Count</th>
                         <th className="text-center py-3 px-2 font-semibold text-gray-700 text-sm lg:text-base">Defect Rate</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {aggregatedDefectData
-                        .sort((a, b) => b.rate - a.rate) // Sort by highest rate first
-                        .map((defect, index) => (
-                        <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                      {defectData
+                        .sort((a, b) => calculateDefectRate(b.defectCount, productCounts[b.product]) - calculateDefectRate(a.defectCount, productCounts[a.product]))
+                        .map((defect) => (
+                        <tr key={defect.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 px-2 text-gray-800 text-sm lg:text-base font-medium">{defect.unit}</td>
+                          <td className="py-4 px-2 text-gray-800 text-sm lg:text-base font-medium">{defect.line}</td>
                           <td className="py-4 px-2">
                             <div className="flex items-center">
                               <div 
                                 className="w-4 h-4 lg:w-5 lg:h-5 rounded-full mr-2 lg:mr-3 flex-shrink-0"
-                                style={{ backgroundColor: defect.color }}
+                                style={{ backgroundColor: getDefectColor(defect.defectType) }}
                               ></div>
-                              <span className="text-gray-800 text-sm lg:text-base">{defect.type}</span>
+                              <span className="text-gray-800 text-sm lg:text-base">{defect.defectType}</span>
                             </div>
                           </td>
-                          <td className="text-center py-4 px-2 font-semibold text-gray-900 text-sm lg:text-base">{defect.count}</td>
-                          <td className="text-center py-4 px-2 font-semibold text-gray-900 text-sm lg:text-base">{defect.rate.toFixed(2)}%</td>
+                          <td className="text-center py-4 px-2 font-semibold text-gray-900 text-sm lg:text-base">{defect.defectCount}</td>
+                          <td className="text-center py-4 px-2 font-semibold text-gray-900 text-sm lg:text-base">
+                            {calculateDefectRate(defect.defectCount, productCounts[defect.product]).toFixed(2)}%
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -181,66 +187,32 @@ function QualityControl() {
               </div>
             </div>
 
-            {/* Alert Card */}
-            <div className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg shadow-lg p-4 lg:p-6 text-white">
-              <div className="flex flex-col items-center justify-center mb-4">
-                <div className="bg-white bg-opacity-20 rounded-full p-3 mb-4">
-                  <div className="relative">
-                    <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-full border-8 border-white border-opacity-30 flex items-center justify-center">
-                      <div 
-                        className="w-32 h-32 lg:w-40 lg:h-40 rounded-full border-8 border-orange-500 border-t-transparent animate-spin-slow"
-                        style={{
-                          background: `conic-gradient(#f97316 0% ${overallDefectRate}%, transparent ${overallDefectRate}% 100%)`
-                        }}
-                      ></div>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs lg:text-sm font-bold">{overallDefectRate}%</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl lg:text-2xl font-bold">Defects</div>
-                  <div className="text-blue-300 text-2xl lg:text-3xl font-bold">{totalDefects} Pcs</div>
-                </div>
-              </div>
-              <div className="text-xs lg:text-sm text-gray-300 text-center">
-                {parseFloat(overallDefectRate) > 2 ? 
-                  "Defect rate is higher than target (2%)" : 
-                  "Defect rate is within acceptable range"
-                }
-              </div>
-            </div>
-          </div>
-
-          {/* Charts Section */}
-          <div className="mt-4 lg:mt-6">
-            {/* Pie Chart */}
+            {/* Product Quality Distribution */}
             <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
-              <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-4">Defects Distribution</h3>
-              <ResponsiveContainer width="100%" height={300}>
+              <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-4">Product Quality Distribution</h3>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
-                    data={aggregatedDefectData}
+                    data={[
+                      { name: 'Good Products', value: totalProductCount - totalDefects, color: '#3B82F6' },
+                      { name: 'Defected Products', value: totalDefects, color: '#EF4444' }
+                    ]}
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
-                    innerRadius={40}
+                    outerRadius={90}
                     paddingAngle={2}
-                    dataKey="count"
-                    label={({ type, rate }) => `${type.split(' ')[0]}: ${rate.toFixed(1)}%`}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
                     labelLine={false}
                   >
-                    {aggregatedDefectData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    <Cell fill="#3B82F6" />
+                    <Cell fill="#EF4444" />
                   </Pie>
                   <Tooltip 
-                    formatter={(value, name, props) => [
-                      `${value} defects (${props.payload.rate.toFixed(2)}%)`,
-                      'Count'
+                    formatter={(value, name) => [
+                      `${value.toLocaleString()} products`,
+                      name
                     ]}
-                    labelFormatter={(label) => `Defect Type: ${label}`}
                     contentStyle={{
                       backgroundColor: '#f8f9fa',
                       border: '1px solid #e9ecef',
@@ -249,6 +221,26 @@ function QualityControl() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="mt-4 text-center">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div className="flex items-center justify-center">
+                    <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                    <span className="text-sm text-gray-600">Good: {(totalProductCount - totalDefects).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                    <span className="text-sm text-gray-600">Defected: {totalDefects}</span>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">Total Defects</div>
+                <div className="text-2xl font-bold text-red-600">{totalDefects} Pcs</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {parseFloat(overallDefectRate) > 2 ? 
+                    "Defect rate is higher than target (2%)" : 
+                    "Defect rate is within acceptable range"
+                  }
+                </div>
+              </div>
             </div>
           </div>
 
