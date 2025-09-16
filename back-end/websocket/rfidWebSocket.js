@@ -1,5 +1,5 @@
 const WebSocket = require("ws");
-const { RFIDTagScan } = require("../models/iot"); // Updated import
+const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
 
 class RFIDWebSocketServer {
   constructor(server) {
@@ -54,6 +54,82 @@ class RFIDWebSocketServer {
                 client.send(JSON.stringify({
                   type: 'new_scan',
                   data: savedScan
+                }));
+              }
+            });
+          } 
+          
+          else if (data.action === 'defect_scan') {
+            // Handle defect data from ESP32
+            const { ID, Section, Type, Subtype, Tag_UID, Station_ID, Time_Stamp } = data.data;
+
+            // Create new defect entry
+            const newDefectEntry = { Section, Type, Subtype };
+
+            // Try to find existing garment defects document
+            let garmentDefects = await GarmentDefects.findOne({ Tag_UID });
+
+            if (garmentDefects) {
+              // Check if this section-subtype combination already exists
+              const existingDefect = garmentDefects.Defects.find(
+                defect => defect.Section === Section && defect.Subtype === Subtype
+              );
+
+              if (existingDefect) {
+                // Send duplicate error response
+                ws.send(JSON.stringify({
+                  type: 'defect_scan_error',
+                  status: 'error',
+                  error: {
+                    type: 'Duplicate',
+                    message: 'Defect already registered for this section-subtype combination'
+                  }
+                }));
+                console.log(`Duplicate defect rejected: ${Tag_UID} - Section:${Section} Subtype:${Subtype}`);
+                return;
+              }
+
+              // Add new defect to existing document and update timestamp
+              garmentDefects.Defects.push(newDefectEntry);
+              garmentDefects.Time_Stamp = Time_Stamp;
+              await garmentDefects.save();
+
+              console.log(`Defect added to existing garment: ${Tag_UID} - Total defects: ${garmentDefects.Defects.length}`);
+            } else {
+              // Create new garment defects document
+              garmentDefects = new GarmentDefects({
+                ID, // Use the scan ID from first defect
+                Tag_UID,
+                Station_ID,
+                Defects: [newDefectEntry],
+                Time_Stamp
+              });
+
+              await garmentDefects.save();
+              console.log(`New garment defects created: ${Tag_UID} - First defect recorded`);
+            }
+
+            // Send success response
+            ws.send(JSON.stringify({
+              type: 'defect_scan_success',
+              status: 'success',
+              data: {
+                garmentId: garmentDefects._id,
+                totalDefects: garmentDefects.Defects.length,
+                newDefect: newDefectEntry,
+                message: 'Defect recorded successfully'
+              }
+            }));
+
+            // Broadcast to all connected clients (for real-time dashboard)
+            this.wss.clients.forEach((client) => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'new_defect',
+                  data: {
+                    garmentDefects,
+                    newDefect: newDefectEntry
+                  }
                 }));
               }
             });

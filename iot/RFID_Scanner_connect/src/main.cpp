@@ -15,7 +15,7 @@ const char* ssid = "Redmi Note 9 Pro";
 const char* password = "1234r65i";
 
 // WebSocket server configuration
-const char* websocket_server = "192.168.87.159"; // Wi-fi Server IP
+const char* websocket_server = "192.168.111.159"; // Wi-fi Server IP
 const int websocket_port = 8000;
 const char* websocket_path = "/rfid-ws";
 

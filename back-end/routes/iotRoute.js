@@ -1,5 +1,5 @@
 const express = require("express");
-const { RFIDTagScan } = require("../models/iot"); // Updated import
+const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
 const router = express.Router();
 
 // Get all RFID tag scans
@@ -67,6 +67,166 @@ router.get("/station-summary", async (req, res) => {
     res.json({ stationCounts });
   } catch (err) {
     console.error("Error fetching station summary:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ==== DEFECT MANAGEMENT ROUTES ====
+
+// Get all garment defects
+router.get("/defects", async (req, res) => {
+  try {
+    const defects = await GarmentDefects.find().sort({ Time_Stamp: -1 });
+    res.status(200).json(defects);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get defects for a specific garment UID
+router.get("/defects/:tagUID", async (req, res) => {
+  try {
+    const garmentDefects = await GarmentDefects.findOne({ Tag_UID: req.params.tagUID });
+    if (!garmentDefects) {
+      return res.status(404).json({ error: "No defects found for this garment" });
+    }
+    res.status(200).json(garmentDefects);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Add or update defect for a garment
+router.post("/defect", async (req, res) => {
+  try {
+    const { ID, Section, Type, Subtype, Tag_UID, Station_ID, Time_Stamp } = req.body;
+
+    // Validate required fields
+    if (ID === undefined || Section === undefined || Type === undefined || 
+        Subtype === undefined || !Tag_UID || !Station_ID || !Time_Stamp) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Create new defect entry
+    const newDefectEntry = { Section, Type, Subtype };
+
+    // Try to find existing garment defects document
+    let garmentDefects = await GarmentDefects.findOne({ Tag_UID });
+
+    if (garmentDefects) {
+      // Check if this section-subtype combination already exists
+      const existingDefect = garmentDefects.Defects.find(
+        defect => defect.Section === Section && defect.Subtype === Subtype
+      );
+
+      if (existingDefect) {
+        return res.status(409).json({ 
+          error: "Defect already registered for this section-subtype combination",
+          existing: existingDefect
+        });
+      }
+
+      // Add new defect to existing document and update timestamp
+      garmentDefects.Defects.push(newDefectEntry);
+      garmentDefects.Time_Stamp = Time_Stamp;
+      await garmentDefects.save();
+
+      res.status(200).json({ 
+        message: "Defect added to existing garment", 
+        data: garmentDefects,
+        newDefect: newDefectEntry
+      });
+    } else {
+      // Create new garment defects document
+      garmentDefects = new GarmentDefects({
+        ID, // Use the scan ID from first defect
+        Tag_UID,
+        Station_ID,
+        Defects: [newDefectEntry],
+        Time_Stamp
+      });
+
+      await garmentDefects.save();
+      res.status(201).json({ 
+        message: "New garment defects document created", 
+        data: garmentDefects 
+      });
+    }
+  } catch (err) {
+    console.error(err.message);
+    if (err.name === 'ValidationError') {
+      res.status(400).json({ error: err.message });
+    } else {
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+});
+
+// Remove a specific defect from a garment
+router.delete("/defect/:tagUID/:section/:subtype", async (req, res) => {
+  try {
+    const { tagUID, section, subtype } = req.params;
+    
+    const garmentDefects = await GarmentDefects.findOne({ Tag_UID: tagUID });
+    
+    if (!garmentDefects) {
+      return res.status(404).json({ error: "Garment defects not found" });
+    }
+
+    // Remove the specific defect
+    const initialLength = garmentDefects.Defects.length;
+    garmentDefects.Defects = garmentDefects.Defects.filter(
+      defect => !(defect.Section === parseInt(section) && defect.Subtype === parseInt(subtype))
+    );
+
+    if (garmentDefects.Defects.length === initialLength) {
+      return res.status(404).json({ error: "Defect not found" });
+    }
+
+    if (garmentDefects.Defects.length === 0) {
+      // Delete the entire document if no defects remain
+      await GarmentDefects.deleteOne({ _id: garmentDefects._id });
+      res.status(200).json({ message: "All defects removed, garment document deleted" });
+    } else {
+      // Update timestamp and save
+      garmentDefects.Time_Stamp = Date.now();
+      await garmentDefects.save();
+      res.status(200).json({ message: "Defect removed", data: garmentDefects });
+    }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get defect statistics
+router.get("/defect-stats", async (req, res) => {
+  try {
+    const stats = await GarmentDefects.aggregate([
+      { $unwind: "$Defects" },
+      { 
+        $group: { 
+          _id: { 
+            section: "$Defects.Section", 
+            type: "$Defects.Type", 
+            subtype: "$Defects.Subtype" 
+          }, 
+          count: { $sum: 1 } 
+        } 
+      },
+      { $sort: { count: -1 } }
+    ]);
+    
+    const totalGarmentsWithDefects = await GarmentDefects.countDocuments();
+    
+    res.json({ 
+      defectBreakdown: stats,
+      totalGarmentsWithDefects 
+    });
+  } catch (err) {
+    console.error("Error fetching defect statistics:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });

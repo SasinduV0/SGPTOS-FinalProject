@@ -24,15 +24,8 @@ const rfidTagScanSchema = new mongoose.Schema({
   }
 });
 
-// Memory-efficient Defect Schema using numeric codes
-const defectSchema = new mongoose.Schema({
-  ID: { 
-    type: String, 
-    required: true, 
-    unique: true,
-    index: true,
-    maxlength: 20
-  },
+// Individual defect entry schema for use within garment defects array
+const defectEntrySchema = new mongoose.Schema({
   Section: { 
     type: Number, 
     required: true, 
@@ -50,10 +43,24 @@ const defectSchema = new mongoose.Schema({
     required: true,
     min: 0,
     max: 15 // 0-3=Fabric, 4-7=Stitching, 8-12=Sewing, 13-15=Other
+  }
+}, { 
+  _id: false // Don't create separate IDs for defect entries
+});
+
+// Garment Defects Schema - stores multiple defects per garment UID
+const garmentDefectsSchema = new mongoose.Schema({
+  ID: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    index: true,
+    maxlength: 20 // First defect scan ID, never updated
   },
   Tag_UID: { 
     type: String, 
     required: true,
+    unique: true, // One document per garment UID
     index: true,
     maxlength: 20
   },
@@ -62,16 +69,35 @@ const defectSchema = new mongoose.Schema({
     required: true,
     maxlength: 10
   },
+  Defects: {
+    type: [defectEntrySchema],
+    required: true,
+    validate: {
+      validator: function(defects) {
+        // Ensure no duplicate section-subtype combinations
+        const combinations = new Set();
+        for (const defect of defects) {
+          const combo = `${defect.Section}-${defect.Subtype}`;
+          if (combinations.has(combo)) {
+            return false; // Duplicate found
+          }
+          combinations.add(combo);
+        }
+        return true;
+      },
+      message: 'Duplicate section-subtype combination not allowed'
+    }
+  },
   Time_Stamp: { 
     type: Number, 
     required: true,
-    index: true
+    index: true // Updated whenever a new defect is added
   }
 }, {
   versionKey: false // Remove __v field for memory efficiency
 });
 
 const RFIDTagScan = mongoose.model("RFIDTagScan", rfidTagScanSchema);
-const Defect = mongoose.model("Defect", defectSchema);
+const GarmentDefects = mongoose.model("GarmentDefects", garmentDefectsSchema);
 
-module.exports = { RFIDTagScan, Defect };
+module.exports = { RFIDTagScan, GarmentDefects };
