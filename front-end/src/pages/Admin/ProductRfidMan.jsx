@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import Header from '../../components/AdminPanal/ProductRfid/Header';
-import FilterBar from '../../components/AdminPanal/ProductRfid/FilterBar';
-import DataTable from '../../components/AdminPanal/ProductRfid/DataTable';
-import StatusBadge from '../../components/AdminPanal/ProductRfid/StatusBadge';
-import ActionButton from '../../components/AdminPanal/ProductRfid/ActionButton';
-import RfidModal from '../../components/AdminPanal/ProductRfid/RfidModal';
-import Modal from '../../components/AdminPanal/ProductRfid/Modal';
+import { User } from 'lucide-react';
+import Header from '../../components/AdminPanal/Header';
+import SearchBar from '../../components/AdminPanal/SearchBar';
+import FilterBar from '../../components/AdminPanal/FilterBar';
+import DataTable from '../../components/AdminPanal/DataTable';
+import StatusBadge from '../../components/AdminPanal/StatusBadge';
+import ActionButton from '../../components/AdminPanal/ActionButton';
+import RfidModal from '../../components/AdminPanal/RfidModal';
+import Modal from '../../components/AdminPanal/Modal';
+import AddButton from '../../components/AdminPanal/AddButton';
 
 const ProductRfidMan = () => {
   const [rfidEntries, setRfidEntries] = useState([
@@ -39,6 +42,7 @@ const ProductRfidMan = () => {
     }
   ]);
 
+  // State variables for modal, editing, search, and filters
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,19 +52,22 @@ const ProductRfidMan = () => {
   const units = ['All Units', 'UNIT 1', 'UNIT 2', 'UNIT 3'];
   const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
+  // Function to handle adding a new entry
   const handleAddEntry = () => {
-    setEditingEntry(null);
-    setIsModalOpen(true);
+    setEditingEntry(null);    
+    setIsModalOpen(true);     
   };
 
+  // Function to handle editing an existing entry
   const handleEditEntry = (entry) => {
-    setEditingEntry(entry);
+    setEditingEntry(entry);   // Set the entry to be edited
     setIsModalOpen(true);
   };
 
+  // Function to handle deleting an entry
   const handleDeleteEntry = (id) => {
     if (window.confirm('Are you sure you want to delete this RFID entry?')) {
-      setRfidEntries(prev => prev.filter(entry => entry.id !== id));
+      setRfidEntries(prev => prev.filter(entry => entry.id !== id));    // Remove the entry by ID
     }
   };
 
@@ -78,14 +85,15 @@ const ProductRfidMan = () => {
       // Add new entry
       const newEntry = {
         ...entryData,
-        id: Date.now().toString()
+        id: Date.now().toString()     // Generate a unique ID
       };
-      setRfidEntries(prev => [...prev, newEntry]);
+      setRfidEntries(prev => [...prev, newEntry]);    // Add the new entry to the list
     }
-    setIsModalOpen(false);
-    setEditingEntry(null);
+    setIsModalOpen(false);   
+    setEditingEntry(null);    
   };
 
+  // Function to handle status changes for an entry
   const handleStatusChange = (id, newStatus) => {
     setRfidEntries(prev =>
       prev.map(entry =>
@@ -94,6 +102,7 @@ const ProductRfidMan = () => {
     );
   };
 
+  // Filter the RFID entries based on search and filter criteria
   const filteredEntries = rfidEntries.filter(entry => {
     const matchesSearch = entry.rfidNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.unit.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,6 +113,7 @@ const ProductRfidMan = () => {
     return matchesSearch && matchesUnit && matchesWorkplace;
   });
 
+  // Define the table columns for the DataTable component
   const tableColumns = [
     {
       header: 'RFID NUMBER',
@@ -126,7 +136,7 @@ const ProductRfidMan = () => {
       render: (entry) => (
         <StatusBadge
           status={entry.status}
-          onChange={(newStatus) => handleStatusChange(entry.id, newStatus)}
+          onChange={(newStatus) => handleStatusChange(entry.id, newStatus)}   // Allow status changes
         />
       )
     },
@@ -166,19 +176,41 @@ const ProductRfidMan = () => {
         {/* Page Content */}
         <div className="flex-1 p-6">
           <div className="bg-white rounded-lg shadow-sm">
-            <Header
-              title="Product RFID Management"
-              onAddClick={handleAddEntry}
-              addButtonText="Add RFID Entry"
-              icon={<div className="w-4 h-4 bg-white rounded-sm"></div>}
-            />
 
-            <FilterBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              searchPlaceholder="Search RFID"
-              filters={filters}
-            />
+            <div className="flex items-center justify-between p-6 border-b">
+              <Header title="Product RFID Managment" icon={<User />} />
+              <AddButton handleAddEntry={handleAddEntry} text="Add User" />
+            </div>
+
+            <div className='flex items-center gap-6 p-6 bg-gray-50'>
+
+              {/*Search Bar*/}
+              <div className='flex-1'>
+                <SearchBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                searchPlaceholder="Search RFID"
+                />
+              </div>
+
+              {/*Unit filter*/}
+              <FilterBar
+              selectedOption={unitFilter}
+              setSelectedOption={setUnitFilter}
+              options={units}
+              selectLabel='Unit'
+              searchPlaceholder=''/>
+
+              {/*Workplace filter*/}
+              <FilterBar
+              selectedOption={workplaceFilter}
+              setSelectedOption={setWorkplaceFilter}
+              options={workplaces}
+              selectLabel='Workplace'
+              searchPlaceholder=''/>
+              
+            </div>
+
 
             {/* RFID Entries */}
             <div className="p-6">

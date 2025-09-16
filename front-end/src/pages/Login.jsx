@@ -22,7 +22,7 @@ const Login = () => {
         setError('');
 
         try {
-            const res = await axios.post('http://localhost:8000/api/auth/login', form);
+            const res = await axios.post('http://localhost:8001/api/auth/login', form);
             const token = res.data.token;
 
             localStorage.setItem('token', token);

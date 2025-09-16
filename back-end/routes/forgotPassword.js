@@ -7,11 +7,16 @@ const User = require("../models/user");
 
 // Nodemailer transporter setup
 const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,  // Gmail account
-        pass: process.env.EMAIL_PASS   // App password
-    }
+  host: "smtp.gmail.com",
+  port: 587, // TLS port
+  secure: false, // use STARTTLS, not SSL
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false, // (optional, for local dev)
+  }
 });
 
 // -------------------------
