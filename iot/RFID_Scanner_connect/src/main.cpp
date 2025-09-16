@@ -207,6 +207,9 @@ const struct {
 const uint8_t QC_UP_BUTTON = 26;
 const uint8_t QC_DOWN_BUTTON = 27;
 
+// Buzzer pin
+const uint8_t BUZZER_PIN = 15;
+
 // Shared SPI pins on ESP32
 const uint8_t SCK_PIN = 18;
 const uint8_t MOSI_PIN = 23;
@@ -657,6 +660,17 @@ void initButtons() {
     // Initialize QC navigation buttons
     pinMode(QC_UP_BUTTON, INPUT_PULLUP);
     pinMode(QC_DOWN_BUTTON, INPUT_PULLUP);
+    
+    // Initialize buzzer pin
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(BUZZER_PIN, LOW); // Ensure buzzer is off initially
+}
+
+// Buzzer beep function
+void beepBuzzer(int duration = 200) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(duration);
+    digitalWrite(BUZZER_PIN, LOW);
 }
 
 // Check if OK button is pressed (LOW when pressed due to pull-up)
@@ -1337,6 +1351,8 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     
     // Check if this is an employee card
     if (isEmployeeCard(uidString)) {
+        // Beep for employee card scan
+        beepBuzzer(300); // 300ms beep for employee cards
         // Handle employee login/logout
         handleEmployeeAccess(uidString, stationNumber);
         return false; // Don't queue employee cards
@@ -1442,6 +1458,9 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
                 updateQCDisplay(uidString.c_str(), qcScanCount);
                 Serial.println("QC: Defect data sent successfully - ID: " + scanID);
                 
+                // Beep for successful defect scan
+                beepBuzzer(150); // 150ms beep for successful defect
+                
                 // Show success message
                 displayQCMessage("Defect Logged!", "ID: " + scanID, "Scan next product", "");
                 delay(3000);
@@ -1493,6 +1512,9 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         // Successfully added to queue
         (*stationCounter)++; // Increment respective station counter
         
+        // Beep for successful product scan
+        beepBuzzer(150); // 150ms beep for successful scan
+        
         // Update LCD display for Station 2 and QC scans
         if (stationNumber == 2) {
             updateStation2Display(uidString.c_str(), station2ScanCount);
@@ -1537,6 +1559,10 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
             // Now try to add the new scan
             if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
                 (*stationCounter)++;
+                
+                // Beep for successful scan after queue management
+                beepBuzzer(150); // 150ms beep
+                
                 // Update display for respective stations
                 if (stationNumber == 2) {
                     updateStation2Display(uidString.c_str(), station2ScanCount);
