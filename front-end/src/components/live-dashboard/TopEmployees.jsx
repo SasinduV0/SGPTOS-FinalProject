@@ -39,7 +39,7 @@ const TopEmployees = () => {
     .slice(0, 4);
 
   return (
-    <div className="p-2">
+    <div className="">
       <div className="text-black rounded-2xl p-3">
         <h2 className="text-lg font-bold text-center">Top 4 Employees (All Lines)</h2>
 
@@ -47,12 +47,12 @@ const TopEmployees = () => {
           {topEmployees.map((emp, index) => (
             <div
               key={emp._id}
-              className="flex justify-between items-center px-3 py-1 rounded-lg hover:bg-gray-700 transition"
+              className="flex justify-between items-center px-3 py-1 rounded-lg  hover:bg-yellow-300 transition"
             >
               <div className="flex items-center gap-4">
                 <FaUser className="text-yellow-700" />
-                <span>
-                  {index + 1}. {emp.name} (Line {emp.line})
+                <span className="font-medium flex gap-10 text-gray-700">
+                  {index + 1}. {emp.name} <span className="text-yellow-300 indent-10"> </span> Line {emp.line}
                 </span>
               </div>
               <span className="font-semibold">{emp.pcs} Pcs</span>
