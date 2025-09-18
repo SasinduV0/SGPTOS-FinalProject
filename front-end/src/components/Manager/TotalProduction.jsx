@@ -25,12 +25,12 @@ const TotalProduction = () => {
   }, []);
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow w-80">
+    <div className="bg-white p-6 rounded-2xl shadow w-82 ml-2">
       <div className="flex items-center justify-between">
         {/* Left side (text) */}
         <div className="text-left">
           <h3 className="text-lg font-semibold text-gray-700">Total Production</h3>
-          <p className="text-3xl font-bold text-indigo-600">{totalProduction}</p>
+          <p className="text-2xl font-bold text-indigo-600">{totalProduction}</p>
         </div>
 
         {/* Right side (icon) */}
