@@ -7,6 +7,7 @@ import TotalProduction from '../../components/Manager/TotalProduction';
 import EfficiencyRate from '../../components/Manager/EfficiencyRate';
 import ActiveWorkers from '../../components/Manager/ActiveWorkers';
 import LinePerformanceTable from '../../components/Manager/LinePerformanceTable';
+import RemainingTarget from '../../components/Manager/RemainingTarget';
 
 
 const Production = () => {
@@ -94,13 +95,7 @@ const Production = () => {
     endDate: ''
   });
 
-  // Sample production data
-  const productionMetrics = [
-    { title: 'Total Production', value: '1,247', change: '+12.5%', icon: Target, color: 'blue' },
-    { title: 'Efficiency Rate', value: '87.3%', change: '+5.2%', icon: TrendingUp, color: 'green' },
-    { title: 'Active Workers', value: '145', change: '-3', icon: Users, color: 'purple' },
-    { title: 'Downtime', value: '2.1h', change: '-15min', icon: Clock, color: 'red' }
-  ];
+
 
   const hourlyProductionData = [
     { hour: '08:00', target: 120, actual: 115 },
@@ -203,31 +198,10 @@ const Production = () => {
     <div className='flex gap-5'>
         <TotalProduction/>
         <EfficiencyRate/>
+        <RemainingTarget/>
         <ActiveWorkers/>
     </div>    
       
-
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {productionMetrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{metric.title}</p>
-                <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
-                <p className={`text-sm ${
-                  metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {metric.change}
-                </p>
-              </div>
-              <div className={`p-3 rounded-full bg-${metric.color}-100`}>
-                <metric.icon className={`h-6 w-6 text-${metric.color}-600`} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* Production Planning Table */}
       <div className="bg-white rounded-lg shadow">
