@@ -102,7 +102,7 @@ const LineTargetChart = () => {
     setLineData(chartData);
   };
 
-  const getBarColor = (percentage) => (percentage >= 100 ? "#22c55e" : "#4f46e5");
+  const getBarColor = (percentage) => (percentage >= 100 ? "#8B0000" : "#4f46e5");
 
   if (loading) {
     return (
@@ -113,9 +113,9 @@ const LineTargetChart = () => {
   }
 
   return (
-    <div className="bg-white rounded-2xl w-[450px] max-w-xl ">
-      <h2 className="text-center text-black font-bold text-2xl mb-6">
-        Line Wise Target
+    <div className="bg-white rounded-2xl w-[500px] max-w-xl ">
+      <h2 className="text-center text-gray-800 font-bold text-2xl mb-6">
+        Total Productivity - Line Wise Target
         {connectionStatus === "connected" && <span className="text-green-500 text-xs ml-2">●</span>}
         {connectionStatus === "disconnected" && <span className="text-red-500 text-xs ml-2">●</span>}
       </h2>
