@@ -15,7 +15,7 @@ const char* ssid = "Redmi Note 9 Pro";
 const char* password = "1234r65i";
 
 // WebSocket server configuration
-const char* websocket_server = "192.168.111.159"; // Wi-fi Server IP
+const char* websocket_server = "192.168.64.159"; // Wi-fi Server IP
 const int websocket_port = 8000;
 const char* websocket_path = "/rfid-ws";
 
@@ -65,27 +65,38 @@ volatile ShiftState station1State = WAITING_FOR_CARD;
 volatile ShiftState station2State = WAITING_FOR_CARD;
 volatile ShiftState qcState = WAITING_FOR_CARD;
 
-// QC Parts selection variables
-const String QC_PARTS[] = {"Body", "Hand", "Collar", "Upper Back"};
-const int QC_PARTS_COUNT = 4;
+// Dynamic QC Defect Configuration - loaded from database
+struct DefectSubtype {
+  uint8_t code;
+  String name;
+};
+
+struct DefectType {
+  uint8_t code;
+  String name;
+  DefectSubtype* subtypes;
+  int subtypeCount;
+};
+
+struct DefectSection {
+  uint8_t code;
+  String name;
+};
+
+// Dynamic defect configuration variables
+DefectSection* qcSections = nullptr;
+int qcSectionsCount = 0;
+
+DefectType* qcTypes = nullptr;
+int qcTypesCount = 0;
+
+String defectDefinitionsVersion = "";
+bool defectDefinitionsLoaded = false;
+
+// QC Parts selection variables (updated to use dynamic data)
 volatile int qcSelectedPart = 0;
 volatile int qcScrollOffset = 0;
 volatile bool qcInPartsSelection = false;
-
-// QC Defect types and subtypes
-const String QC_DEFECT_TYPES[] = {"Fabric", "Stitching", "Sewing", "Other"};
-const int QC_DEFECT_TYPES_COUNT = 4;
-
-// QC Defect subtypes organized by type
-const String QC_FABRIC_SUBTYPES[] = {"Hole", "Stain", "Shading", "Slub"};
-const String QC_STITCHING_SUBTYPES[] = {"Skipped", "Broken", "Uneven", "Loose"};
-const String QC_SEWING_SUBTYPES[] = {"Pluckering", "Misalignment", "Open_seam", "Backtak", "Seam_gap"};
-const String QC_OTHER_SUBTYPES[] = {"Measurement", "Button/Button_hole", "Twisted"};
-
-const int QC_FABRIC_SUBTYPES_COUNT = 4;
-const int QC_STITCHING_SUBTYPES_COUNT = 4;
-const int QC_SEWING_SUBTYPES_COUNT = 5;
-const int QC_OTHER_SUBTYPES_COUNT = 3;
 
 // QC Selection state management
 enum QCSelectionStep {
@@ -100,23 +111,32 @@ volatile int qcSelectedSubtype = 0;
 volatile int qcTypeScrollOffset = 0;
 volatile int qcSubtypeScrollOffset = 0;
 
-// Numeric conversion functions for defect schema
+// Dynamic numeric conversion functions for defect schema
 uint8_t getSectionCode(int sectionIndex) {
-    return (uint8_t)sectionIndex; // 0=Body, 1=Hand, 2=Collar, 3=Upper Back
+    if (!defectDefinitionsLoaded || sectionIndex < 0 || sectionIndex >= qcSectionsCount) {
+        return 0; // Default to first section
+    }
+    return qcSections[sectionIndex].code;
 }
 
 uint8_t getTypeCode(int typeIndex) {
-    return (uint8_t)typeIndex; // 0=Fabric, 1=Stitching, 2=Sewing, 3=Other
+    if (!defectDefinitionsLoaded || typeIndex < 0 || typeIndex >= qcTypesCount) {
+        return 0; // Default to first type
+    }
+    return qcTypes[typeIndex].code;
 }
 
 uint8_t getSubtypeCode(int typeIndex, int subtypeIndex) {
-    switch(typeIndex) {
-        case 0: return subtypeIndex;           // Fabric: 0-3
-        case 1: return 4 + subtypeIndex;      // Stitching: 4-7
-        case 2: return 8 + subtypeIndex;      // Sewing: 8-12
-        case 3: return 13 + subtypeIndex;     // Other: 13-15
-        default: return 0;
+    if (!defectDefinitionsLoaded || typeIndex < 0 || typeIndex >= qcTypesCount) {
+        return 0; // Default
     }
+    
+    DefectType& type = qcTypes[typeIndex];
+    if (subtypeIndex < 0 || subtypeIndex >= type.subtypeCount) {
+        return 0; // Default
+    }
+    
+    return type.subtypes[subtypeIndex].code;
 }
 
 // Daily scan counter for ID generation
@@ -155,6 +175,11 @@ volatile bool timeInitialized = false;
 // Forward declarations for FreeRTOS tasks
 void connectivityTask(void *parameter);
 void rfidScanningTask(void *parameter);
+
+// Forward declarations for defect definitions functions
+bool fetchDefectDefinitions();
+bool parseDefectDefinitions(JsonDocument& doc);
+void cleanupDefectDefinitions();
 
 // Forward declarations for LCD functions
 void initLCDs();
@@ -326,6 +351,181 @@ void checkNTPSync() {
         configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
         lastNTPSync = millis();
     }
+}
+
+// Fetch defect definitions from server (Core 0 task)
+bool fetchDefectDefinitions() {
+    if (!wifiConnected) {
+        Serial.println("WiFi not connected, cannot fetch defect definitions");
+        return false;
+    }
+
+    Serial.println("Fetching defect definitions from server...");
+    
+    // Create HTTP client
+    WiFiClient client;
+    
+    if (!client.connect(websocket_server, websocket_port)) {
+        Serial.println("Failed to connect to server for defect definitions");
+        return false;
+    }
+
+    // Send HTTP GET request
+    String request = "GET /api/iot/defect-definitions/esp32 HTTP/1.1\r\n";
+    request += "Host: " + String(websocket_server) + ":" + String(websocket_port) + "\r\n";
+    request += "Connection: close\r\n\r\n";
+    
+    client.print(request);
+
+    // Wait for response
+    unsigned long timeout = millis() + 10000; // 10 second timeout
+    while (client.available() == 0) {
+        if (millis() > timeout) {
+            Serial.println("Timeout waiting for defect definitions response");
+            client.stop();
+            return false;
+        }
+        delay(10);
+    }
+
+    // Read response
+    String response = "";
+    bool headersEnded = false;
+    
+    while (client.available()) {
+        String line = client.readStringUntil('\n');
+        if (!headersEnded) {
+            if (line == "\r") {
+                headersEnded = true;
+            }
+        } else {
+            response += line;
+        }
+    }
+    
+    client.stop();
+
+    if (response.length() == 0) {
+        Serial.println("Empty response from defect definitions endpoint");
+        return false;
+    }
+
+    Serial.println("Received defect definitions response:");
+    Serial.println(response.substring(0, 200) + "..."); // Print first 200 chars
+
+    // Parse JSON response
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, response);
+
+    if (error) {
+        Serial.print("Failed to parse defect definitions JSON: ");
+        Serial.println(error.c_str());
+        return false;
+    }
+
+    return parseDefectDefinitions(doc);
+}
+
+// Parse and store defect definitions (Core 0 task)
+bool parseDefectDefinitions(JsonDocument& doc) {
+    Serial.println("Parsing defect definitions...");
+
+    // Check if we got an error response
+    if (doc["error"].is<const char*>()) {
+        Serial.println("Server returned error: " + String(doc["error"].as<const char*>()));
+        
+        // Try to use fallback data if provided
+        if (doc["fallback"].is<JsonObject>()) {
+            Serial.println("Using fallback defect definitions");
+            doc = doc["fallback"];
+        } else {
+            return false;
+        }
+    }
+
+    // Free existing memory
+    cleanupDefectDefinitions();
+
+    // Parse version
+    if (doc["version"].is<const char*>()) {
+        defectDefinitionsVersion = doc["version"].as<String>();
+    }
+
+    // Parse sections
+    JsonArray sectionsArray = doc["sections"];
+    qcSectionsCount = sectionsArray.size();
+    
+    if (qcSectionsCount > 0) {
+        qcSections = new DefectSection[qcSectionsCount];
+        
+        for (int i = 0; i < qcSectionsCount; i++) {
+            qcSections[i].code = sectionsArray[i]["code"];
+            qcSections[i].name = sectionsArray[i]["name"].as<String>();
+        }
+        
+        Serial.printf("Loaded %d sections\n", qcSectionsCount);
+    }
+
+    // Parse types and subtypes
+    JsonArray typesArray = doc["types"];
+    qcTypesCount = typesArray.size();
+    
+    if (qcTypesCount > 0) {
+        qcTypes = new DefectType[qcTypesCount];
+        
+        for (int i = 0; i < qcTypesCount; i++) {
+            qcTypes[i].code = typesArray[i]["code"];
+            qcTypes[i].name = typesArray[i]["name"].as<String>();
+            
+            // Parse subtypes for this type
+            JsonArray subtypesArray = typesArray[i]["subtypes"];
+            qcTypes[i].subtypeCount = subtypesArray.size();
+            
+            if (qcTypes[i].subtypeCount > 0) {
+                qcTypes[i].subtypes = new DefectSubtype[qcTypes[i].subtypeCount];
+                
+                for (int j = 0; j < qcTypes[i].subtypeCount; j++) {
+                    qcTypes[i].subtypes[j].code = subtypesArray[j]["code"];
+                    qcTypes[i].subtypes[j].name = subtypesArray[j]["name"].as<String>();
+                }
+            } else {
+                qcTypes[i].subtypes = nullptr;
+            }
+            
+            Serial.printf("Type %d (%s) has %d subtypes\n", 
+                         qcTypes[i].code, qcTypes[i].name.c_str(), qcTypes[i].subtypeCount);
+        }
+        
+        Serial.printf("Loaded %d types\n", qcTypesCount);
+    }
+
+    defectDefinitionsLoaded = true;
+    Serial.println("Defect definitions loaded successfully!");
+    Serial.println("Version: " + defectDefinitionsVersion);
+    
+    return true;
+}
+
+// Clean up dynamically allocated defect definitions memory
+void cleanupDefectDefinitions() {
+    if (qcSections) {
+        delete[] qcSections;
+        qcSections = nullptr;
+    }
+    
+    if (qcTypes) {
+        for (int i = 0; i < qcTypesCount; i++) {
+            if (qcTypes[i].subtypes) {
+                delete[] qcTypes[i].subtypes;
+            }
+        }
+        delete[] qcTypes;
+        qcTypes = nullptr;
+    }
+    
+    qcSectionsCount = 0;
+    qcTypesCount = 0;
+    defectDefinitionsLoaded = false;
 }
 
 // Handle incoming WebSocket messages
@@ -737,6 +937,15 @@ void waitForQCButtonRelease() {
 
 // Display QC parts selection list
 void displayQCPartsList() {
+    if (!defectDefinitionsLoaded || qcSectionsCount == 0) {
+        lcdQC.clear();
+        lcdQC.setCursor(0, 0);
+        lcdQC.print("No defect data");
+        lcdQC.setCursor(0, 1);
+        lcdQC.print("Check connection");
+        return;
+    }
+
     lcdQC.clear();
     
     // First line: Title at index 3
@@ -746,16 +955,16 @@ void displayQCPartsList() {
     // Display 3 items starting from scroll offset
     for (int i = 0; i < 3; i++) {
         int partIndex = qcScrollOffset + i;
-        if (partIndex < QC_PARTS_COUNT) {
+        if (partIndex < qcSectionsCount) {
             int row = i + 1;
             
             // Selected item indented by 1 space, others at index 0
             if (partIndex == qcSelectedPart) {
                 lcdQC.setCursor(1, row); // Selected item at index 1
-                lcdQC.print(QC_PARTS[partIndex]);
+                lcdQC.print(qcSections[partIndex].name);
             } else {
                 lcdQC.setCursor(0, row); // Non-selected items at index 0
-                lcdQC.print(QC_PARTS[partIndex]);
+                lcdQC.print(qcSections[partIndex].name);
             }
         }
     }
@@ -763,6 +972,15 @@ void displayQCPartsList() {
 
 // Display QC defect types selection list
 void displayQCTypesList() {
+    if (!defectDefinitionsLoaded || qcTypesCount == 0) {
+        lcdQC.clear();
+        lcdQC.setCursor(0, 0);
+        lcdQC.print("No types data");
+        lcdQC.setCursor(0, 1);
+        lcdQC.print("Check connection");
+        return;
+    }
+
     lcdQC.clear();
     
     // First line: Title at index 2
@@ -772,45 +990,32 @@ void displayQCTypesList() {
     // Display 3 items starting from scroll offset
     for (int i = 0; i < 3; i++) {
         int typeIndex = qcTypeScrollOffset + i;
-        if (typeIndex < QC_DEFECT_TYPES_COUNT) {
+        if (typeIndex < qcTypesCount) {
             int row = i + 1;
             
             // Selected item indented by 1 space, others at index 0
             if (typeIndex == qcSelectedType) {
                 lcdQC.setCursor(1, row); // Selected item at index 1
-                lcdQC.print(QC_DEFECT_TYPES[typeIndex]);
+                lcdQC.print(qcTypes[typeIndex].name);
             } else {
                 lcdQC.setCursor(0, row); // Non-selected items at index 0
-                lcdQC.print(QC_DEFECT_TYPES[typeIndex]);
+                lcdQC.print(qcTypes[typeIndex].name);
             }
         }
     }
 }
 
-// Get subtypes array and count based on selected type
-void getSubtypesForType(int typeIndex, const String*& subtypes, int& count) {
-    switch(typeIndex) {
-        case 0: // Fabric
-            subtypes = QC_FABRIC_SUBTYPES;
-            count = QC_FABRIC_SUBTYPES_COUNT;
-            break;
-        case 1: // Stitching
-            subtypes = QC_STITCHING_SUBTYPES;
-            count = QC_STITCHING_SUBTYPES_COUNT;
-            break;
-        case 2: // Sewing
-            subtypes = QC_SEWING_SUBTYPES;
-            count = QC_SEWING_SUBTYPES_COUNT;
-            break;
-        case 3: // Other
-            subtypes = QC_OTHER_SUBTYPES;
-            count = QC_OTHER_SUBTYPES_COUNT;
-            break;
-        default:
-            subtypes = QC_FABRIC_SUBTYPES;
-            count = QC_FABRIC_SUBTYPES_COUNT;
-            break;
+// Get subtypes array and count based on selected type (dynamic version)
+bool getSubtypesForType(int typeIndex, DefectSubtype*& subtypes, int& count) {
+    if (!defectDefinitionsLoaded || typeIndex < 0 || typeIndex >= qcTypesCount) {
+        subtypes = nullptr;
+        count = 0;
+        return false;
     }
+    
+    subtypes = qcTypes[typeIndex].subtypes;
+    count = qcTypes[typeIndex].subtypeCount;
+    return true;
 }
 
 // Display QC defect subtypes selection list
@@ -822,9 +1027,13 @@ void displayQCSubtypesList() {
     lcdQC.print("-DEFECT-");
     
     // Get subtypes for selected type
-    const String* subtypes;
+    DefectSubtype* subtypes;
     int subtypesCount;
-    getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+    if (!getSubtypesForType(qcSelectedType, subtypes, subtypesCount)) {
+        lcdQC.setCursor(0, 1);
+        lcdQC.print("No subtypes");
+        return;
+    }
     
     // Display 3 items starting from scroll offset
     for (int i = 0; i < 3; i++) {
@@ -835,10 +1044,10 @@ void displayQCSubtypesList() {
             // Selected item indented by 1 space, others at index 0
             if (subtypeIndex == qcSelectedSubtype) {
                 lcdQC.setCursor(1, row); // Selected item at index 1
-                lcdQC.print(subtypes[subtypeIndex]);
+                lcdQC.print(subtypes[subtypeIndex].name);
             } else {
                 lcdQC.setCursor(0, row); // Non-selected items at index 0
-                lcdQC.print(subtypes[subtypeIndex]);
+                lcdQC.print(subtypes[subtypeIndex].name);
             }
         }
     }
@@ -873,7 +1082,7 @@ bool handleQCPartsSelection() {
                     waitForQCButtonRelease();
                     qcSelectedPart--;
                     if (qcSelectedPart < 0) {
-                        qcSelectedPart = QC_PARTS_COUNT - 1; // Wrap to bottom
+                        qcSelectedPart = qcSectionsCount - 1; // Wrap to bottom
                     }
                     
                     // Adjust scroll offset if needed
@@ -883,7 +1092,7 @@ bool handleQCPartsSelection() {
                         qcScrollOffset = qcSelectedPart - 2;
                     }
                     
-                    Serial.println("QC: Section UP - Selected: " + QC_PARTS[qcSelectedPart]);
+                    Serial.println("QC: Section UP - Selected: " + qcSections[qcSelectedPart].name);
                     displayQCPartsList();
                     startTime = millis(); // Reset timeout
                 }
@@ -892,7 +1101,7 @@ bool handleQCPartsSelection() {
                 if (isQCDownPressed()) {
                     waitForQCButtonRelease();
                     qcSelectedPart++;
-                    if (qcSelectedPart >= QC_PARTS_COUNT) {
+                    if (qcSelectedPart >= qcSectionsCount) {
                         qcSelectedPart = 0; // Wrap to top
                         qcScrollOffset = 0;
                     }
@@ -904,7 +1113,7 @@ bool handleQCPartsSelection() {
                         qcScrollOffset = qcSelectedPart;
                     }
                     
-                    Serial.println("QC: Section DOWN - Selected: " + QC_PARTS[qcSelectedPart]);
+                    Serial.println("QC: Section DOWN - Selected: " + qcSections[qcSelectedPart].name);
                     displayQCPartsList();
                     startTime = millis(); // Reset timeout
                 }
@@ -912,7 +1121,7 @@ bool handleQCPartsSelection() {
                 // OK button - proceed to type selection
                 if (isOKPressed(3)) {
                     waitForButtonRelease(3);
-                    Serial.println("QC: Section confirmed - " + QC_PARTS[qcSelectedPart] + " -> Moving to Type selection");
+                    Serial.println("QC: Section confirmed - " + qcSections[qcSelectedPart].name + " -> Moving to Type selection");
                     qcCurrentStep = QC_SELECT_TYPE;
                     qcSelectedType = 0;
                     qcTypeScrollOffset = 0;
@@ -935,7 +1144,7 @@ bool handleQCPartsSelection() {
                     waitForQCButtonRelease();
                     qcSelectedType--;
                     if (qcSelectedType < 0) {
-                        qcSelectedType = QC_DEFECT_TYPES_COUNT - 1; // Wrap to bottom
+                        qcSelectedType = qcTypesCount - 1; // Wrap to bottom
                     }
                     
                     // Adjust scroll offset if needed
@@ -945,7 +1154,7 @@ bool handleQCPartsSelection() {
                         qcTypeScrollOffset = qcSelectedType - 2;
                     }
                     
-                    Serial.println("QC: Type UP - Selected: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    Serial.println("QC: Type UP - Selected: " + qcTypes[qcSelectedType].name);
                     displayQCTypesList();
                     startTime = millis(); // Reset timeout
                 }
@@ -954,7 +1163,7 @@ bool handleQCPartsSelection() {
                 if (isQCDownPressed()) {
                     waitForQCButtonRelease();
                     qcSelectedType++;
-                    if (qcSelectedType >= QC_DEFECT_TYPES_COUNT) {
+                    if (qcSelectedType >= qcTypesCount) {
                         qcSelectedType = 0; // Wrap to top
                         qcTypeScrollOffset = 0;
                     }
@@ -966,7 +1175,7 @@ bool handleQCPartsSelection() {
                         qcTypeScrollOffset = qcSelectedType;
                     }
                     
-                    Serial.println("QC: Type DOWN - Selected: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    Serial.println("QC: Type DOWN - Selected: " + qcTypes[qcSelectedType].name);
                     displayQCTypesList();
                     startTime = millis(); // Reset timeout
                 }
@@ -974,7 +1183,7 @@ bool handleQCPartsSelection() {
                 // OK button - proceed to subtype selection
                 if (isOKPressed(3)) {
                     waitForButtonRelease(3);
-                    Serial.println("QC: Type confirmed - " + QC_DEFECT_TYPES[qcSelectedType] + " -> Moving to Subtype selection");
+                    Serial.println("QC: Type confirmed - " + qcTypes[qcSelectedType].name + " -> Moving to Subtype selection");
                     qcCurrentStep = QC_SELECT_SUBTYPE;
                     qcSelectedSubtype = 0;
                     qcSubtypeScrollOffset = 0;
@@ -994,9 +1203,13 @@ bool handleQCPartsSelection() {
                 
             case QC_SELECT_SUBTYPE:
                 // Get subtypes count for current type
-                const String* subtypes;
+                DefectSubtype* subtypes;
                 int subtypesCount;
-                getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+                if (!getSubtypesForType(qcSelectedType, subtypes, subtypesCount)) {
+                    // Handle error case
+                    qcInPartsSelection = false;
+                    return false;
+                }
                 
                 // Navigation UP
                 if (isQCUpPressed()) {
@@ -1013,7 +1226,7 @@ bool handleQCPartsSelection() {
                         qcSubtypeScrollOffset = qcSelectedSubtype - 2;
                     }
                     
-                    Serial.println("QC: Subtype UP - Selected: " + subtypes[qcSelectedSubtype]);
+                    Serial.println("QC: Subtype UP - Selected: " + subtypes[qcSelectedSubtype].name);
                     displayQCSubtypesList();
                     startTime = millis(); // Reset timeout
                 }
@@ -1034,7 +1247,7 @@ bool handleQCPartsSelection() {
                         qcSubtypeScrollOffset = qcSelectedSubtype;
                     }
                     
-                    Serial.println("QC: Subtype DOWN - Selected: " + subtypes[qcSelectedSubtype]);
+                    Serial.println("QC: Subtype DOWN - Selected: " + subtypes[qcSelectedSubtype].name);
                     displayQCSubtypesList();
                     startTime = millis(); // Reset timeout
                 }
@@ -1043,9 +1256,17 @@ bool handleQCPartsSelection() {
                 if (isOKPressed(3)) {
                     waitForButtonRelease(3);
                     Serial.println("QC: Complete selection confirmed!");
-                    Serial.println("Section: " + QC_PARTS[qcSelectedPart]);
-                    Serial.println("Type: " + QC_DEFECT_TYPES[qcSelectedType]);
-                    Serial.println("Subtype: " + subtypes[qcSelectedSubtype]);
+                    Serial.println("Section: " + qcSections[qcSelectedPart].name);
+                    Serial.println("Type: " + qcTypes[qcSelectedType].name);
+                    
+                    // Get selected subtype name
+                    DefectSubtype* subtypes;
+                    int subtypesCount;
+                    if (getSubtypesForType(qcSelectedType, subtypes, subtypesCount) && 
+                        qcSelectedSubtype < subtypesCount) {
+                        Serial.println("Subtype: " + subtypes[qcSelectedSubtype].name);
+                    }
+                    
                     qcInPartsSelection = false;
                     return true;
                 }
@@ -1240,8 +1461,17 @@ void connectivityTask(void *parameter) {
         initNTP();
         // Initialize WebSocket
         initWebSocket();
+        
+        // Fetch defect definitions from server
+        Serial.println("Fetching defect definitions...");
+        if (fetchDefectDefinitions()) {
+            Serial.println("Defect definitions loaded successfully");
+        } else {
+            Serial.println("!! Failed to load defect definitions, using fallback");
+            // You could implement fallback hardcoded values here if needed
+        }
     } else {
-        Serial.println("!! Skipping NTP and WebSocket due to WiFi failure");
+        Serial.println("!! Skipping NTP, WebSocket, and defect definitions due to WiFi failure");
         Serial.println("RFID scanning will work in OFFLINE mode - scans will be queued");
         Serial.println("Data will be sent when WiFi/WebSocket connection is restored");
     }
@@ -1425,18 +1655,21 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         }
         
         // Get selected subtype name for display
-        const String* subtypes;
+        DefectSubtype* subtypes;
         int subtypesCount;
-        getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
-        String selectedSubtype = subtypes[qcSelectedSubtype];
+        String selectedSubtype = "";
+        if (getSubtypesForType(qcSelectedType, subtypes, subtypesCount) && 
+            qcSelectedSubtype < subtypesCount) {
+            selectedSubtype = subtypes[qcSelectedSubtype].name;
+        }
         
         // User confirmed complete selection - process as defect
         Serial.println("QC: Processing defect scan with complete selection:");
-        Serial.println("  Section: " + QC_PARTS[qcSelectedPart]);
-        Serial.println("  Type: " + QC_DEFECT_TYPES[qcSelectedType]); 
+        Serial.println("  Section: " + qcSections[qcSelectedPart].name);
+        Serial.println("  Type: " + qcTypes[qcSelectedType].name); 
         Serial.println("  Subtype: " + selectedSubtype);
         
-        displayQCMessage("Processing...", "Sec:" + QC_PARTS[qcSelectedPart], "Typ:" + QC_DEFECT_TYPES[qcSelectedType], "Sub:" + selectedSubtype.substring(0, 12));
+        displayQCMessage("Processing...", "Sec:" + qcSections[qcSelectedPart].name, "Typ:" + qcTypes[qcSelectedType].name, "Sub:" + selectedSubtype.substring(0, 12));
         delay(1500); // Reduced from 2500ms for faster processing
         
         // Generate scan ID and get timestamp
