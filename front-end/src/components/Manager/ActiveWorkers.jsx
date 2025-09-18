@@ -24,12 +24,12 @@ const ActiveWorkers = () => {
   }, []);
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow w-80">
+    <div className="bg-white p-6 rounded-2xl shadow w-82">
       <div className="flex items-center justify-between">
         {/* Left side (text) */}
         <div className="text-left">
           <h3 className="text-lg font-semibold text-gray-700">Active Workers</h3>
-          <p className="text-3xl font-bold text-blue-600">{activeWorkers}</p>
+          <p className="text-2xl font-bold text-blue-600">{activeWorkers}</p>
         </div>
 
         {/* Right side (icon) */}
