@@ -1,23 +1,3 @@
-/*
- * ESP32 Multi-RFID Scanner with FreeRTOS Dual-Core Architecture
- * 
- * Core 0 (Pro Core): WiFi, NTP synchronization, connectivity tasks
- * Core 1 (App Core): RFID scanning, queue operations (time-critical)
- * 
- * Features:
- * - Supports 3 MFRC522 RFID scanners via shared SPI
- * - WiFi connectivity with NTP time synchronization (Sri Lanka timezone)
- * - FreeRTOS queue for thread-safe data passing between cores
- * - Automatic NTP re-synchronization every 2 hours
- * - Dual-core architecture for uninterrupted RFID scanning
- * 
- * Data Structure: ScannedData contains timestamp, station number, UID, and UID size
- * Queue: Thread-safe FreeRTOS queue with configurable size (default: 50 items)
- * 
- * Modified by: GitHub Copilot
- * Date: August 17, 2025
- */
-
 #include <SPI.h>
 #include <MFRC522.h>
 #include <WiFi.h>
@@ -27,13 +7,15 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 
 // WiFi credentials - Replace with your network credentials
 const char* ssid = "Redmi Note 9 Pro";
 const char* password = "1234r65i";
 
 // WebSocket server configuration
-const char* websocket_server = "192.168.211.159"; // Replace with your server IP
+const char* websocket_server = "192.168.111.159"; // Wi-fi Server IP
 const int websocket_port = 8000;
 const char* websocket_path = "/rfid-ws";
 
@@ -44,6 +26,98 @@ const int daylightOffset_sec = 0;   // Sri Lanka doesn't use daylight saving tim
 
 // WebSocket client
 WebSocketsClient webSocket;
+
+// LCD configuration for Station 2 (1602A)
+const uint8_t LCD_S2_I2C_ADDR = 0x27;
+const uint8_t LCD_S2_COLS = 16;
+const uint8_t LCD_S2_ROWS = 2;
+LiquidCrystal_I2C lcdStation2(LCD_S2_I2C_ADDR, LCD_S2_COLS, LCD_S2_ROWS);
+
+// LCD configuration for QC Station (1604A)
+const uint8_t LCD_QC_I2C_ADDR = 0x26;
+const uint8_t LCD_QC_COLS = 16;
+const uint8_t LCD_QC_ROWS = 4;
+LiquidCrystal_I2C lcdQC(LCD_QC_I2C_ADDR, LCD_QC_COLS, LCD_QC_ROWS);
+
+// Individual station scan counters
+volatile uint32_t station1ScanCount = 0;
+volatile uint32_t station2ScanCount = 0;
+volatile uint32_t qcScanCount = 0;
+
+// Station access control - tracks which employee is logged in to each station
+bool station1Active = false;
+bool station2Active = false;
+bool qcActive = false;
+
+String station1Employee = "";
+String station2Employee = "";
+String qcEmployee = "";
+
+// Shift confirmation states
+enum ShiftState {
+    WAITING_FOR_CARD,
+    WAITING_START_CONFIRMATION,
+    ACTIVE_SCANNING,
+    WAITING_END_CONFIRMATION
+};
+
+volatile ShiftState station1State = WAITING_FOR_CARD;
+volatile ShiftState station2State = WAITING_FOR_CARD;
+volatile ShiftState qcState = WAITING_FOR_CARD;
+
+// QC Parts selection variables
+const String QC_PARTS[] = {"Body", "Hand", "Collar", "Upper Back"};
+const int QC_PARTS_COUNT = 4;
+volatile int qcSelectedPart = 0;
+volatile int qcScrollOffset = 0;
+volatile bool qcInPartsSelection = false;
+
+// QC Defect types and subtypes
+const String QC_DEFECT_TYPES[] = {"Fabric", "Stitching", "Sewing", "Other"};
+const int QC_DEFECT_TYPES_COUNT = 4;
+
+// QC Defect subtypes organized by type
+const String QC_FABRIC_SUBTYPES[] = {"Hole", "Stain", "Shading", "Slub"};
+const String QC_STITCHING_SUBTYPES[] = {"Skipped", "Broken", "Uneven", "Loose"};
+const String QC_SEWING_SUBTYPES[] = {"Pluckering", "Misalignment", "Open_seam", "Backtak", "Seam_gap"};
+const String QC_OTHER_SUBTYPES[] = {"Measurement", "Button/Button_hole", "Twisted"};
+
+const int QC_FABRIC_SUBTYPES_COUNT = 4;
+const int QC_STITCHING_SUBTYPES_COUNT = 4;
+const int QC_SEWING_SUBTYPES_COUNT = 5;
+const int QC_OTHER_SUBTYPES_COUNT = 3;
+
+// QC Selection state management
+enum QCSelectionStep {
+    QC_SELECT_SECTION,
+    QC_SELECT_TYPE,
+    QC_SELECT_SUBTYPE
+};
+
+volatile QCSelectionStep qcCurrentStep = QC_SELECT_SECTION;
+volatile int qcSelectedType = 0;
+volatile int qcSelectedSubtype = 0;
+volatile int qcTypeScrollOffset = 0;
+volatile int qcSubtypeScrollOffset = 0;
+
+// Numeric conversion functions for defect schema
+uint8_t getSectionCode(int sectionIndex) {
+    return (uint8_t)sectionIndex; // 0=Body, 1=Hand, 2=Collar, 3=Upper Back
+}
+
+uint8_t getTypeCode(int typeIndex) {
+    return (uint8_t)typeIndex; // 0=Fabric, 1=Stitching, 2=Sewing, 3=Other
+}
+
+uint8_t getSubtypeCode(int typeIndex, int subtypeIndex) {
+    switch(typeIndex) {
+        case 0: return subtypeIndex;           // Fabric: 0-3
+        case 1: return 4 + subtypeIndex;      // Stitching: 4-7
+        case 2: return 8 + subtypeIndex;      // Sewing: 8-12
+        case 3: return 13 + subtypeIndex;     // Other: 13-15
+        default: return 0;
+    }
+}
 
 // Daily scan counter for ID generation
 volatile uint16_t dailyScanCount = 0;
@@ -64,7 +138,7 @@ struct ScannedData {
 
 // FreeRTOS Queue handle
 QueueHandle_t scannedDataQueue;
-const int QUEUE_SIZE = 50;      // Maximum number of scanned data items in queue
+const int QUEUE_SIZE = 100;      // Increased to 100 for better offline storage
 
 // FreeRTOS Task handles
 TaskHandle_t connectivityTaskHandle = NULL;
@@ -82,6 +156,27 @@ volatile bool timeInitialized = false;
 void connectivityTask(void *parameter);
 void rfidScanningTask(void *parameter);
 
+// Forward declarations for LCD functions
+void initLCDs();
+void updateStation2Display(const char* uid, uint32_t scanCount);
+void updateQCDisplay(const char* uid, uint32_t scanCount);
+void displayStation2Message(String line1, String line2);
+void displayQCMessage(String line1, String line2, String line3 = "", String line4 = "");
+
+// Forward declarations for button functions
+void initButtons();
+bool isOKPressed(uint8_t stationNumber);
+bool isCancelPressed(uint8_t stationNumber);
+void waitForButtonRelease(uint8_t stationNumber);
+bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs = 30000);
+
+// Forward declarations for QC navigation functions
+bool isQCUpPressed();
+bool isQCDownPressed();
+void waitForQCButtonRelease();
+void displayQCPartsList();
+bool handleQCPartsSelection();
+
 // Helper function to repeat a string
 String repeatString(const char* str, int count) {
     String result = "";
@@ -92,16 +187,28 @@ String repeatString(const char* str, int count) {
 }
 
 // RFID Scanner pins
-const struct {
-    uint8_t ss;    // SDA
-    uint8_t rst;
-}
-
-SCANNER_PINS[] = {
-    {5, 27},   // Scanner 1
-    {4, 32},   // Scanner 2
-    {2, 34}    // Scanner 3
+const uint8_t SCANNER_SS_PINS[] = {
+    5,   // Station 1
+    4,   // Station 2
+    2    // QC Station
 };
+
+// Button pins for shift confirmation
+const struct {
+    uint8_t ok;
+    uint8_t cancel;
+} BUTTON_PINS[] = {
+    {32, 34},  // Station 1 - OK: 32, Cancel: 34
+    {13, 14},  // Station 2 - OK: 13, Cancel: 14
+    {33, 25}   // QC Station - OK: 27, Cancel: 26
+};
+
+// QC Navigation button pins
+const uint8_t QC_UP_BUTTON = 26;
+const uint8_t QC_DOWN_BUTTON = 27;
+
+// Buzzer pin
+const uint8_t BUZZER_PIN = 15;
 
 // Shared SPI pins on ESP32
 const uint8_t SCK_PIN = 18;
@@ -110,9 +217,9 @@ const uint8_t MISO_PIN = 19;
 
 // Create RFID instances
 MFRC522 readers[] = {
-    MFRC522(SCANNER_PINS[0].ss, SCANNER_PINS[0].rst),
-    MFRC522(SCANNER_PINS[1].ss, SCANNER_PINS[1].rst),
-    MFRC522(SCANNER_PINS[2].ss, SCANNER_PINS[2].rst)
+    MFRC522(SCANNER_SS_PINS[0], 0), // RST pin not used
+    MFRC522(SCANNER_SS_PINS[1], 0),
+    MFRC522(SCANNER_SS_PINS[2], 0)
 };
 
 void initRFID(MFRC522& rfid) {
@@ -245,6 +352,241 @@ void handleWebSocketMessage(const char* message) {
     }
 }
 
+//These are the RFID card UIDs of employees that have been assigned to each station
+String qcSta = "E9EB3903";       //QC station employee card
+String emp1Sta = "F5A628A1";     //Employee 1 station card  
+String emp2Sta = "E5B79BA1";     //Employee 2 station card
+
+// Function to check if a scanned UID matches an employee card
+bool isEmployeeCard(String scannedUID) {
+    return (scannedUID == qcSta || scannedUID == emp1Sta || scannedUID == emp2Sta);
+}
+
+// Function to get employee name from UID
+String getEmployeeName(String uid) {
+    if (uid == qcSta) return "QC_Employee";
+    if (uid == emp1Sta) return "Employee_1";
+    if (uid == emp2Sta) return "Employee_2";
+    return "Unknown";
+}
+
+// Function to get the assigned station number for an employee
+uint8_t getAssignedStation(String uid) {
+    if (uid == emp1Sta) return 1;  // Employee 1 -> Station 1
+    if (uid == emp2Sta) return 2;  // Employee 2 -> Station 2
+    if (uid == qcSta) return 3;    // QC Employee -> QC Station
+    return 0; // Unknown
+}
+
+// Function to get station name
+String getStationName(uint8_t stationNumber) {
+    switch(stationNumber) {
+        case 1: return "Station 1";
+        case 2: return "Station 2"; 
+        case 3: return "QC Station";
+        default: return "Unknown";
+    }
+}
+
+// Function to display message on Station 2 LCD
+void displayStation2Message(String line1, String line2) {
+    lcdStation2.clear();
+    lcdStation2.setCursor(0, 0);
+    lcdStation2.print(line1.substring(0, 16)); // Truncate to 16 chars
+    lcdStation2.setCursor(0, 1);
+    lcdStation2.print(line2.substring(0, 16)); // Truncate to 16 chars
+}
+
+// Function to display message on QC LCD (supports up to 4 lines)
+void displayQCMessage(String line1, String line2, String line3, String line4) {
+    lcdQC.clear();
+    lcdQC.setCursor(0, 0);
+    lcdQC.print(line1.substring(0, 16)); // Truncate to 16 chars
+    lcdQC.setCursor(0, 1);
+    lcdQC.print(line2.substring(0, 16)); // Truncate to 16 chars
+    if (line3.length() > 0) {
+        lcdQC.setCursor(0, 2);
+        lcdQC.print(line3.substring(0, 16)); // Truncate to 16 chars
+    }
+    if (line4.length() > 0) {
+        lcdQC.setCursor(0, 3);
+        lcdQC.print(line4.substring(0, 16)); // Truncate to 16 chars
+    }
+}
+
+// Function to handle employee login/logout with station assignment validation and button confirmation
+void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
+    String employeeName = getEmployeeName(scannedUID);
+    uint8_t assignedStation = getAssignedStation(scannedUID);
+    String stationName = getStationName(stationNumber);
+    String assignedStationName = getStationName(assignedStation);
+    
+    // Check if employee is trying to access their assigned station
+    if (assignedStation != stationNumber) {
+        String message = "Wrong station, Go to " + assignedStationName;
+        Serial.println(employeeName + " tried to access " + stationName + " - " + message);
+        
+        // Display message on LCD for Station 2
+        if (stationNumber == 2) {
+            displayStation2Message("Wrong Station!", "Go to " + assignedStationName);
+            delay(2500); // Slightly reduced from 3000ms (kept longer as it's important)
+            displayStation2Message("Station 2", "Scan your card");
+        }
+        // Display message on LCD for QC Station
+        else if (stationNumber == 3) {
+            displayQCMessage("Wrong Station!", "Go to " + assignedStationName, "Access Denied", "");
+            delay(2500); // Slightly reduced from 3000ms (kept longer as it's important)
+            displayQCMessage("QC Station", "Scan your card", "", "");
+        }
+        return;
+    }
+    
+    // Employee is at their correct station - handle state-based logic
+    switch(stationNumber) {
+        case 1: // Station 1 - Employee 1
+            if (station1State == WAITING_FOR_CARD && !station1Active) {
+                // Request confirmation to start shift
+                Serial.println("Station 1: " + employeeName + " requesting to start shift");
+                station1State = WAITING_START_CONFIRMATION;
+                
+                // Wait for button press (OK to start, Cancel to postpone)
+                if (waitForButtonPress(1, 30000)) { // 30 second timeout
+                    // OK pressed - start shift
+                    station1Active = true;
+                    station1Employee = employeeName;
+                    station1State = ACTIVE_SCANNING;
+                    Serial.println("Station 1: Shift starting... - " + employeeName);
+                } else {
+                    // Cancel pressed or timeout - postpone
+                    station1State = WAITING_FOR_CARD;
+                    Serial.println("Station 1: Shift postponed - " + employeeName);
+                }
+            } else if (station1State == ACTIVE_SCANNING && station1Employee == employeeName) {
+                // Request confirmation to end shift
+                Serial.println("Station 1: " + employeeName + " requesting to end shift");
+                station1State = WAITING_END_CONFIRMATION;
+                
+                // Wait for button press (OK to end, Cancel to continue)
+                if (waitForButtonPress(1, 30000)) { // 30 second timeout
+                    // OK pressed - end shift
+                    station1Active = false;
+                    station1Employee = "";
+                    station1State = WAITING_FOR_CARD;
+                    Serial.println("Station 1: Shift ended - " + employeeName);
+                } else {
+                    // Cancel pressed or timeout - continue working
+                    station1State = ACTIVE_SCANNING;
+                    Serial.println("Station 1: Shift ending denied - " + employeeName);
+                }
+            }
+            break;
+            
+        case 2: // Station 2 - Employee 2
+            if (station2State == WAITING_FOR_CARD && !station2Active) {
+                // Request confirmation to start shift
+                Serial.println("Station 2: " + employeeName + " requesting to start shift");
+                station2State = WAITING_START_CONFIRMATION;
+                displayStation2Message("Press OK to", "Start the Shift");
+                
+                // Wait for button press (OK to start, Cancel to postpone)
+                if (waitForButtonPress(2, 30000)) { // 30 second timeout
+                    // OK pressed - start shift
+                    station2Active = true;
+                    station2Employee = employeeName;
+                    station2State = ACTIVE_SCANNING;
+                    Serial.println("Station 2: Shift starting... - " + employeeName);
+                    displayStation2Message("Shift starting...", employeeName);
+                    delay(1500); // Reduced from 2000ms for faster login
+                    displayStation2Message("Station 2", "Ready to scan");
+                } else {
+                    // Cancel pressed or timeout - postpone
+                    station2State = WAITING_FOR_CARD;
+                    Serial.println("Station 2: Shift postponed - " + employeeName);
+                    displayStation2Message("Postponed Shift!", "Scan again to start");
+                    delay(3000);
+                    displayStation2Message("Station 2", "Scan your card");
+                }
+            } else if (station2State == ACTIVE_SCANNING && station2Employee == employeeName) {
+                // Request confirmation to end shift
+                Serial.println("Station 2: " + employeeName + " requesting to end shift");
+                station2State = WAITING_END_CONFIRMATION;
+                displayStation2Message("Press OK to", "End the Shift");
+                
+                // Wait for button press (OK to end, Cancel to continue)
+                if (waitForButtonPress(2, 30000)) { // 30 second timeout
+                    // OK pressed - end shift
+                    station2Active = false;
+                    station2Employee = "";
+                    station2State = WAITING_FOR_CARD;
+                    Serial.println("Station 2: Shift ended - " + employeeName);
+                    displayStation2Message("Shift Ending...", employeeName);
+                    delay(2000);
+                    displayStation2Message("Station 2", "Scan your card");
+                } else {
+                    // Cancel pressed or timeout - continue working
+                    station2State = ACTIVE_SCANNING;
+                    Serial.println("Station 2: Shift ending denied - " + employeeName);
+                    displayStation2Message("Denied ending!", "Back to Tag scanning");
+                    delay(3000);
+                    displayStation2Message("Station 2", "Ready to scan");
+                }
+            }
+            break;
+            
+        case 3: // QC Station - QC Employee
+            if (qcState == WAITING_FOR_CARD && !qcActive) {
+                // Request confirmation to start shift
+                Serial.println("QC Station: " + employeeName + " requesting to start shift");
+                qcState = WAITING_START_CONFIRMATION;
+                displayQCMessage("Press OK to", "Start the Shift", "", "");
+                
+                // Wait for button press (OK to start, Cancel to postpone)
+                if (waitForButtonPress(3, 30000)) { // 30 second timeout
+                    // OK pressed - start shift
+                    qcActive = true;
+                    qcEmployee = employeeName;
+                    qcState = ACTIVE_SCANNING;
+                    Serial.println("QC Station: Shift starting... - " + employeeName);
+                    displayQCMessage("QC Station", "Shift starting...", employeeName, "Ready to scan");
+                    delay(1500); // Reduced from 2000ms for faster login
+                    displayQCMessage("QC Station", "Ready to scan", "", "");
+                } else {
+                    // Cancel pressed or timeout - postpone
+                    qcState = WAITING_FOR_CARD;
+                    Serial.println("QC Station: Shift postponed - " + employeeName);
+                    displayQCMessage("Postponed Shift!", "Scan again to start", "", "");
+                    delay(3000);
+                    displayQCMessage("QC Station", "Scan your card", "", "");
+                }
+            } else if (qcState == ACTIVE_SCANNING && qcEmployee == employeeName) {
+                // Request confirmation to end shift
+                Serial.println("QC Station: " + employeeName + " requesting to end shift");
+                qcState = WAITING_END_CONFIRMATION;
+                displayQCMessage("Press OK to", "End the Shift", "", "");
+                
+                // Wait for button press (OK to end, Cancel to continue)
+                if (waitForButtonPress(3, 30000)) { // 30 second timeout
+                    // OK pressed - end shift
+                    qcActive = false;
+                    qcEmployee = "";
+                    qcState = WAITING_FOR_CARD;
+                    Serial.println("QC Station: Shift ended - " + employeeName);
+                    displayQCMessage("QC Station", "Shift Ending...", employeeName, "");
+                    delay(2000);
+                    displayQCMessage("QC Station", "Scan your card", "", "");
+                } else {
+                    // Cancel pressed or timeout - continue working
+                    qcState = ACTIVE_SCANNING;
+                    Serial.println("QC Station: Shift ending denied - " + employeeName);
+                    displayQCMessage("Denied ending!", "Back to Tag scanning", "", "");
+                    delay(3000);
+                    displayQCMessage("QC Station", "Ready to scan", "", "");
+                }
+            }
+            break;
+    }
+}
+
 // WebSocket event handler
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
@@ -281,6 +623,520 @@ void initWebSocket() {
     Serial.println("<- WebSocket client initialized ->");
 }
 
+// Initialize both LCD displays
+void initLCDs() {
+    Wire.begin();
+    
+    // Initialize Station 2 LCD (1602A)
+    lcdStation2.init();
+    lcdStation2.backlight();
+    lcdStation2.setCursor(0, 0);
+    lcdStation2.print("Station 2 LCD");
+    lcdStation2.setCursor(0, 1);
+    lcdStation2.print("Ready");
+    
+    // Initialize QC LCD (1604A)
+    lcdQC.init();
+    lcdQC.backlight();
+    lcdQC.setCursor(0, 0);
+    lcdQC.print("QC Station LCD");
+    lcdQC.setCursor(0, 1);
+    lcdQC.print("Ready");
+    
+    delay(1500); // Reduced from 2000ms for faster startup
+    
+    // Clear and show initial state
+    displayStation2Message("Station 2", "Scan your card");
+    displayQCMessage("QC Station", "Scan your card", "", "");
+}
+
+// Initialize button pins with internal pull-up resistors
+void initButtons() {
+    for (int i = 0; i < 3; i++) {
+        pinMode(BUTTON_PINS[i].ok, INPUT_PULLUP);
+        pinMode(BUTTON_PINS[i].cancel, INPUT_PULLUP);
+    }
+    
+    // Initialize QC navigation buttons
+    pinMode(QC_UP_BUTTON, INPUT_PULLUP);
+    pinMode(QC_DOWN_BUTTON, INPUT_PULLUP);
+    
+    // Initialize buzzer pin
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(BUZZER_PIN, LOW); // Ensure buzzer is off initially
+}
+
+// Buzzer beep function
+void beepBuzzer(int duration = 200) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(duration);
+    digitalWrite(BUZZER_PIN, LOW);
+}
+
+// Check if OK button is pressed (LOW when pressed due to pull-up)
+bool isOKPressed(uint8_t stationNumber) {
+    if (stationNumber < 1 || stationNumber > 3) return false;
+    return digitalRead(BUTTON_PINS[stationNumber - 1].ok) == LOW;
+}
+
+// Check if Cancel button is pressed (LOW when pressed due to pull-up)
+bool isCancelPressed(uint8_t stationNumber) {
+    if (stationNumber < 1 || stationNumber > 3) return false;
+    return digitalRead(BUTTON_PINS[stationNumber - 1].cancel) == LOW;
+}
+
+// Wait for button to be released (for debouncing)
+void waitForButtonRelease(uint8_t stationNumber) {
+    if (stationNumber < 1 || stationNumber > 3) return;
+    
+    while (digitalRead(BUTTON_PINS[stationNumber - 1].ok) == LOW || 
+           digitalRead(BUTTON_PINS[stationNumber - 1].cancel) == LOW) {
+        delay(50);
+    }
+    delay(100); // Additional debounce delay
+}
+
+// Wait for button press with timeout, returns true if OK pressed, false if Cancel or timeout
+bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs) {
+    if (stationNumber < 1 || stationNumber > 3) return false;
+    
+    unsigned long startTime = millis();
+    
+    while (millis() - startTime < timeoutMs) {
+        if (isOKPressed(stationNumber)) {
+            waitForButtonRelease(stationNumber);
+            return true;
+        }
+        if (isCancelPressed(stationNumber)) {
+            waitForButtonRelease(stationNumber);
+            return false;
+        }
+        delay(50); // Small delay to prevent tight loop
+    }
+    
+    return false; // Timeout - treat as cancel
+}
+
+// Check if QC Up button is pressed
+bool isQCUpPressed() {
+    return digitalRead(QC_UP_BUTTON) == LOW;
+}
+
+// Check if QC Down button is pressed
+bool isQCDownPressed() {
+    return digitalRead(QC_DOWN_BUTTON) == LOW;
+}
+
+// Wait for QC navigation buttons to be released
+void waitForQCButtonRelease() {
+    while (digitalRead(QC_UP_BUTTON) == LOW || digitalRead(QC_DOWN_BUTTON) == LOW) {
+        delay(50);
+    }
+    delay(100); // Additional debounce delay
+}
+
+// Display QC parts selection list
+void displayQCPartsList() {
+    lcdQC.clear();
+    
+    // First line: Title at index 3
+    lcdQC.setCursor(3, 0);
+    lcdQC.print("-SECTION-");
+    
+    // Display 3 items starting from scroll offset
+    for (int i = 0; i < 3; i++) {
+        int partIndex = qcScrollOffset + i;
+        if (partIndex < QC_PARTS_COUNT) {
+            int row = i + 1;
+            
+            // Selected item indented by 1 space, others at index 0
+            if (partIndex == qcSelectedPart) {
+                lcdQC.setCursor(1, row); // Selected item at index 1
+                lcdQC.print(QC_PARTS[partIndex]);
+            } else {
+                lcdQC.setCursor(0, row); // Non-selected items at index 0
+                lcdQC.print(QC_PARTS[partIndex]);
+            }
+        }
+    }
+}
+
+// Display QC defect types selection list
+void displayQCTypesList() {
+    lcdQC.clear();
+    
+    // First line: Title at index 2
+    lcdQC.setCursor(2, 0);
+    lcdQC.print("-DEFECT TYPES-");
+    
+    // Display 3 items starting from scroll offset
+    for (int i = 0; i < 3; i++) {
+        int typeIndex = qcTypeScrollOffset + i;
+        if (typeIndex < QC_DEFECT_TYPES_COUNT) {
+            int row = i + 1;
+            
+            // Selected item indented by 1 space, others at index 0
+            if (typeIndex == qcSelectedType) {
+                lcdQC.setCursor(1, row); // Selected item at index 1
+                lcdQC.print(QC_DEFECT_TYPES[typeIndex]);
+            } else {
+                lcdQC.setCursor(0, row); // Non-selected items at index 0
+                lcdQC.print(QC_DEFECT_TYPES[typeIndex]);
+            }
+        }
+    }
+}
+
+// Get subtypes array and count based on selected type
+void getSubtypesForType(int typeIndex, const String*& subtypes, int& count) {
+    switch(typeIndex) {
+        case 0: // Fabric
+            subtypes = QC_FABRIC_SUBTYPES;
+            count = QC_FABRIC_SUBTYPES_COUNT;
+            break;
+        case 1: // Stitching
+            subtypes = QC_STITCHING_SUBTYPES;
+            count = QC_STITCHING_SUBTYPES_COUNT;
+            break;
+        case 2: // Sewing
+            subtypes = QC_SEWING_SUBTYPES;
+            count = QC_SEWING_SUBTYPES_COUNT;
+            break;
+        case 3: // Other
+            subtypes = QC_OTHER_SUBTYPES;
+            count = QC_OTHER_SUBTYPES_COUNT;
+            break;
+        default:
+            subtypes = QC_FABRIC_SUBTYPES;
+            count = QC_FABRIC_SUBTYPES_COUNT;
+            break;
+    }
+}
+
+// Display QC defect subtypes selection list
+void displayQCSubtypesList() {
+    lcdQC.clear();
+    
+    // First line: Title at index 4
+    lcdQC.setCursor(4, 0);
+    lcdQC.print("-DEFECT-");
+    
+    // Get subtypes for selected type
+    const String* subtypes;
+    int subtypesCount;
+    getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+    
+    // Display 3 items starting from scroll offset
+    for (int i = 0; i < 3; i++) {
+        int subtypeIndex = qcSubtypeScrollOffset + i;
+        if (subtypeIndex < subtypesCount) {
+            int row = i + 1;
+            
+            // Selected item indented by 1 space, others at index 0
+            if (subtypeIndex == qcSelectedSubtype) {
+                lcdQC.setCursor(1, row); // Selected item at index 1
+                lcdQC.print(subtypes[subtypeIndex]);
+            } else {
+                lcdQC.setCursor(0, row); // Non-selected items at index 0
+                lcdQC.print(subtypes[subtypeIndex]);
+            }
+        }
+    }
+}
+
+// Handle QC multi-step selection navigation: Section -> Type -> Subtype
+// Returns true if complete selection confirmed, false if cancelled
+bool handleQCPartsSelection() {
+    qcInPartsSelection = true;
+    qcCurrentStep = QC_SELECT_SECTION;
+    
+    // Reset all selections and scroll offsets
+    qcSelectedPart = 0;
+    qcSelectedType = 0;
+    qcSelectedSubtype = 0;
+    qcScrollOffset = 0;
+    qcTypeScrollOffset = 0;
+    qcSubtypeScrollOffset = 0;
+    
+    Serial.println("QC: Starting multi-step selection - Section -> Type -> Subtype");
+    displayQCPartsList();
+    
+    unsigned long startTime = millis();
+    const unsigned long selectionTimeout = 120000; // 2 minutes timeout for complete selection
+    
+    while (millis() - startTime < selectionTimeout) {
+        // Handle navigation based on current step
+        switch(qcCurrentStep) {
+            case QC_SELECT_SECTION:
+                // Navigation UP
+                if (isQCUpPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedPart--;
+                    if (qcSelectedPart < 0) {
+                        qcSelectedPart = QC_PARTS_COUNT - 1; // Wrap to bottom
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedPart < qcScrollOffset) {
+                        qcScrollOffset = qcSelectedPart;
+                    } else if (qcSelectedPart >= qcScrollOffset + 3) {
+                        qcScrollOffset = qcSelectedPart - 2;
+                    }
+                    
+                    Serial.println("QC: Section UP - Selected: " + QC_PARTS[qcSelectedPart]);
+                    displayQCPartsList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Navigation DOWN
+                if (isQCDownPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedPart++;
+                    if (qcSelectedPart >= QC_PARTS_COUNT) {
+                        qcSelectedPart = 0; // Wrap to top
+                        qcScrollOffset = 0;
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedPart >= qcScrollOffset + 3) {
+                        qcScrollOffset = qcSelectedPart - 2;
+                    } else if (qcSelectedPart < qcScrollOffset) {
+                        qcScrollOffset = qcSelectedPart;
+                    }
+                    
+                    Serial.println("QC: Section DOWN - Selected: " + QC_PARTS[qcSelectedPart]);
+                    displayQCPartsList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // OK button - proceed to type selection
+                if (isOKPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Section confirmed - " + QC_PARTS[qcSelectedPart] + " -> Moving to Type selection");
+                    qcCurrentStep = QC_SELECT_TYPE;
+                    qcSelectedType = 0;
+                    qcTypeScrollOffset = 0;
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Cancel button - exit selection
+                if (isCancelPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Section selection cancelled");
+                    qcInPartsSelection = false;
+                    return false;
+                }
+                break;
+                
+            case QC_SELECT_TYPE:
+                // Navigation UP
+                if (isQCUpPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedType--;
+                    if (qcSelectedType < 0) {
+                        qcSelectedType = QC_DEFECT_TYPES_COUNT - 1; // Wrap to bottom
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedType < qcTypeScrollOffset) {
+                        qcTypeScrollOffset = qcSelectedType;
+                    } else if (qcSelectedType >= qcTypeScrollOffset + 3) {
+                        qcTypeScrollOffset = qcSelectedType - 2;
+                    }
+                    
+                    Serial.println("QC: Type UP - Selected: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Navigation DOWN
+                if (isQCDownPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedType++;
+                    if (qcSelectedType >= QC_DEFECT_TYPES_COUNT) {
+                        qcSelectedType = 0; // Wrap to top
+                        qcTypeScrollOffset = 0;
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedType >= qcTypeScrollOffset + 3) {
+                        qcTypeScrollOffset = qcSelectedType - 2;
+                    } else if (qcSelectedType < qcTypeScrollOffset) {
+                        qcTypeScrollOffset = qcSelectedType;
+                    }
+                    
+                    Serial.println("QC: Type DOWN - Selected: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // OK button - proceed to subtype selection
+                if (isOKPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Type confirmed - " + QC_DEFECT_TYPES[qcSelectedType] + " -> Moving to Subtype selection");
+                    qcCurrentStep = QC_SELECT_SUBTYPE;
+                    qcSelectedSubtype = 0;
+                    qcSubtypeScrollOffset = 0;
+                    displayQCSubtypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Cancel button - go back to section selection
+                if (isCancelPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Type selection cancelled - Back to Section selection");
+                    qcCurrentStep = QC_SELECT_SECTION;
+                    displayQCPartsList();
+                    startTime = millis(); // Reset timeout
+                }
+                break;
+                
+            case QC_SELECT_SUBTYPE:
+                // Get subtypes count for current type
+                const String* subtypes;
+                int subtypesCount;
+                getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+                
+                // Navigation UP
+                if (isQCUpPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedSubtype--;
+                    if (qcSelectedSubtype < 0) {
+                        qcSelectedSubtype = subtypesCount - 1; // Wrap to bottom
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedSubtype < qcSubtypeScrollOffset) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype;
+                    } else if (qcSelectedSubtype >= qcSubtypeScrollOffset + 3) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype - 2;
+                    }
+                    
+                    Serial.println("QC: Subtype UP - Selected: " + subtypes[qcSelectedSubtype]);
+                    displayQCSubtypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // Navigation DOWN
+                if (isQCDownPressed()) {
+                    waitForQCButtonRelease();
+                    qcSelectedSubtype++;
+                    if (qcSelectedSubtype >= subtypesCount) {
+                        qcSelectedSubtype = 0; // Wrap to top
+                        qcSubtypeScrollOffset = 0;
+                    }
+                    
+                    // Adjust scroll offset if needed
+                    if (qcSelectedSubtype >= qcSubtypeScrollOffset + 3) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype - 2;
+                    } else if (qcSelectedSubtype < qcSubtypeScrollOffset) {
+                        qcSubtypeScrollOffset = qcSelectedSubtype;
+                    }
+                    
+                    Serial.println("QC: Subtype DOWN - Selected: " + subtypes[qcSelectedSubtype]);
+                    displayQCSubtypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                
+                // OK button - complete selection
+                if (isOKPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Complete selection confirmed!");
+                    Serial.println("Section: " + QC_PARTS[qcSelectedPart]);
+                    Serial.println("Type: " + QC_DEFECT_TYPES[qcSelectedType]);
+                    Serial.println("Subtype: " + subtypes[qcSelectedSubtype]);
+                    qcInPartsSelection = false;
+                    return true;
+                }
+                
+                // Cancel button - go back to type selection
+                if (isCancelPressed(3)) {
+                    waitForButtonRelease(3);
+                    Serial.println("QC: Subtype selection cancelled - Back to Type selection");
+                    qcCurrentStep = QC_SELECT_TYPE;
+                    displayQCTypesList();
+                    startTime = millis(); // Reset timeout
+                }
+                break;
+        }
+        
+        delay(50); // Small delay to prevent tight loop
+    }
+    
+    // Timeout
+    Serial.println("QC: Multi-step selection timeout");
+    qcInPartsSelection = false;
+    return false;
+}
+
+// Update Station 2 LCD with latest RFID UID and scan count
+void updateStation2Display(const char* uid, uint32_t scanCount) {
+    char line1[17];
+    char line2[17];
+    
+    // Format UID for display (truncate if too long)
+    if (strlen(uid) <= 12) {
+        snprintf(line1, sizeof(line1), "S2: %s", uid);
+    } else {
+        // Show first 10 chars if longer (accounting for "S2: " prefix)
+        char truncatedUid[11];
+        strncpy(truncatedUid, uid, 10);
+        truncatedUid[10] = '\0';
+        snprintf(line1, sizeof(line1), "S2: %s..", truncatedUid);
+    }
+    
+    // Format scan count for Station 2
+    snprintf(line2, sizeof(line2), "Count: %lu", scanCount);
+    
+    // Update display
+    lcdStation2.clear();
+    lcdStation2.setCursor(0, 0);
+    lcdStation2.print(line1);
+    lcdStation2.setCursor(0, 1);
+    lcdStation2.print(line2);
+}
+
+// Update QC LCD with latest RFID UID and scan count
+void updateQCDisplay(const char* uid, uint32_t scanCount) {
+    char line1[17];
+    char line2[17];
+    char line3[17];
+    
+    // Format UID for display (truncate if too long)
+    if (strlen(uid) <= 13) {
+        snprintf(line1, sizeof(line1), "QC: %s", uid);
+    } else {
+        // Show first 11 chars if longer (accounting for "QC: " prefix)
+        char truncatedUid[12];
+        strncpy(truncatedUid, uid, 11);
+        truncatedUid[11] = '\0';
+        snprintf(line1, sizeof(line1), "QC: %s..", truncatedUid);
+    }
+    
+    // Format scan count and timestamp
+    snprintf(line2, sizeof(line2), "Count: %lu", scanCount);
+    
+    // Get current time if available
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+        strftime(line3, sizeof(line3), "%H:%M:%S", &timeinfo);
+    } else {
+        snprintf(line3, sizeof(line3), "Time: N/A");
+    }
+    
+    // Update display
+    lcdQC.clear();
+    lcdQC.setCursor(0, 0);
+    lcdQC.print(line1);
+    lcdQC.setCursor(0, 1);
+    lcdQC.print(line2);
+    lcdQC.setCursor(0, 2);
+    lcdQC.print(line3);
+    lcdQC.setCursor(0, 3);
+    lcdQC.print("QC Active");
+}
+
 // Generate unique scan ID (format: YYMMDDSA# where A# is hex counter)
 String generateScanID() {
     struct tm timeinfo;
@@ -303,9 +1159,14 @@ String generateScanID() {
     return scanID;
 }
 
-// Generate station ID (format: UAss where U=Unit, A=Line, ss=Station)
+// Generate station ID based on station type
 String generateStationID(uint8_t stationNumber) {
-    return "1A0" + String(stationNumber);
+    switch(stationNumber) {
+        case 1: return "1A01";  // Station 1
+        case 2: return "1A02";  // Station 2
+        case 3: return "1AQC";  // QC Station
+        default: return "1A00"; // Unknown
+    }
 }
 
 // Convert UID bytes to hex string
@@ -341,6 +1202,32 @@ bool sendRFIDDataViaWebSocket(const ScannedData& data) {
     return true;
 }
 
+// Send Defect data via WebSocket
+bool sendDefectDataViaWebSocket(String scanID, String tagUID, String stationID, time_t timestamp, 
+                               uint8_t sectionCode, uint8_t typeCode, uint8_t subtypeCode) {
+    if (!wsConnected) {
+        Serial.println("!! WebSocket not connected, cannot send defect data");
+        return false;
+    }
+    
+    JsonDocument doc;
+    doc["action"] = "defect_scan";
+    doc["data"]["ID"] = scanID;
+    doc["data"]["Section"] = sectionCode;
+    doc["data"]["Type"] = typeCode;
+    doc["data"]["Subtype"] = subtypeCode;
+    doc["data"]["Tag_UID"] = tagUID;
+    doc["data"]["Station_ID"] = stationID;
+    doc["data"]["Time_Stamp"] = timestamp;
+    
+    String jsonString;
+    serializeJson(doc, jsonString);
+    
+    Serial.println("Sending Defect via WebSocket: " + jsonString);
+    webSocket.sendTXT(jsonString);
+    return true;
+}
+
 // Core 0 Task: Handle WiFi connectivity and time synchronization
 void connectivityTask(void *parameter) {
     Serial.println("Core 0: Starting connectivity task...");
@@ -355,7 +1242,8 @@ void connectivityTask(void *parameter) {
         initWebSocket();
     } else {
         Serial.println("!! Skipping NTP and WebSocket due to WiFi failure");
-        Serial.println("RFID scanning will work in offline mode");
+        Serial.println("RFID scanning will work in OFFLINE mode - scans will be queued");
+        Serial.println("Data will be sent when WiFi/WebSocket connection is restored");
     }
     
     // Signal that connectivity task is ready
@@ -392,34 +1280,62 @@ void connectivityTask(void *parameter) {
                 static unsigned long lastReconnectAttempt = 0;
                 if (millis() - lastReconnectAttempt >= 30000) {
                     Serial.println("Attempting WiFi reconnection...");
-                    initWiFi();
+                    WiFi.disconnect();
+                    delay(1000);
+                    WiFi.begin(ssid, password);
                     lastReconnectAttempt = millis();
                 }
             }
         }
         
-        // Process queue and send data via WebSocket
-        ScannedData queueData;
-        while (xQueueReceive(scannedDataQueue, &queueData, 0) == pdTRUE) {
-            // Try to send data via WebSocket
-            if (sendRFIDDataViaWebSocket(queueData)) {
-                Serial.println("Core 0: Data sent via WebSocket successfully");
-            } else {
-                Serial.println("Core 0: Failed to send data, re-queuing...");
-                // Re-queue the data if sending failed
-                xQueueSendToFront(scannedDataQueue, &queueData, pdMS_TO_TICKS(10));
-                break; // Stop processing queue if WebSocket issues
+        // Process queue and send data via WebSocket (only when connected)
+        if (wsConnected) {
+            ScannedData queueData;
+            // Try to send one item from queue per loop iteration
+            if (xQueueReceive(scannedDataQueue, &queueData, 0) == pdTRUE) {
+                // Try to send data via WebSocket
+                if (sendRFIDDataViaWebSocket(queueData)) {
+                    Serial.println("Core 0: Data sent via WebSocket successfully");
+                } else {
+                    Serial.println("Core 0: Failed to send data, will retry next cycle");
+                    // Put the failed item back at front of queue to retry later
+                    xQueueSendToFront(scannedDataQueue, &queueData, 0);
+                    // Don't break - let scanning continue
+                }
             }
         }
+        // If WebSocket not connected, just let the queue fill up - scanning continues
         
         // Optional: Print status periodically (every 30 seconds)
         static unsigned long lastStatus = 0;
         if (millis() - lastStatus >= 30000) {
             int queueCount = uxQueueMessagesWaiting(scannedDataQueue);
-            Serial.printf("Core 0 - Queue: %d/%d | WiFi: %s | WebSocket: %s\n", 
+            uint32_t totalScans = station1ScanCount + station2ScanCount + qcScanCount;
+            Serial.printf("Core 0 - Queue: %d/%d | WiFi: %s | WebSocket: %s | Total: %lu (S1:%lu S2:%lu QC:%lu)\n", 
                          queueCount, QUEUE_SIZE,
                          wifiConnected ? "OK" : "Not-OK",
-                         wsConnected ? "OK" : "Not-OK");
+                         wsConnected ? "OK" : "Not-OK",
+                         totalScans, station1ScanCount, station2ScanCount, qcScanCount);
+            
+            // Show station status
+            Serial.printf("Station Status - S1: %s%s | S2: %s%s | QC: %s%s\n",
+                         station1Active ? "ACTIVE" : "INACTIVE",
+                         station1Active ? (" (" + station1Employee + ")").c_str() : "",
+                         station2Active ? "ACTIVE" : "INACTIVE", 
+                         station2Active ? (" (" + station2Employee + ")").c_str() : "",
+                         qcActive ? "ACTIVE" : "INACTIVE",
+                         qcActive ? (" (" + qcEmployee + ")").c_str() : "");
+            
+            // Show shift states
+            const char* stateNames[] = {"WAITING_CARD", "WAIT_START_CONF", "ACTIVE_SCAN", "WAIT_END_CONF"};
+            Serial.printf("Shift States - S1: %s | S2: %s | QC: %s\n",
+                         stateNames[station1State], stateNames[station2State], stateNames[qcState]);
+            
+            // Warn if queue is getting full
+            if (queueCount > QUEUE_SIZE * 0.8) {
+                Serial.printf("!! WARNING: Queue is %d%% full - %d items pending\n", 
+                             (queueCount * 100) / QUEUE_SIZE, queueCount);
+            }
             lastStatus = millis();
         }
         
@@ -430,6 +1346,146 @@ void connectivityTask(void *parameter) {
 
 // Process scanned RFID card and add to queue (Core 1 task)
 bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
+    // Convert UID to string for comparison
+    String uidString = uidToString((uint8_t*)rfid.uid.uidByte, rfid.uid.size);
+    
+    // Check if this is an employee card
+    if (isEmployeeCard(uidString)) {
+        // Beep for employee card scan
+        beepBuzzer(200); // 200ms beep for employee cards (reduced from 300ms)
+        // Handle employee login/logout
+        handleEmployeeAccess(uidString, stationNumber);
+        return false; // Don't queue employee cards
+    }
+    
+    // Beep immediately for product card detection (instant feedback)
+    beepBuzzer(100); // 100ms beep for immediate scan confirmation
+    
+    // Check if station is active before scanning regular cards
+    bool stationActive = false;
+    String stationName = "";
+    volatile uint32_t* stationCounter = nullptr;
+    ShiftState currentState;
+    
+    switch(stationNumber) {
+        case 1:
+            stationActive = station1Active;
+            stationName = "Station 1";
+            stationCounter = &station1ScanCount;
+            currentState = station1State;
+            break;
+        case 2:
+            stationActive = station2Active;
+            stationName = "Station 2";
+            stationCounter = &station2ScanCount;
+            currentState = station2State;
+            break;
+        case 3:
+            stationActive = qcActive;
+            stationName = "QC Station";
+            stationCounter = &qcScanCount;
+            currentState = qcState;
+            break;
+    }
+    
+    if (!stationActive || currentState != ACTIVE_SCANNING) {
+        String message = stationName + " is not active - First scan your card";
+        Serial.println(message);
+        
+        // Display message on LCD for Station 2
+        if (stationNumber == 2) {
+            displayStation2Message("First scan", "your card");
+            delay(1500); // Show message for 1.5 seconds (reduced for faster response)
+            displayStation2Message("Station 2", "Scan your card");
+        }
+        // Display message on LCD for QC Station
+        else if (stationNumber == 3) {
+            displayQCMessage("First scan", "your card", "", "");
+            delay(1500); // Show message for 1.5 seconds (reduced for faster response)
+            displayQCMessage("QC Station", "Scan your card", "", "");
+        }
+        return false;
+    }
+    
+    // Special handling for QC Station - show parts selection
+    if (stationNumber == 3) {
+        Serial.println("QC: Product tag scanned - " + uidString);
+        displayQCMessage("Product scanned!", "UID: " + uidString.substring(0, 12), "Select section", "Use UP/DOWN + OK");
+        delay(1000); // Reduced from 2000ms for faster scanning
+        
+        // Show multi-step selection and wait for user choice
+        bool selectionConfirmed = handleQCPartsSelection();
+        
+        if (!selectionConfirmed) {
+            // User cancelled or timeout
+            displayQCMessage("Selection", "Cancelled", "Scan next product", "");
+            delay(1500); // Reduced from 2000ms for faster recovery
+            displayQCMessage("QC Station", "Ready to scan", "", "");
+            return false;
+        }
+        
+        // Get selected subtype name for display
+        const String* subtypes;
+        int subtypesCount;
+        getSubtypesForType(qcSelectedType, subtypes, subtypesCount);
+        String selectedSubtype = subtypes[qcSelectedSubtype];
+        
+        // User confirmed complete selection - process as defect
+        Serial.println("QC: Processing defect scan with complete selection:");
+        Serial.println("  Section: " + QC_PARTS[qcSelectedPart]);
+        Serial.println("  Type: " + QC_DEFECT_TYPES[qcSelectedType]); 
+        Serial.println("  Subtype: " + selectedSubtype);
+        
+        displayQCMessage("Processing...", "Sec:" + QC_PARTS[qcSelectedPart], "Typ:" + QC_DEFECT_TYPES[qcSelectedType], "Sub:" + selectedSubtype.substring(0, 12));
+        delay(1500); // Reduced from 2500ms for faster processing
+        
+        // Generate scan ID and get timestamp
+        String scanID = generateScanID();
+        String stationID = generateStationID(stationNumber);
+        time_t now = 0;
+        if (timeInitialized) {
+            time(&now);
+        }
+        
+        // Convert selections to numeric codes
+        uint8_t sectionCode = getSectionCode(qcSelectedPart);
+        uint8_t typeCode = getTypeCode(qcSelectedType);
+        uint8_t subtypeCode = getSubtypeCode(qcSelectedType, qcSelectedSubtype);
+        
+        // Send defect data immediately if connected
+        if (wsConnected) {
+            bool defectSent = sendDefectDataViaWebSocket(scanID, uidString, stationID, now, 
+                                                        sectionCode, typeCode, subtypeCode);
+            if (defectSent) {
+                qcScanCount++; // Increment QC scan counter
+                updateQCDisplay(uidString.c_str(), qcScanCount);
+                Serial.println("QC: Defect data sent successfully - ID: " + scanID);
+                
+                // Beep for successful defect scan
+                beepBuzzer(100); // 100ms beep for successful defect (reduced from 150ms)
+                
+                // Show success message
+                displayQCMessage("Defect Logged!", "ID: " + scanID, "Scan next product", "");
+                delay(2000); // Reduced from 3000ms for faster next scan
+                displayQCMessage("QC Station", "Ready to scan", "", "");
+                return true;
+            } else {
+                Serial.println("QC: Failed to send defect data");
+                displayQCMessage("Send Failed!", "Try again", "", "");
+                delay(2000);
+                displayQCMessage("QC Station", "Ready to scan", "", "");
+                return false;
+            }
+        } else {
+            // If not connected, show offline message
+            Serial.println("QC: Offline - Defect data will be queued when connection restored");
+            displayQCMessage("Offline Mode", "Data will sync", "when connected", "");
+            delay(3000);
+            displayQCMessage("QC Station", "Ready to scan", "", "");
+            return false;
+        }
+    }
+    
     // Get current timestamp (only if time is initialized)
     time_t now = 0;
     if (timeInitialized) {
@@ -457,8 +1513,16 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     // Try to add to queue (non-blocking for maximum speed)
     if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
         // Successfully added to queue
-        Serial.print("Core 1 - Card queued - Station ");
-        Serial.print(stationNumber);
+        (*stationCounter)++; // Increment respective station counter
+        
+        // Update LCD display for Station 2 and QC scans
+        if (stationNumber == 2) {
+            updateStation2Display(uidString.c_str(), station2ScanCount);
+        } else if (stationNumber == 3) {
+            updateQCDisplay(uidString.c_str(), qcScanCount);
+        }
+        
+        Serial.print("Core 1 - Card queued - " + stationName);
         Serial.print(" (");
         Serial.print(stationID);
         Serial.print("), ID: ");
@@ -480,10 +1544,40 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         } else {
             Serial.println(", Time: Not synchronized");
         }
+        
+        // Show queue status and station counters
+        int queueCount = uxQueueMessagesWaiting(scannedDataQueue);
+        Serial.printf("Queue: %d/%d | S1: %lu | S2: %lu | QC: %lu\n", 
+                     queueCount, QUEUE_SIZE, station1ScanCount, station2ScanCount, qcScanCount);
+        
         return true;
     } else {
-        // Queue is full
-        Serial.println("Core 1 - Warning: Queue is full, card data discarded!");
+        // Queue is full - remove oldest item to make space for new scan
+        ScannedData oldestData;
+        if (xQueueReceive(scannedDataQueue, &oldestData, 0) == pdTRUE) {
+            Serial.println("Core 1 - Queue full! Removed oldest scan to make space");
+            // Now try to add the new scan
+            if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
+                (*stationCounter)++;
+                
+                // Update display for respective stations
+                if (stationNumber == 2) {
+                    updateStation2Display(uidString.c_str(), station2ScanCount);
+                } else if (stationNumber == 3) {
+                    updateQCDisplay(uidString.c_str(), qcScanCount);
+                }
+                Serial.println("Core 1 - New scan added after removing oldest");
+                return true;
+            }
+        }
+        
+        // Show error on appropriate display
+        if (stationNumber == 2) {
+            updateStation2Display("Queue Error", station2ScanCount);
+        } else if (stationNumber == 3) {
+            updateQCDisplay("Queue Error", qcScanCount);
+        }
+        Serial.println("Core 1 - Queue management failed, but continuing to scan...");
         return false;
     }
 }
@@ -509,11 +1603,16 @@ void setup() {
     Serial.println("<> Success!");
     
     // Configure all SS pins as OUTPUT and HIGH
-    Serial.print("Configuring RFID scanner pins... ");
-    for (auto& pin : SCANNER_PINS) {
-        pinMode(pin.ss, OUTPUT);
-        digitalWrite(pin.ss, HIGH);
+    Serial.print("Configuring RFID scanner SS pins... ");
+    for (int i = 0; i < 3; i++) {
+        pinMode(SCANNER_SS_PINS[i], OUTPUT);
+        digitalWrite(SCANNER_SS_PINS[i], HIGH);
     }
+    Serial.println("<> Done!");
+    
+    // Initialize button pins
+    Serial.print("Configuring button pins... ");
+    initButtons();
     Serial.println("<> Done!");
     
     // Initialize SPI
@@ -532,6 +1631,11 @@ void setup() {
         Serial.println(ver, HEX);
         delay(50);
     }
+    
+    // Initialize LCD displays
+    Serial.print("Initializing LCD displays... ");
+    initLCDs();
+    Serial.println("<> Done!");
     
     Serial.println("\n" + repeatString("=", 50));
     Serial.println("<> Hardware setup complete!");
@@ -592,8 +1696,11 @@ void rfidScanningTask(void *parameter) {
     vTaskDelay(pdMS_TO_TICKS(3000)); // Increased to 3 seconds
     
     Serial.println("> Core 1: RFID scanning task ready!");
-    Serial.println("> Ready to scan RFID cards on all 3 readers!");
-    Serial.println("> Place an RFID card near any scanner to test...");
+    Serial.println("> Ready to scan RFID cards on all 3 stations!");
+    Serial.println("> Station 1, Station 2, and QC Station");
+    Serial.println("> First scan employee cards to activate stations");
+    Serial.println("> Use OK/Cancel buttons to confirm shift start/end");
+    Serial.println("> LCD will show Station 2 and QC scans");
     
     // Main RFID scanning loop - optimized for maximum speed
     while (true) {
@@ -601,14 +1708,14 @@ void rfidScanningTask(void *parameter) {
         for (int i = 0; i < 3; i++) {
             // Set current reader's SS pin LOW, others HIGH
             for (int j = 0; j < 3; j++) {
-                digitalWrite(SCANNER_PINS[j].ss, j == i ? LOW : HIGH);
+                digitalWrite(SCANNER_SS_PINS[j], j == i ? LOW : HIGH);
             }
             delayMicroseconds(10000);  // 10ms delay in microseconds for precision
             
             // Use the optimized scanCard function
             scanCard(readers[i], i + 1);  // Station numbers are 1-based
             
-            digitalWrite(SCANNER_PINS[i].ss, HIGH);
+            digitalWrite(SCANNER_SS_PINS[i], HIGH);
             delayMicroseconds(50000);  // 50ms delay between readers for stability
         }
         
@@ -618,11 +1725,5 @@ void rfidScanningTask(void *parameter) {
 }
 
 void loop() {
-    // Main loop is now empty as tasks handle everything
-    // Tasks are running on both cores independently
-    
-    // Optional: Add any main loop monitoring or watchdog feeding here
-    // Keep this minimal to avoid interfering with core tasks
-    
     delay(1000); // Prevent tight loop
 }
