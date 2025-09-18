@@ -1,23 +1,7 @@
 const mongoose = require("mongoose");
 
-const defectSchema = new mongoose.Schema({
-  sewingDefect: { 
-    type: Boolean, 
-    default: false 
-  },
-  coloringDefect: { 
-    type: Boolean, 
-    default: false 
-  },
-  cuttingDefect: { 
-    type: Boolean, 
-    default: false 
-  },
-  default: { type: String, default: "none" },
-});
-
-// RFID Scan Schema for ESP32 WebSocket
-const rfidScanSchema = new mongoose.Schema({
+// RFID Tag Scan Schema for ESP32 WebSocket
+const rfidTagScanSchema = new mongoose.Schema({
   ID: { 
     type: String, 
     required: true, 
@@ -37,54 +21,83 @@ const rfidScanSchema = new mongoose.Schema({
     type: Number, 
     required: true,
     index: true // For time-based queries
-  },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
   }
 });
 
-const iotDataSchema = new mongoose.Schema({
+// Individual defect entry schema for use within garment defects array
+const defectEntrySchema = new mongoose.Schema({
+  Section: { 
+    type: Number, 
+    required: true, 
+    min: 0, 
+    max: 3 // 0=Body, 1=Hand, 2=Collar, 3=Upper Back
+  },
+  Type: { 
+    type: Number, 
+    required: true, 
+    min: 0, 
+    max: 3 // 0=Fabric, 1=Stitching, 2=Sewing, 3=Other
+  },
+  Subtype: { 
+    type: Number, 
+    required: true,
+    min: 0,
+    max: 15 // 0-3=Fabric, 4-7=Stitching, 8-12=Sewing, 13-15=Other
+  }
+}, { 
+  _id: false // Don't create separate IDs for defect entries
+});
+
+// Garment Defects Schema - stores multiple defects per garment UID
+const garmentDefectsSchema = new mongoose.Schema({
   ID: { 
     type: String, 
-    required: true 
+    required: true, 
+    unique: true,
+    index: true,
+    maxlength: 20 // First defect scan ID, never updated
   },
-  tagUID: {
-    type: String,
-    required: true
-  },
-  stationID: { 
+  Tag_UID: { 
     type: String, 
-    required: true 
-  },
-  timeStamp: { 
-    type: Date, 
-    default: Date.now 
-  },
-});
-
-const stationSchema = new mongoose.Schema({
-  stationID: {
-    type: String,
     required: true,
-    unique: true
+    unique: true, // One document per garment UID
+    index: true,
+    maxlength: 20
   },
-  stationName: {
-    type: String,
-    required: true
+  Station_ID: { 
+    type: String, 
+    required: true,
+    maxlength: 10
   },
-  location: {
-    type: String,
-    required: false
+  Defects: {
+    type: [defectEntrySchema],
+    required: true,
+    validate: {
+      validator: function(defects) {
+        // Ensure no duplicate section-subtype combinations
+        const combinations = new Set();
+        for (const defect of defects) {
+          const combo = `${defect.Section}-${defect.Subtype}`;
+          if (combinations.has(combo)) {
+            return false; // Duplicate found
+          }
+          combinations.add(combo);
+        }
+        return true;
+      },
+      message: 'Duplicate section-subtype combination not allowed'
+    }
   },
-  isActive: {
-    type: Boolean,
-    default: true
+  Time_Stamp: { 
+    type: Number, 
+    required: true,
+    index: true // Updated whenever a new defect is added
   }
+}, {
+  versionKey: false // Remove __v field for memory efficiency
 });
 
-const RFIDScan = mongoose.model("RFIDScan", rfidScanSchema);
-const IOTData = mongoose.model("IOTData", iotDataSchema);
-const Station = mongoose.model("Station", stationSchema);
+const RFIDTagScan = mongoose.model("RFIDTagScan", rfidTagScanSchema);
+const GarmentDefects = mongoose.model("GarmentDefects", garmentDefectsSchema);
 
-module.exports = { RFIDScan, IOTData, Station };
+module.exports = { RFIDTagScan, GarmentDefects };
