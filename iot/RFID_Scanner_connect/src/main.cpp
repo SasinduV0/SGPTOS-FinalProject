@@ -13,14 +13,15 @@
 // WiFi credentials - Replace with your network credentials
 const char* ssid = "Redmi Note 9 Pro";
 const char* password = "1234r65i";
+const char* wifi_ip = "192.168.64.159";
 
 // WebSocket server configuration
-const char* websocket_server = "192.168.64.159"; // Wi-fi Server IP
+const char* websocket_server = wifi_ip; // Wi-fi Server IP
 const int websocket_port = 8000;
 const char* websocket_path = "/rfid-ws";
 
 // HTTP API server configuration  
-const char* http_server = "192.168.64.159"; // Same IP as WebSocket server
+const char* http_server = wifi_ip; // Same IP as WebSocket server
 const int http_port = 8001; // Express server port for API endpoints
 
 // NTP server configuration for Sri Lanka timezone
@@ -180,6 +181,10 @@ TaskHandle_t rfidScanningTaskHandle = NULL;
 // Time synchronization variables
 unsigned long lastNTPSync = 0;
 const unsigned long NTP_SYNC_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+
+// Defect definitions refresh variables
+unsigned long lastDefectDefinitionsSync = 0;
+const unsigned long DEFECT_DEFINITIONS_RETRY_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // WiFi and time synchronization status flags
 volatile bool wifiConnected = false;
@@ -367,6 +372,24 @@ void checkNTPSync() {
     }
 }
 
+// Check if defect definitions need to be refreshed (Core 0 task)
+void checkDefectDefinitionsSync() {
+    if (!wifiConnected) return;
+    
+    // Only retry if using fallback definitions or it's been a while since last sync
+    if ((!defectDefinitionsLoaded || defectDefinitionsVersion == "Fallback v1.0") && 
+        (millis() - lastDefectDefinitionsSync >= DEFECT_DEFINITIONS_RETRY_INTERVAL)) {
+        
+        Serial.println("Attempting to refresh defect definitions from server...");
+        if (fetchDefectDefinitions()) {
+            Serial.println("Successfully updated defect definitions from server!");
+        } else {
+            Serial.println("Failed to refresh defect definitions, keeping current data");
+        }
+        lastDefectDefinitionsSync = millis();
+    }
+}
+
 // Fetch defect definitions from server (Core 0 task)
 bool fetchDefectDefinitions() {
     if (!wifiConnected) {
@@ -375,42 +398,67 @@ bool fetchDefectDefinitions() {
     }
 
     Serial.println("Fetching defect definitions from server...");
+    Serial.printf("Connecting to: %s:%d\n", http_server, http_port);
     
     // Create HTTP client
     WiFiClient client;
     
     if (!client.connect(http_server, http_port)) {
-        Serial.println("Failed to connect to HTTP server for defect definitions");
+        Serial.printf("!! Failed to connect to HTTP server %s:%d for defect definitions\n", http_server, http_port);
+        Serial.println("Check if:");
+        Serial.println("1. Backend server is running on port 8001");
+        Serial.println("2. IP address is correct: " + String(http_server));
+        Serial.println("3. Server is accessible from ESP32 network");
         return false;
     }
 
+    Serial.println("Connected to server, sending HTTP request...");
+    
     // Send HTTP GET request
-    String request = "GET /api/iot/defect-definitions/esp32 HTTP/1.1\r\n";
+    String request = "GET /api/defect-definitions/esp32 HTTP/1.1\r\n";
     request += "Host: " + String(http_server) + ":" + String(http_port) + "\r\n";
     request += "Connection: close\r\n\r\n";
+    
+    Serial.println("HTTP Request:");
+    Serial.println(request);
     
     client.print(request);
 
     // Wait for response
+    Serial.println("Waiting for server response...");
     unsigned long timeout = millis() + 10000; // 10 second timeout
     while (client.available() == 0) {
         if (millis() > timeout) {
-            Serial.println("Timeout waiting for defect definitions response");
+            Serial.println("!! Timeout waiting for defect definitions response (10 seconds)");
+            Serial.println("!! Server may be down or not responding");
             client.stop();
             return false;
         }
         delay(10);
     }
 
+    Serial.println("Receiving response from server...");
+    
     // Read response
     String response = "";
+    String fullResponse = "";
     bool headersEnded = false;
+    int statusCode = 0;
     
     while (client.available()) {
         String line = client.readStringUntil('\n');
+        fullResponse += line + "\n";
+        
         if (!headersEnded) {
+            // Check HTTP status code
+            if (line.startsWith("HTTP/1.1 ") && statusCode == 0) {
+                statusCode = line.substring(9, 12).toInt();
+                Serial.println("HTTP Status Code: " + String(statusCode));
+            }
+            
             if (line == "\r") {
                 headersEnded = true;
+                Serial.println("Headers received, reading body...");
             }
         } else {
             response += line;
@@ -418,14 +466,26 @@ bool fetchDefectDefinitions() {
     }
     
     client.stop();
+    
+    Serial.println("Full HTTP Response:");
+    Serial.println("==================");
+    Serial.println(fullResponse.substring(0, 500) + "..."); // Print first 500 chars
+    Serial.println("==================");
 
-    if (response.length() == 0) {
-        Serial.println("Empty response from defect definitions endpoint");
+    if (statusCode != 200) {
+        Serial.printf("!! HTTP Error: Status code %d\n", statusCode);
+        Serial.println("!! Expected 200 OK, but got error response");
         return false;
     }
 
-    Serial.println("Received defect definitions response:");
-    Serial.println(response.substring(0, 200) + "..."); // Print first 200 chars
+    if (response.length() == 0) {
+        Serial.println("!! Empty response body from defect definitions endpoint");
+        Serial.println("!! Check if the endpoint /api/iot/defect-definitions/esp32 exists");
+        return false;
+    }
+
+    Serial.println("Response body received:");
+    Serial.println(response.substring(0, 300) + "..."); // Print first 300 chars
 
     // Parse JSON response
     JsonDocument doc;
@@ -1572,6 +1632,33 @@ void connectivityTask(void *parameter) {
     
     // Main connectivity loop
     while (true) {
+        // Check for serial commands for manual refresh
+        if (Serial.available()) {
+            String command = Serial.readStringUntil('\n');
+            command.trim();
+            
+            if (command == "refresh" || command == "REFRESH") {
+                Serial.println("\n>> Manual defect definitions refresh requested!");
+                if (wifiConnected) {
+                    if (fetchDefectDefinitions()) {
+                        Serial.println(">> Manual refresh successful!");
+                    } else {
+                        Serial.println(">> Manual refresh failed!");
+                    }
+                } else {
+                    Serial.println(">> WiFi not connected, cannot refresh");
+                }
+            } else if (command == "status" || command == "STATUS") {
+                Serial.println("\n>> System Status:");
+                Serial.printf("   WiFi: %s\n", wifiConnected ? "Connected" : "Disconnected");
+                Serial.printf("   WebSocket: %s\n", wsConnected ? "Connected" : "Disconnected");
+                Serial.printf("   Defect Definitions: %s\n", defectDefinitionsLoaded ? "Loaded" : "Not loaded");
+                Serial.printf("   Version: %s\n", defectDefinitionsVersion.c_str());
+                Serial.printf("   Sections: %d, Types: %d\n", qcSectionsCount, qcTypesCount);
+                Serial.println("   Commands: 'refresh' to update defects, 'status' for info");
+            }
+        }
+        
         if (wifiConnected) {
             // Handle WebSocket events
             webSocket.loop();
@@ -1587,6 +1674,9 @@ void connectivityTask(void *parameter) {
             
             // Check for NTP re-synchronization
             checkNTPSync();
+            
+            // Check for defect definitions refresh
+            checkDefectDefinitionsSync();
         } else {
             // Try to reconnect WiFi periodically
             if (WiFi.status() == WL_CONNECTED) {
