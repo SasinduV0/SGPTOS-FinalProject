@@ -52,13 +52,10 @@ const iotRoutes = require("./routes/employee");
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
-<<<<<<< HEAD
+
 const lineManagementRoutes = require('./routes/lineManagement');
 const productionRoutes = require("./routes/production");
-=======
-const userRoute = require('./routes/userRoute');
 
->>>>>>> 96bd39e811698ee866a0963e829dcf2875480ab2
 
 connectDB();
 
@@ -74,25 +71,19 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userProfileRoutes);
 app.use("/api", iotRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
-<<<<<<< HEAD
+
 app.use("/api/line-management", lineManagementRoutes);
 app.use("/api/production", productionRoutes);
 
 
-app.use("/", (req,res) => {
-    res.json({
-        "msg":"Hello Smart Garment production tracking system!",
-        "websocket": "Available at ws://localhost:8000/rfid-ws",
-        "status": "WebSocket server running"
-    })
-=======
+
 app.use("/", (req, res) => {
   res.json({
     "msg": "Hello Smart Garment production tracking system!",
     "websocket": "Available at ws://localhost:8000/rfid-ws",
     "status": "WebSocket server running"
   });
->>>>>>> 96bd39e811698ee866a0963e829dcf2875480ab2
+
 });
 
 io.on("connection", (socket) => {
