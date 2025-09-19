@@ -19,6 +19,10 @@ const char* websocket_server = "192.168.64.159"; // Wi-fi Server IP
 const int websocket_port = 8000;
 const char* websocket_path = "/rfid-ws";
 
+// HTTP API server configuration  
+const char* http_server = "192.168.64.159"; // Same IP as WebSocket server
+const int http_port = 8001; // Express server port for API endpoints
+
 // NTP server configuration for Sri Lanka timezone
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 19800;    // GMT+5:30 for Sri Lanka (5.5 hours * 3600 seconds)
@@ -69,6 +73,9 @@ volatile ShiftState qcState = WAITING_FOR_CARD;
 struct DefectSubtype {
   uint8_t code;
   String name;
+  
+  DefectSubtype() : code(0), name("") {}
+  DefectSubtype(uint8_t c, const char* n) : code(c), name(n) {}
 };
 
 struct DefectType {
@@ -76,11 +83,17 @@ struct DefectType {
   String name;
   DefectSubtype* subtypes;
   int subtypeCount;
+  
+  DefectType() : code(0), name(""), subtypes(nullptr), subtypeCount(0) {}
+  DefectType(uint8_t c, const char* n) : code(c), name(n), subtypes(nullptr), subtypeCount(0) {}
 };
 
 struct DefectSection {
   uint8_t code;
   String name;
+  
+  DefectSection() : code(0), name("") {}
+  DefectSection(uint8_t c, const char* n) : code(c), name(n) {}
 };
 
 // Dynamic defect configuration variables
@@ -180,6 +193,7 @@ void rfidScanningTask(void *parameter);
 bool fetchDefectDefinitions();
 bool parseDefectDefinitions(JsonDocument& doc);
 void cleanupDefectDefinitions();
+void loadFallbackDefectDefinitions();
 
 // Forward declarations for LCD functions
 void initLCDs();
@@ -365,14 +379,14 @@ bool fetchDefectDefinitions() {
     // Create HTTP client
     WiFiClient client;
     
-    if (!client.connect(websocket_server, websocket_port)) {
-        Serial.println("Failed to connect to server for defect definitions");
+    if (!client.connect(http_server, http_port)) {
+        Serial.println("Failed to connect to HTTP server for defect definitions");
         return false;
     }
 
     // Send HTTP GET request
     String request = "GET /api/iot/defect-definitions/esp32 HTTP/1.1\r\n";
-    request += "Host: " + String(websocket_server) + ":" + String(websocket_port) + "\r\n";
+    request += "Host: " + String(http_server) + ":" + String(http_port) + "\r\n";
     request += "Connection: close\r\n\r\n";
     
     client.print(request);
@@ -441,6 +455,14 @@ bool parseDefectDefinitions(JsonDocument& doc) {
         } else {
             return false;
         }
+    }
+    
+    // Check if this is a valid defect definitions response
+    if (!doc["sections"].is<JsonArray>() || !doc["types"].is<JsonArray>()) {
+        Serial.println("!! Invalid defect definitions format - missing sections or types");
+        Serial.println("!! Received: " + doc.as<String>());
+        Serial.println("!! Using fallback defect definitions");
+        return false; // This will trigger fallback in fetchDefectDefinitions
     }
 
     // Free existing memory
@@ -526,6 +548,69 @@ void cleanupDefectDefinitions() {
     qcSectionsCount = 0;
     qcTypesCount = 0;
     defectDefinitionsLoaded = false;
+}
+
+// Load fallback defect definitions (hardcoded)
+void loadFallbackDefectDefinitions() {
+    Serial.println("Loading fallback defect definitions...");
+    
+    // Clean up any existing data
+    cleanupDefectDefinitions();
+    
+    // Create sections
+    qcSectionsCount = 4;
+    qcSections = new DefectSection[qcSectionsCount];
+    
+    qcSections[0] = DefectSection(0, "Body");
+    qcSections[1] = DefectSection(1, "Hand");
+    qcSections[2] = DefectSection(2, "Collar");
+    qcSections[3] = DefectSection(3, "Upper Back");
+    
+    // Create types with subtypes
+    qcTypesCount = 4;
+    qcTypes = new DefectType[qcTypesCount];
+    
+    // Fabric type (4 subtypes)
+    qcTypes[0] = DefectType(0, "Fabric");
+    qcTypes[0].subtypeCount = 4;
+    qcTypes[0].subtypes = new DefectSubtype[4];
+    qcTypes[0].subtypes[0] = DefectSubtype(0, "Hole");
+    qcTypes[0].subtypes[1] = DefectSubtype(1, "Stain");
+    qcTypes[0].subtypes[2] = DefectSubtype(2, "Shading");
+    qcTypes[0].subtypes[3] = DefectSubtype(3, "Slub");
+    
+    // Stitching type (4 subtypes)
+    qcTypes[1] = DefectType(1, "Stitching");
+    qcTypes[1].subtypeCount = 4;
+    qcTypes[1].subtypes = new DefectSubtype[4];
+    qcTypes[1].subtypes[0] = DefectSubtype(4, "Skipped");
+    qcTypes[1].subtypes[1] = DefectSubtype(5, "Broken");
+    qcTypes[1].subtypes[2] = DefectSubtype(6, "Uneven");
+    qcTypes[1].subtypes[3] = DefectSubtype(7, "Loose");
+    
+    // Sewing type (5 subtypes)
+    qcTypes[2] = DefectType(2, "Sewing");
+    qcTypes[2].subtypeCount = 5;
+    qcTypes[2].subtypes = new DefectSubtype[5];
+    qcTypes[2].subtypes[0] = DefectSubtype(8, "Pluckering");
+    qcTypes[2].subtypes[1] = DefectSubtype(9, "Misalignment");
+    qcTypes[2].subtypes[2] = DefectSubtype(10, "Open_seam");
+    qcTypes[2].subtypes[3] = DefectSubtype(11, "Backtak");
+    qcTypes[2].subtypes[4] = DefectSubtype(12, "Seam_gap");
+    
+    // Other type (3 subtypes)
+    qcTypes[3] = DefectType(3, "Other");
+    qcTypes[3].subtypeCount = 3;
+    qcTypes[3].subtypes = new DefectSubtype[3];
+    qcTypes[3].subtypes[0] = DefectSubtype(13, "Measurement");
+    qcTypes[3].subtypes[1] = DefectSubtype(14, "Button/Button_hole");
+    qcTypes[3].subtypes[2] = DefectSubtype(15, "Twisted");
+    
+    defectDefinitionsLoaded = true;
+    defectDefinitionsVersion = "Fallback v1.0";
+    
+    Serial.println("Fallback defect definitions loaded successfully!");
+    Serial.printf("Loaded %d sections, %d types\n", qcSectionsCount, qcTypesCount);
 }
 
 // Handle incoming WebSocket messages
@@ -629,13 +714,13 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
         // Display message on LCD for Station 2
         if (stationNumber == 2) {
             displayStation2Message("Wrong Station!", "Go to " + assignedStationName);
-            delay(2500); // Slightly reduced from 3000ms (kept longer as it's important)
+            vTaskDelay(pdMS_TO_TICKS(2500)); // Use vTaskDelay instead of delay()
             displayStation2Message("Station 2", "Scan your card");
         }
         // Display message on LCD for QC Station
         else if (stationNumber == 3) {
             displayQCMessage("Wrong Station!", "Go to " + assignedStationName, "Access Denied", "");
-            delay(2500); // Slightly reduced from 3000ms (kept longer as it's important)
+            vTaskDelay(pdMS_TO_TICKS(2500)); // Use vTaskDelay instead of delay()
             displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return;
@@ -869,7 +954,7 @@ void initButtons() {
 // Buzzer beep function
 void beepBuzzer(int duration = 200) {
     digitalWrite(BUZZER_PIN, HIGH);
-    delay(duration);
+    vTaskDelay(pdMS_TO_TICKS(duration)); // Use vTaskDelay instead of delay()
     digitalWrite(BUZZER_PIN, LOW);
 }
 
@@ -891,9 +976,9 @@ void waitForButtonRelease(uint8_t stationNumber) {
     
     while (digitalRead(BUTTON_PINS[stationNumber - 1].ok) == LOW || 
            digitalRead(BUTTON_PINS[stationNumber - 1].cancel) == LOW) {
-        delay(50);
+        vTaskDelay(pdMS_TO_TICKS(50)); // Use vTaskDelay instead of delay()
     }
-    delay(100); // Additional debounce delay
+    vTaskDelay(pdMS_TO_TICKS(100)); // Use vTaskDelay for additional debounce delay
 }
 
 // Wait for button press with timeout, returns true if OK pressed, false if Cancel or timeout
@@ -911,7 +996,7 @@ bool waitForButtonPress(uint8_t stationNumber, unsigned long timeoutMs) {
             waitForButtonRelease(stationNumber);
             return false;
         }
-        delay(50); // Small delay to prevent tight loop
+        vTaskDelay(pdMS_TO_TICKS(50)); // Use vTaskDelay instead of delay()
     }
     
     return false; // Timeout - treat as cancel
@@ -930,9 +1015,9 @@ bool isQCDownPressed() {
 // Wait for QC navigation buttons to be released
 void waitForQCButtonRelease() {
     while (digitalRead(QC_UP_BUTTON) == LOW || digitalRead(QC_DOWN_BUTTON) == LOW) {
-        delay(50);
+        vTaskDelay(pdMS_TO_TICKS(50)); // Use vTaskDelay instead of delay()
     }
-    delay(100); // Additional debounce delay
+    vTaskDelay(pdMS_TO_TICKS(100)); // Use vTaskDelay for additional debounce delay
 }
 
 // Display QC parts selection list
@@ -1084,14 +1169,14 @@ bool handleQCPartsSelection() {
                     if (qcSelectedPart < 0) {
                         qcSelectedPart = qcSectionsCount - 1; // Wrap to bottom
                     }
-                    
+
                     // Adjust scroll offset if needed
                     if (qcSelectedPart < qcScrollOffset) {
                         qcScrollOffset = qcSelectedPart;
                     } else if (qcSelectedPart >= qcScrollOffset + 3) {
                         qcScrollOffset = qcSelectedPart - 2;
                     }
-                    
+
                     Serial.println("QC: Section UP - Selected: " + qcSections[qcSelectedPart].name);
                     displayQCPartsList();
                     startTime = millis(); // Reset timeout
@@ -1105,7 +1190,7 @@ bool handleQCPartsSelection() {
                         qcSelectedPart = 0; // Wrap to top
                         qcScrollOffset = 0;
                     }
-                    
+
                     // Adjust scroll offset if needed
                     if (qcSelectedPart >= qcScrollOffset + 3) {
                         qcScrollOffset = qcSelectedPart - 2;
@@ -1282,7 +1367,7 @@ bool handleQCPartsSelection() {
                 break;
         }
         
-        delay(50); // Small delay to prevent tight loop
+        vTaskDelay(pdMS_TO_TICKS(50)); // Use vTaskDelay instead of delay()
     }
     
     // Timeout
@@ -1390,9 +1475,15 @@ String generateStationID(uint8_t stationNumber) {
     }
 }
 
-// Convert UID bytes to hex string
+// Convert UID bytes to hex string with bounds checking
 String uidToString(uint8_t* uid, uint8_t uidSize) {
+    if (uid == nullptr || uidSize == 0 || uidSize > 10) {
+        return "INVALID_UID"; // Safety check
+    }
+    
     String uidStr = "";
+    uidStr.reserve(uidSize * 2); // Pre-allocate memory for efficiency
+    
     for (byte i = 0; i < uidSize; i++) {
         if (uid[i] < 0x10) uidStr += "0";
         uidStr += String(uid[i], HEX);
@@ -1468,7 +1559,7 @@ void connectivityTask(void *parameter) {
             Serial.println("Defect definitions loaded successfully");
         } else {
             Serial.println("!! Failed to load defect definitions, using fallback");
-            // You could implement fallback hardcoded values here if needed
+            loadFallbackDefectDefinitions();
         }
     } else {
         Serial.println("!! Skipping NTP, WebSocket, and defect definitions due to WiFi failure");
@@ -1625,13 +1716,13 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         // Display message on LCD for Station 2
         if (stationNumber == 2) {
             displayStation2Message("First scan", "your card");
-            delay(1500); // Show message for 1.5 seconds (reduced for faster response)
+            vTaskDelay(pdMS_TO_TICKS(1500)); // Use vTaskDelay instead of delay()
             displayStation2Message("Station 2", "Scan your card");
         }
         // Display message on LCD for QC Station
         else if (stationNumber == 3) {
             displayQCMessage("First scan", "your card", "", "");
-            delay(1500); // Show message for 1.5 seconds (reduced for faster response)
+            vTaskDelay(pdMS_TO_TICKS(1500)); // Use vTaskDelay instead of delay()
             displayQCMessage("QC Station", "Scan your card", "", "");
         }
         return false;
@@ -1641,7 +1732,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     if (stationNumber == 3) {
         Serial.println("QC: Product tag scanned - " + uidString);
         displayQCMessage("Product scanned!", "UID: " + uidString.substring(0, 12), "Select section", "Use UP/DOWN + OK");
-        delay(1000); // Reduced from 2000ms for faster scanning
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Use vTaskDelay instead of delay()
         
         // Show multi-step selection and wait for user choice
         bool selectionConfirmed = handleQCPartsSelection();
@@ -1649,7 +1740,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         if (!selectionConfirmed) {
             // User cancelled or timeout
             displayQCMessage("Selection", "Cancelled", "Scan next product", "");
-            delay(1500); // Reduced from 2000ms for faster recovery
+            vTaskDelay(pdMS_TO_TICKS(1500)); // Use vTaskDelay instead of delay()
             displayQCMessage("QC Station", "Ready to scan", "", "");
             return false;
         }
@@ -1670,7 +1761,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         Serial.println("  Subtype: " + selectedSubtype);
         
         displayQCMessage("Processing...", "Sec:" + qcSections[qcSelectedPart].name, "Typ:" + qcTypes[qcSelectedType].name, "Sub:" + selectedSubtype.substring(0, 12));
-        delay(1500); // Reduced from 2500ms for faster processing
+        vTaskDelay(pdMS_TO_TICKS(1500)); // Use vTaskDelay instead of delay()
         
         // Generate scan ID and get timestamp
         String scanID = generateScanID();

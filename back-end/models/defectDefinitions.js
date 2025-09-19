@@ -213,6 +213,6 @@ defectDefinitionsSchema.statics.getActiveDefinitions = function() {
   return this.findOne({ isActive: true }).sort({ lastUpdated: -1 });
 };
 
-const DefectDefinitions = mongoose.model("DefectDefinitions", defectDefinitionsSchema);
+const DefectDefinitions = mongoose.model("DefectDefinitions", defectDefinitionsSchema, "defectDefinitionsSchema");
 
 module.exports = DefectDefinitions;
