@@ -172,8 +172,8 @@ const LeadingLine = () => {
       <div className="text-white rounded-2xl px-3">
         <h2 className="text-lg font-bold text-center">
           Leading Line 
-          {connectionStatus === "connected" && <span className="text-green-400 text-xs ml-2">●</span>}
-          {connectionStatus === "disconnected" && <span className="text-red-400 text-xs ml-2">●</span>}
+          {/* {connectionStatus === "connected" && <span className="text-green-400 text-xs ml-2">●</span>}
+          {connectionStatus === "disconnected" && <span className="text-red-400 text-xs ml-2">●</span>} */}
         </h2>
 
         {leadingLine !== null && (
