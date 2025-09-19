@@ -1,0 +1,145 @@
+{
+  "version": "1.0",
+  "isActive": true,
+  "createdBy": "Quality Lead",
+  "createdAt": { "$date": "2025-09-18T10:00:00.000Z" },
+  "lastUpdated": { "$date": "2025-09-18T10:00:00.000Z" },
+  
+  "sections": [
+    {
+      "code": 0,
+      "name": "Body",
+      "description": "Main body section of the garment"
+    },
+    {
+      "code": 1,
+      "name": "Hand",
+      "description": "Sleeve and arm sections"
+    },
+    {
+      "code": 2,
+      "name": "Collar",
+      "description": "Collar and neck area"
+    },
+    {
+      "code": 3,
+      "name": "Upper Back",
+      "description": "Upper back section"
+    }
+  ],
+  
+  "types": [
+    {
+      "code": 0,
+      "name": "Fabric",
+      "description": "Fabric related defects",
+      "subtypes": [
+        {
+          "code": 0,
+          "name": "Hole",
+          "description": "Fabric holes or tears"
+        },
+        {
+          "code": 1,
+          "name": "Stain",
+          "description": "Stains or discoloration"
+        },
+        {
+          "code": 2,
+          "name": "Shading",
+          "description": "Color shading issues"
+        },
+        {
+          "code": 3,
+          "name": "Slub",
+          "description": "Fabric slub defects"
+        }
+      ]
+    },
+    {
+      "code": 1,
+      "name": "Stitching",
+      "description": "Stitching related defects",
+      "subtypes": [
+        {
+          "code": 4,
+          "name": "Skipped",
+          "description": "Skipped stitches"
+        },
+        {
+          "code": 5,
+          "name": "Broken",
+          "description": "Broken stitches"
+        },
+        {
+          "code": 6,
+          "name": "Uneven",
+          "description": "Uneven stitching"
+        },
+        {
+          "code": 7,
+          "name": "Loose",
+          "description": "Loose stitching"
+        }
+      ]
+    },
+    {
+      "code": 2,
+      "name": "Sewing",
+      "description": "Sewing construction defects",
+      "subtypes": [
+        {
+          "code": 8,
+          "name": "Pluckering",
+          "description": "Fabric puckering"
+        },
+        {
+          "code": 9,
+          "name": "Misalignment",
+          "description": "Seam misalignment"
+        },
+        {
+          "code": 10,
+          "name": "Open_seam",
+          "description": "Open seam defects"
+        },
+        {
+          "code": 11,
+          "name": "Backtak",
+          "description": "Backtack issues"
+        },
+        {
+          "code": 12,
+          "name": "Seam_gap",
+          "description": "Gaps in seams"
+        }
+      ]
+    },
+    {
+      "code": 3,
+      "name": "Other",
+      "description": "Other defect types",
+      "subtypes": [
+        {
+          "code": 13,
+          "name": "Measurement",
+          "description": "Size and measurement issues"
+        },
+        {
+          "code": 14,
+          "name": "Button/Button_hole",
+          "description": "Button and buttonhole defects"
+        },
+        {
+          "code": 15,
+          "name": "Twisted",
+          "description": "Twisted or distorted areas"
+        }
+      ]
+    }
+  ],
+  
+  "totalSections": 4,
+  "totalTypes": 4,
+  "totalSubtypes": 16
+}
