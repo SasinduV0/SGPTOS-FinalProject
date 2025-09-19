@@ -52,13 +52,13 @@ const iotRoutes = require("./routes/iotRoute");
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
-<<<<<<< HEAD
+
 const lineManagementRoutes = require('./routes/lineManagement');
 const productionRoutes = require("./routes/production");
-=======
+
 const userRoute = require('./routes/userRoute');
 
->>>>>>> 96bd39e811698ee866a0963e829dcf2875480ab2
+
 
 connectDB();
 
@@ -80,7 +80,7 @@ app.use("/", (req, res) => {
     "websocket": "Available at ws://localhost:8000/rfid-ws",
     "status": "WebSocket server running"
   });
->>>>>>> 96bd39e811698ee866a0963e829dcf2875480ab2
+
 });
 
 io.on("connection", (socket) => {
