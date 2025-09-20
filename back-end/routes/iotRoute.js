@@ -1,6 +1,7 @@
 const express = require("express");
 const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
-const DefectDefinitions = require("../models/defectDefinitions"); // Add DefectDefinitions import
+const DefectDefinitions = require("../models/defectDefinitions");  // Updated import
+const Employee = require("../models/Employee"); // Add Employee model
 const router = express.Router();
 
 // Get all RFID tag scans
@@ -228,6 +229,32 @@ router.get("/defect-stats", async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching defect statistics:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get defect rate (defect count vs total production from employees)
+router.get("/defect-rate", async (req, res) => {
+  try {
+    // Get total production from employees
+    const employees = await Employee.find();
+    const totalProduction = employees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
+
+    // Total garments with defects
+    const defectCount = await GarmentDefects.countDocuments();
+
+    // Calculate defect rate (%)
+    const defectRate = totalProduction > 0 
+      ? ((defectCount / totalProduction) * 100).toFixed(2) 
+      : 0;
+
+    res.json({
+      total: totalProduction,
+      defects: defectCount,
+      defectRate: `${defectRate}%`,
+    });
+  } catch (err) {
+    console.error("Error fetching defect rate:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });

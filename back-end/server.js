@@ -1,45 +1,3 @@
-// require("dotenv").config();
-
-// const express = require("express");
-// const cors = require("cors");
-// const app = express();
-// const connectDB = require('./config/database')
-// const authRoutes = require('./routes/auth')
-// const iotRoutes = require('./routes/iotRoute')
-// const userProfileRoutes = require('./routes/userProfile');
-// const forgotPasswordRoutes = require('./routes/forgotPassword');
-
-
-// connectDB();
-
-// app.use(cors())
-// app.use(express.json());
-
-// app.use("/api/auth", authRoutes);
-// app.use('/api/user', userProfileRoutes);
-// app.use("/api", iotRoutes);
-// app.use("/api/auth", forgotPasswordRoutes);
-
-
-// app.use("/", (req,res) => {
-//     res.json({"msg":"Hello Smart Garment production tracking system!"})
-// });
-
-// const PORT = process.env.PORT || 8001;
-
-// app.listen(PORT, ()=>{
-//     console.log(`Server is up and running on port ${PORT}`)
-// });
-
-
-
-
-
-
-
-
-
-
 
 require("dotenv").config();
 const express = require("express");
@@ -49,6 +7,11 @@ const { Server } = require("socket.io");
 const connectDB = require("./config/database");
 const authRoutes = require("./routes/auth");
 const iotRoutes = require("./routes/iotRoute");
+const employeeRoutes = require("./routes/employee");
+const iotDefectRoutes = require("./routes/iotRoute");
+const lineManagement = require("./routes/LineManagement");
+const lineReallocation = require("./routes/LineReallocation");
+
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
@@ -67,10 +30,12 @@ app.use(express.json());
 app.set("io", io);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userProfileRoutes);
-app.use("/api", iotRoutes);
-app.use("/api/auth", forgotPasswordRoutes);
+app.use("/api", employeeRoutes);
+app.use("/api/line-management", lineManagement);
+app.use("/api/line-reallocation", lineReallocation);
 
-// Catch-all route should be LAST
+app.use("/api/iot", iotDefectRoutes);
+app.use("/api/auth", forgotPasswordRoutes);
 app.use("/", (req, res) => {
   res.json({
     "msg": "Hello Smart Garment production tracking system!",
