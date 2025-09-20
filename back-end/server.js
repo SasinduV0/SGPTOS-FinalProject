@@ -7,7 +7,7 @@ const { Server } = require("socket.io");
 const connectDB = require("./config/database");
 const authRoutes = require("./routes/auth");
 const iotRoutes = require("./routes/iotRoute");
-const iotRoutes = require("./routes/employee");
+const employeeRoutes = require("./routes/employee");
 const iotDefectRoutes = require("./routes/iotRoute");
 const lineManagement = require("./routes/LineManagement");
 const lineReallocation = require("./routes/LineReallocation");
@@ -30,7 +30,7 @@ app.use(express.json());
 app.set("io", io);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userProfileRoutes);
-app.use("/api", iotRoutes);
+app.use("/api", employeeRoutes);
 app.use("/api/line-management", lineManagement);
 app.use("/api/line-reallocation", lineReallocation);
 
