@@ -6,6 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const connectDB = require("./config/database");
 const authRoutes = require("./routes/auth");
+const iotRoutes = require("./routes/iotRoute");
 const iotRoutes = require("./routes/employee");
 const iotDefectRoutes = require("./routes/iotRoute");
 const lineManagement = require("./routes/LineManagement");
@@ -14,6 +15,7 @@ const lineReallocation = require("./routes/LineReallocation");
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
+const userRoute = require('./routes/userRoute');
 
 
 connectDB();
@@ -50,14 +52,14 @@ io.on("connection", (socket) => {
 });
 
 const SOCKET_IO_PORT = process.env.PORT || 8001;
-httpServer.listen(SOCKET_IO_PORT, () => {
-  console.log(`<> Socket.IO server running on port ${SOCKET_IO_PORT}`);
+httpServer.listen(SOCKET_IO_PORT, '0.0.0.0', () => {
+  console.log(`<> Socket.IO server running on port ${SOCKET_IO_PORT} on all interfaces`);
 });
 
 // --- Plain WebSocket server for ESP32 (port 8000) ---
 const wsServer = http.createServer();
 const rfidWS = new RFIDWebSocketServer(wsServer);
-wsServer.listen(8000, () => {
-  console.log(`-> WebSocket server available at: ws://localhost:8000/rfid-ws`);
+wsServer.listen(8000, '0.0.0.0', () => {
+  console.log(`-> WebSocket server available at: ws://0.0.0.0:8000/rfid-ws`);
   console.log(`-> Ready to receive RFID data from ESP32`);
 });

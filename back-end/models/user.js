@@ -1,44 +1,71 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const bcrypt = require("bcryptjs");
 
-const userSchema = new Schema({
-    username: { 
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
-    userID:{
-        type: String,
-        required: true,
-        unique: true
-    },
-    password:{
-        type: String,
-        required: true,
-        minlength: 6
-    },
-    role: {
-        type: String,
-        required: true,
-        enum: ["qc", "supervisor", "manager", "admin", "live-dashboard"],
-        
-    },
+const userSchema = new mongoose.Schema({
+  // Name
+  firstname: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  lastname: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  username: { 
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+  },
+  userID:{
+      type: String,
+      required: true,
+      unique: true
+  },
+  password:{
+      type: String,
+      required: true,
+      minlength: 6
+  },
+  role: {
+      type: String,
+      required: true,
+      enum: ["qc", "supervisor", "manager", "admin", "live-dashboard"],
+      
+  },
+  // Login & ID
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  // Contact & Department
+  phoneNumber: {
+    type: String,
+    required: true
+  },
+  department: {
+    type: String,
+    required: true
+  },
 
-    // ... existing fields
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
+  // Password reset
+  resetToken: { type: String },
+  resetTokenExpire: { type: Date }
 
-     // 🆕 Password reset එකට අලුතින් add කල fields
-    resetToken: { type: String },         // Random token එක
-    resetTokenExpire: { type: Date }      // කල් ඉකුත් වෙන වෙලාව
-    
 }, {
-    timestamps: true
+  timestamps: true
 });
 
-module.exports = mongoose.model('User', userSchema);
+// Hash password before saving
+// userSchema.pre("save", async function(next) {
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
+
+const User = mongoose.model("User", userSchema);
+module.exports = User;

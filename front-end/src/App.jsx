@@ -3,18 +3,24 @@ import Login from './pages/login'
 import ProtectedRoute from './components/ProtectedRoute';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Manager from './pages/Manager/Manager';
-import SupervisorDashboard from './pages/Supervisor/SupervisorDashboard';
+import Production from './pages/Manager/Production';
+import ReportAnalytics from './pages/Manager/ReportAnalytics';
+import HomePage from './pages/Supervisor/HomePage';
+import { dashboardData } from './pages/Data/dashboardData';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QualityControl from './pages/QC/QualityControl';
+import DefectRate from './pages/QC/DefectRate';
+import QCEmployeeManagement from './pages/QC/QCEmployeeManagement';
 import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
 import EmployeeManagement from './pages/Manager/EmployeeManagement';
-import Production from './pages/Manager/Production';
+
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import ReportAnalytics from './pages/Manager/ReportAnalytics';
-
+import AssignmentPage from './pages/Supervisor/AssignmentPage';
+// import SupervisorAssignmentWrapper from './pages/Supervisor/SupervisorAssignmentWrapper';
+import ProductivityPage from './pages/Supervisor/ProductivityPage';
 
 function AppWrapper() {
   const location = useLocation();
@@ -68,15 +74,34 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           path="/manager/report-analytics"
           element={
             <ProtectedRoute allowedRoles={['manager']}>
-              <ReportAnalytics />
+              <ReportAnalytics/>
             </ProtectedRoute>
           }
         />
+
+        {/* Supervisor */}
+
         <Route
           path="/supervisor"
           element={
             <ProtectedRoute allowedRoles={['supervisor']}>
-              <SupervisorDashboard />
+              <HomePage dashboardData={dashboardData} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/worker-assignment"
+          element={
+            <ProtectedRoute allowedRoles={['supervisor']}>
+              <AssignmentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/lineProd"
+          element={
+            <ProtectedRoute allowedRoles={['supervisor']}>
+              <ProductivityPage dashboardData={dashboardData} />
             </ProtectedRoute>
           }
         />
@@ -95,6 +120,23 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
               <QualityControl />
             </ProtectedRoute>
           }
+        />
+         <Route
+          path="/qc/DefectRate"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <DefectRate />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/qc/Employee"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <QCEmployeeManagement />
+            </ProtectedRoute>
+          } 
+
         />
         <Route
           path="/live-dashboard"

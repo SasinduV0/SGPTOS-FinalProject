@@ -3,9 +3,11 @@ export const initialEmployee = [
         id: '1',
         firstName: 'S.N',
         lastName: 'Fernando',
-        section : 'Cutting',
+        section : 'QC',
         email: 'fdo12@gmail.com',
         empId: 'EMP-006',
+        rfidNumber: 'E9 EB 39 03',
+        status: 'ACTIVE'
     },
     {
         id: '2',
@@ -14,6 +16,8 @@ export const initialEmployee = [
         section : 'Packing',
         email: 'Hdd67@gmail.com',
         empId: 'EMP-110',
+        rfidNumber: 'E9 EB 53 03',
+        status: 'ACTIVE'
     },
     {
         id: '3',
@@ -22,6 +26,8 @@ export const initialEmployee = [
         section : 'Cutting',
         email: 'peReRapk12@gmail.com',
         empId: 'EMP-066',
+        rfidNumber: 'F9 E9 50 67',
+        status: 'INACTIVE'
     },
     {
         id: '4',
@@ -30,6 +36,8 @@ export const initialEmployee = [
         section : 'Sewing',
         email: 'kamal2002@gmail.com',
         empId: 'EMP-101',
+        rfidNumber: 'F9 ED 53 97',
+        status: 'ACTIVE'
     }
 ];
 

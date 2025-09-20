@@ -1,5 +1,6 @@
 const express = require("express");
 const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
+const DefectDefinitions = require("../models/defectDefinitions");  // Updated import
 const Employee = require("../models/Employee"); // Add Employee model
 const router = express.Router();
 
@@ -232,9 +233,6 @@ router.get("/defect-stats", async (req, res) => {
   }
 });
 
-
-
-
 // Get defect rate (defect count vs total production from employees)
 router.get("/defect-rate", async (req, res) => {
   try {
@@ -261,10 +259,68 @@ router.get("/defect-rate", async (req, res) => {
   }
 });
 
+// ==== DEFECT DEFINITIONS ROUTES FOR ESP32 ====
 
+// Get defect definitions in ESP32 compatible format
+router.get("/defect-definitions/esp32", async (req, res) => {
+  try {
+    const definitions = await DefectDefinitions.getActiveDefinitions();
+    
+    if (!definitions) {
+      return res.status(404).json({ 
+        error: "No active defect definitions found",
+        fallback: {
+          sections: [
+            { code: 0, name: "Body" },
+            { code: 1, name: "Hand" },
+            { code: 2, name: "Collar" },
+            { code: 3, name: "Upper Back" }
+          ],
+          types: [
+            { 
+              code: 0, 
+              name: "Fabric", 
+              subtypes: [
+                { code: 0, name: "Hole" },
+                { code: 1, name: "Stain" },
+                { code: 2, name: "Shading" },
+                { code: 3, name: "Slub" }
+              ]
+            }
+          ]
+        }
+      });
+    }
 
+    // Format for ESP32 consumption
+    const esp32Format = {
+      version: definitions.version,
+      lastUpdated: definitions.lastUpdated,
+      sections: definitions.sections.map(s => ({
+        code: s.code,
+        name: s.name.replace(/[^a-zA-Z0-9_]/g, '_') // Replace special chars for ESP32
+      })),
+      types: definitions.types.map(t => ({
+        code: t.code,
+        name: t.name.replace(/[^a-zA-Z0-9_]/g, '_'),
+        subtypes: t.subtypes.map(st => ({
+          code: st.code,
+          name: st.name.replace(/[^a-zA-Z0-9_]/g, '_')
+        }))
+      })),
+      metadata: {
+        totalSections: definitions.totalSections,
+        totalTypes: definitions.totalTypes,
+        totalSubtypes: definitions.totalSubtypes
+      }
+    };
 
-
-
+    res.status(200).json(esp32Format);
+    console.log(`ESP32 defect definitions served - Version: ${definitions.version}`);
+  } catch (err) {
+    console.error("Error fetching defect definitions for ESP32:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import EmployeeTable from '../../components/AdminPanal/UserManagment/EmployeeTable'
-import SearchFilter from '../../components/AdminPanal/UserManagment/SearchFilter';
-import EditUserModal from '../../components/AdminPanal/UserManagment/EditUserModal';
-import Header from '../../components/AdminPanal/UserManagment/Header';
-import ActionButton from '../../components/AdminPanal/UserManagment/ActionButton';
+import React, { useState, useEffect } from 'react';
+import {User} from 'lucide-react'
+import EditUserModal from '../../components/AdminPanal/EditUserModal';
+import Header from '../../components/AdminPanal/Header';
+import ActionButton from '../../components/AdminPanal/ActionButton';
 import { initialEmployee } from '../Data/initialEmployee'
+import SearchBar from '../../components/AdminPanal/SearchBar';
+import FilterBar from '../../components/AdminPanal/FilterBar';
+import DataTable from '../../components/AdminPanal/DataTable';
 
 function UserManagment() {
   // State variables
@@ -95,33 +97,71 @@ function UserManagment() {
     }
   ];
 
+  //For filter bar
+  const departments = ['All Departments', 'Cutting', 'QC', 'Sewing', 'Packing'];
+
   return (
-    <div className='p-6 space-y-6'>
-      <Header />
+    <div className='flex min-h-screen bg-gray-50'>
 
-      <SearchFilter
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedDepartment={selectedDepartment}
-        setSelectedDepartment={setSelectedDepartment}
-      />
+      {/* Main Content */}
+      <div className='flex-1 flex flex-col'>
 
-      <EmployeeTable 
-        columns={columns}
-        data={filteredEmployees}
-        emptyMessage="Add employees to see them listed here"
-      />
+        {/* Page Content */}
+        <div className="flex-1 p-6">
+          <div className="bg-white rounded-lg shadow-sm">
 
-      {isEditModalOpen && (
-        <EditUserModal
-          isOpen={isEditModalOpen}
-          employee={editingEmployee}
-          onClose={handleCloseModal}
-          onUpdate={handleUpdateEmployee}
-        />
-      )}
+            <div className="flex items-center justify-between p-6 border-b">
+              <Header title="User Managment" icon={<User />} />
+            </div>
+
+              <div className='flex items-center gap-6 p-6 bg-gray-50'>
+                {/*Search Bar*/}
+                <div className='flex-1'>
+                  <SearchBar
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  searchPlaceholder="Search Name or Employee ID"
+                  />
+                </div>
+
+                {/*Department filter*/}
+                <FilterBar
+                selectedOption={selectedDepartment}
+                setSelectedOption={setSelectedDepartment}
+                options={departments}
+                selectLabel='Department'
+                searchPlaceholder=''/>
+
+              </div>
+
+              <div className="p-6">
+              <div className="mb-4">
+                <h2 className="text-lg font-medium text-gray-800">
+                  Users ({filteredEmployees.length})
+                </h2>
+              </div>
+
+              <DataTable
+                columns={columns}
+                data={filteredEmployees}
+                emptyMessage="Add employees to see them listed here"
+              />
+
+              {isEditModalOpen && (
+                <EditUserModal
+                  isOpen={isEditModalOpen}
+                  employee={editingEmployee}
+                  onClose={handleCloseModal}
+                  onUpdate={handleUpdateEmployee}
+                />
+              )}
+            </div>  
+          </div>
+        </div>
+      </div>
     </div>
-  )
-}
+      
+  );
+};
 
 export default UserManagment
