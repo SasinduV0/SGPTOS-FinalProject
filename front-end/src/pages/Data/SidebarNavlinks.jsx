@@ -7,6 +7,7 @@ import { FiUsers } from "react-icons/fi";
 import { BsBarChartLine } from "react-icons/bs";
 import { MdOutlineSpaceDashboard } from "react-icons/md";
 
+import { FiAlertTriangle } from "react-icons/fi";
 
 export const ManagerLinks = [
   { label: 'Dashboard', href: '/manager', icon: <FaTachometerAlt /> },
@@ -29,7 +30,14 @@ export const adminLinks = [
   { label: 'Product RFID Update', href: '/admin/ProductRfidMan', icon: <RiRfidLine /> },
 ];
 
+export const QCManagerLinks = [
+  { label: 'Dashboard', href: '/qc', icon: <FaTachometerAlt /> },
+  { label: 'Defect Rate', href: '/qc/DefectRate', icon: <FiAlertTriangle /> },
+  { label: 'Employee Management', href: '/qc/Employee', icon: <FaUser /> },
+];
 export const ProfileLinks = [
   
 ];
+
+
 

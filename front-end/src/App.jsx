@@ -9,6 +9,8 @@ import HomePage from './pages/Supervisor/HomePage';
 import { dashboardData } from './pages/Data/dashboardData';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import QualityControl from './pages/QC/QualityControl';
+import DefectRate from './pages/QC/DefectRate';
+import QCEmployeeManagement from './pages/QC/QCEmployeeManagement';
 import LiveDashboard from './pages/LiveDashboard';
 import Navbar from './components/Navbar';
 import UserProfile from './pages/Profile';
@@ -118,6 +120,23 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
               <QualityControl />
             </ProtectedRoute>
           }
+        />
+         <Route
+          path="/qc/DefectRate"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <DefectRate />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/qc/Employee"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <QCEmployeeManagement />
+            </ProtectedRoute>
+          } 
+
         />
         <Route
           path="/live-dashboard"
