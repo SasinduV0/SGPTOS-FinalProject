@@ -9,7 +9,7 @@ import ActionButton from '../../components/AdminPanal/ActionButton';
 import EmpRfidModal from '../../components/AdminPanal/EmpRfidModal';
 import AddButton from '../../components/AdminPanal/AddButton';
 
-const API_URL = 'http://localhost:8001/api/rfid-employees';
+const API_BASE_URL = 'http://localhost:8001/api/rfid-employees';
 
 const EmployeeRfidMan = () => {
   const [rfidEntries, setRfidEntries] = useState([]);
@@ -23,7 +23,7 @@ const EmployeeRfidMan = () => {
     try {
       setLoading(true); setError('');
       const params = searchTerm ? { search: searchTerm } : {};
-      const res = await axios.get(API_URL, { params });
+      const res = await axios.get(API_BASE_URL, { params });
       setRfidEntries(res.data.data || []);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Error fetching employees');
@@ -58,9 +58,15 @@ const EmployeeRfidMan = () => {
     } catch (err) { alert(err.response?.data?.message || err.message); }
   };
 
-  const handleStatusChange = async (id, status) => {
-    try { await axios.patch(`${API_BASE_URL}/${id}/status`, { status }); await fetchRfidEmployees(); }
-    catch (err) { alert(err.response?.data?.message || err.message); }
+  // Your current handleStatusChange function 
+  const handleStatusChange = async (id, newStatus) => {
+    try 
+    { 
+      await axios.patch(`${API_BASE_URL}/${id}/status`, { status:newStatus }); 
+      fetchRfidEmployees(); 
+      alert('Ststus updated');
+    }catch (err){ 
+      alert(err.response?.data?.message || err.message); } //Error popup
   };
 
   const tableColumns = [
@@ -83,7 +89,7 @@ const EmployeeRfidMan = () => {
 
           </div>
 
-          <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+          <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID / Unit / Workplace" />
           {error && <div className="p-4 bg-red-50 text-red-600">{error}</div>}
           {loading && <div className="p-6 text-center">Loading...</div>}
           {!loading && <DataTable columns={tableColumns} data={rfidEntries} />}

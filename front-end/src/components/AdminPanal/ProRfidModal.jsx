@@ -1,13 +1,7 @@
-// src/components/AdminPanal/ProRfidModal.jsx
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import FormField from './FormField'; // assume your FormField accepts label, type, value, onChange, placeholder, error
+import FormField from './FormField';
 import { ChevronDown } from 'lucide-react';
-
-/*
-  Validation rule: rfidNumber must be exactly 8 digits (numbers only).
-  If user types letters, an error message will show.
-*/
 
 const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
@@ -16,11 +10,13 @@ const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     workplace: '',
     status: 'ACTIVE'
   });
+
   const [errors, setErrors] = useState({});
 
-  const unitOptions = ['UNIT 1','UNIT 2','UNIT 3'];
-  const workplaceOptions = ['LINE 1','LINE 2','LINE 3','LINE 4'];
+  const unitOptions = ['UNIT 1', 'UNIT 2', 'UNIT 3'];
+  const workplaceOptions = ['LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
+  // Reset or load initial data
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -30,27 +26,21 @@ const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
         status: initialData.status || 'ACTIVE'
       });
     } else {
-      setFormData({ rfidNumber: '', unit: '', workplace: '', status: 'ACTIVE' });
+      setFormData({
+        rfidNumber: '',
+        unit: '',
+        workplace: '',
+        status: 'ACTIVE'
+      });
     }
     setErrors({});
   }, [initialData, isOpen]);
 
-  // Validate: exactly 8 digits, no letters allowed
+  // Validation rules
   const validateForm = () => {
     const newErrors = {};
-    const rfidVal = String(formData.rfidNumber || '').trim();
 
-    if (!rfidVal) {
-      newErrors.rfidNumber = 'RFID Number is required';
-    } else if (!/^[0-9]{8}$/.test(rfidVal)) {
-      // show specific message if letters present
-      if (/[a-zA-Z]/.test(rfidVal)) {
-        newErrors.rfidNumber = 'Letters are not allowed — enter 8 digits only';
-      } else {
-        newErrors.rfidNumber = 'RFID must be exactly 8 digits';
-      }
-    }
-
+    if (!formData.rfidNumber.trim()) newErrors.rfidNumber = 'RFID Number is required';
     if (!formData.unit.trim()) newErrors.unit = 'Unit is required';
     if (!formData.workplace.trim()) newErrors.workplace = 'Workplace is required';
 
@@ -58,72 +48,102 @@ const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle form submit
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    // Clean data
-    const clean = {
+    const cleanData = {
       rfidNumber: String(formData.rfidNumber || '').trim(),
       unit: String(formData.unit || '').trim(),
       workplace: String(formData.workplace || '').trim(),
       status: String(formData.status || 'ACTIVE').trim()
     };
 
-    onSave(clean);
+    console.log('Submitting product RFID data:', cleanData);
+    onSave(cleanData);
   };
 
-  // If you want to show error as user types letters:
+  // Handle input changes
   const handleInputChange = (field, value) => {
-    // keep raw input; we do not strip letters automatically to show error when user types them
     setFormData(prev => ({ ...prev, [field]: String(value || '') }));
-
-    // clear that field's error on typing
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? 'Edit Product RFID' : 'Add Product RFID'}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={initialData ? 'Edit Product RFID' : 'Add New Product RFID'}
+    >
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* RFID Number */}
         <FormField
           label="RFID Number"
           type="text"
           value={formData.rfidNumber}
           onChange={(v) => handleInputChange('rfidNumber', v)}
-          placeholder="Enter 8 digits e.g. 12345678"
+          placeholder="Enter 8 alphanumeric characters"
           required
           error={errors.rfidNumber}
         />
 
+        {/* Unit */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
-          <select value={formData.unit} onChange={(e) => handleInputChange('unit', e.target.value)} className="w-full p-3 border rounded-lg">
+          <select
+            value={formData.unit}
+            onChange={(e) => handleInputChange('unit', e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+          >
             <option value="">Select Unit</option>
-            {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
+            {unitOptions.map(u => (
+              <option key={u} value={u}>{u}</option>
+            ))}
           </select>
           {errors.unit && <p className="text-red-600 text-sm mt-1">{errors.unit}</p>}
         </div>
 
+        {/* Workplace */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Workplace</label>
-          <select value={formData.workplace} onChange={(e) => handleInputChange('workplace', e.target.value)} className="w-full p-3 border rounded-lg">
+          <select
+            value={formData.workplace}
+            onChange={(e) => handleInputChange('workplace', e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg"
+          >
             <option value="">Select Workplace</option>
-            {workplaceOptions.map(w => <option key={w} value={w}>{w}</option>)}
+            {workplaceOptions.map(w => (
+              <option key={w} value={w}>{w}</option>
+            ))}
           </select>
           {errors.workplace && <p className="text-red-600 text-sm mt-1">{errors.workplace}</p>}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-          <select value={formData.status} onChange={(e) => handleInputChange('status', e.target.value)} className="w-full p-3 border rounded-lg">
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-          </select>
-        </div>
+        {/* Status */}
+        <FormField
+          label="Status"
+          type="select"
+          value={formData.status}
+          onChange={(v) => handleInputChange('status', v)}
+          options={['ACTIVE', 'INACTIVE']}
+        />
 
+        {/* Actions */}
         <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
-          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">{initialData ? 'Update' : 'Save'}</button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+          >
+            {initialData ? 'Update Product RFID' : 'Save Product RFID'}
+          </button>
         </div>
       </form>
     </Modal>

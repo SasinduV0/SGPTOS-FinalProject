@@ -115,7 +115,7 @@ const ProductRfidMan = () => {
 
           <div className="flex items-center gap-6 p-6 bg-gray-50">
             <div className="flex-1">
-              <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID / Unit / Workplace"/>
+              <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID"/>
             </div>
             <FilterBar selectedOption={unitFilter} setSelectedOption={setUnitFilter} options={units} selectLabel="Unit" />
             <FilterBar selectedOption={workplaceFilter} setSelectedOption={setWorkplaceFilter} options={workplaces} selectLabel="Workplace" />
