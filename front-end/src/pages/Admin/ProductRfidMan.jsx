@@ -6,7 +6,7 @@ import FilterBar from '../../components/AdminPanal/FilterBar';
 import DataTable from '../../components/AdminPanal/DataTable';
 import StatusBadge from '../../components/AdminPanal/StatusBadge';
 import ActionButton from '../../components/AdminPanal/ActionButton';
-import RfidModal from '../../components/AdminPanal/RfidModal';
+import RfidModal from '../../components/AdminPanal/EmpRfidModal';
 import Modal from '../../components/AdminPanal/Modal';
 import AddButton from '../../components/AdminPanal/AddButton';
 
