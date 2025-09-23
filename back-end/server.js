@@ -16,7 +16,7 @@ const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 const userRoute = require('./routes/userRoute');
-const rfidEmployeeRoutes = require('./routes/rfidEmployeeRoute');
+const rfidEmployeeRoutes = require('./routes/rfidEmployeeRoute')
 
 
 connectDB();
@@ -37,7 +37,8 @@ app.use("/api/line-reallocation", lineReallocation);
 
 app.use("/api/iot", iotDefectRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
-app.use("/api/rfid-employees", rfidEmployeeRoutes);
+
+app.use("/api/rfid-employees", rfidEmployeeRoutes)
 
 app.use("/", (req, res) => {
   res.json({
