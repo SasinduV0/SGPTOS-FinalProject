@@ -7,26 +7,37 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     rfidNumber: '',
     empName: '',
     empId: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    department: '',
+    position: '',
+    phoneNumber: '',
+    email: ''
   });
 
   const [errors, setErrors] = useState({});
 
-
   useEffect(() => {
     if (initialData) {
       setFormData({
-        rfidNumber: initialData.rfidNumber,
-        empName: initialData.empName,
-        empId: initialData.empId,
-        status: initialData.status
+        rfidNumber: initialData.rfidNumber || '',
+        empName: initialData.empName || '',
+        empId: initialData.empId || '',
+        status: initialData.status || 'ACTIVE',
+        department: initialData.department || '',
+        position: initialData.position || '',
+        phoneNumber: initialData.phoneNumber || '',
+        email: initialData.email || ''
       });
     } else {
       setFormData({
         rfidNumber: '',
         empName: '',
         empId: '',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        department: '',
+        position: '',
+        phoneNumber: '',
+        email: ''
       });
     }
     setErrors({});
@@ -37,16 +48,21 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
 
     if (!formData.rfidNumber.trim()) {
       newErrors.rfidNumber = 'RFID Number is required';
-    } else if (formData.rfidNumber.length < 5) {
-      newErrors.rfidNumber = 'RFID Number must be at least 5 characters';
+    } else if (formData.rfidNumber.length < 3) {
+      newErrors.rfidNumber = 'RFID Number must be at least 3 characters';
     }
 
-    if (!formData.empName) {
-      newErrors.empName = 'Unit is required';
+    if (!formData.empName.trim()) {
+      newErrors.empName = 'Employee Name is required';
     }
 
-    if (!formData.empId) {
-      newErrors.empId = 'Workplace is required';
+    if (!formData.empId.trim()) {
+      newErrors.empId = 'Employee ID is required';
+    }
+
+    // Email validation if provided
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
     setErrors(newErrors);
@@ -57,6 +73,7 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     e.preventDefault();
     
     if (validateForm()) {
+      console.log('Submitting form data:', formData);
       onSave(formData);
     }
   };
@@ -80,7 +97,7 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={initialData ? 'Edit RFID Entry' : 'Add New RFID Entry'}
+      title={initialData ? 'Edit RFID Employee' : 'Add New RFID Employee'}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <FormField
@@ -98,6 +115,7 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
           type="text"
           value={formData.empName}
           onChange={(value) => handleInputChange('empName', value)}
+          placeholder="Enter employee name"
           required
           error={errors.empName}
         />
@@ -107,8 +125,42 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
           type="text"
           value={formData.empId}
           onChange={(value) => handleInputChange('empId', value)}
+          placeholder="e.g. EMP001"
           required
           error={errors.empId}
+        />
+
+        <FormField
+          label="Department"
+          type="text"
+          value={formData.department}
+          onChange={(value) => handleInputChange('department', value)}
+          placeholder="Enter department"
+        />
+
+        <FormField
+          label="Position"
+          type="text"
+          value={formData.position}
+          onChange={(value) => handleInputChange('position', value)}
+          placeholder="Enter position"
+        />
+
+        <FormField
+          label="Phone Number"
+          type="tel"
+          value={formData.phoneNumber}
+          onChange={(value) => handleInputChange('phoneNumber', value)}
+          placeholder="Enter phone number"
+        />
+
+        <FormField
+          label="Email"
+          type="email"
+          value={formData.email}
+          onChange={(value) => handleInputChange('email', value)}
+          placeholder="Enter email address"
+          error={errors.email}
         />
 
         <FormField
@@ -132,7 +184,7 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
-            {initialData ? 'Update Entry' : 'Save Entry'}
+            {initialData ? 'Update Employee' : 'Save Employee'}
           </button>
         </div>
       </form>
