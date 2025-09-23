@@ -36,18 +36,27 @@ function DefectRateChart() {
 
   // Listen for real-time updates via Socket.IO
   useEffect(() => {
+    // Listen for defect updates (when new defects are added)
+    socket.on("defectUpdate", () => {
+      console.log("📊 DefectRateChart received defect update");
+      fetchDefectRate();
+    });
+
     // Listen for employee updates (affects total production)
     socket.on("leadingLineUpdate", () => {
+      console.log("📊 DefectRateChart received employee update");
       fetchDefectRate();
     });
 
     // Listen for supervisor updates (might affect data)
     socket.on("supervisorUpdate", () => {
+      console.log("📊 DefectRateChart received supervisor update");
       fetchDefectRate();
     });
 
     // Cleanup
     return () => {
+      socket.off("defectUpdate");
       socket.off("leadingLineUpdate");
       socket.off("supervisorUpdate");
     };

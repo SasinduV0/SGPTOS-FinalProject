@@ -135,6 +135,17 @@ router.post("/defect", async (req, res) => {
       garmentDefects.Time_Stamp = Time_Stamp;
       await garmentDefects.save();
 
+      // Emit real-time update
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("defectUpdate", { 
+          message: "New defect added", 
+          data: garmentDefects,
+          newDefect: newDefectEntry 
+        });
+        console.log("🔥 Emitted defectUpdate event for existing garment");
+      }
+
       res.status(200).json({ 
         message: "Defect added to existing garment", 
         data: garmentDefects,
