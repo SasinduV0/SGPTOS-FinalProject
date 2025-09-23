@@ -40,7 +40,8 @@ app.use("/api/iot", iotDefectRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
 
 app.use("/api/rfid-employees", rfidEmployeeRoutes);
-app.use("/api/product-rfid", productRfidRoutes);
+app.use("/api/product-rfids", productRfidRoutes);
+
 
 app.use("/", (req, res) => {
   res.json({

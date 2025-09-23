@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const productRFidSchema = new mongoose.Schema({
+const ProductRfidSchema = new mongoose.Schema({
     rfidNumber: {
         type: String,
         required: [true, 'RFID number is required'],
