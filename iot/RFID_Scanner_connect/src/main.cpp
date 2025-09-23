@@ -49,6 +49,11 @@ volatile uint32_t station1ScanCount = 0;
 volatile uint32_t station2ScanCount = 0;
 volatile uint32_t qcScanCount = 0;
 
+// Duplicate scan prevention - stores last scanned UID for normal employee stations
+String lastScannedUID_Station1 = "";
+String lastScannedUID_Station2 = "";
+// Note: QC station (Station 3) doesn't have duplicate prevention
+
 // Station access control - tracks which employee is logged in to each station
 bool station1Active = false;
 bool station2Active = false;
@@ -800,6 +805,7 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station1Active = true;
                     station1Employee = employeeName;
                     station1State = ACTIVE_SCANNING;
+                    lastScannedUID_Station1 = ""; // Reset duplicate prevention for new shift
                     Serial.println("Station 1: Shift starting... - " + employeeName);
                 } else {
                     // Cancel pressed or timeout - postpone
@@ -817,6 +823,7 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station1Active = false;
                     station1Employee = "";
                     station1State = WAITING_FOR_CARD;
+                    lastScannedUID_Station1 = ""; // Reset duplicate prevention
                     Serial.println("Station 1: Shift ended - " + employeeName);
                 } else {
                     // Cancel pressed or timeout - continue working
@@ -839,6 +846,7 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station2Active = true;
                     station2Employee = employeeName;
                     station2State = ACTIVE_SCANNING;
+                    lastScannedUID_Station2 = ""; // Reset duplicate prevention for new shift
                     Serial.println("Station 2: Shift starting... - " + employeeName);
                     displayStation2Message("Shift starting...", employeeName);
                     delay(1500); // Reduced from 2000ms for faster login
@@ -863,6 +871,7 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station2Active = false;
                     station2Employee = "";
                     station2State = WAITING_FOR_CARD;
+                    lastScannedUID_Station2 = ""; // Reset duplicate prevention
                     Serial.println("Station 2: Shift ended - " + employeeName);
                     displayStation2Message("Shift Ending...", employeeName);
                     delay(2000);
@@ -1015,6 +1024,17 @@ void initButtons() {
 void beepBuzzer(int duration = 200) {
     digitalWrite(BUZZER_PIN, HIGH);
     vTaskDelay(pdMS_TO_TICKS(duration)); // Use vTaskDelay instead of delay()
+    digitalWrite(BUZZER_PIN, LOW);
+}
+
+// Double beep function for consecutive scan notification
+void doubleBeepBuzzer() {
+    digitalWrite(BUZZER_PIN, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(50)); // 50ms beep
+    digitalWrite(BUZZER_PIN, LOW);
+    vTaskDelay(pdMS_TO_TICKS(50)); // 50ms pause
+    digitalWrite(BUZZER_PIN, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(50)); // 50ms beep
     digitalWrite(BUZZER_PIN, LOW);
 }
 
@@ -1768,6 +1788,33 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         handleEmployeeAccess(uidString, stationNumber);
         return false; // Don't queue employee cards
     }
+    
+    // Check for consecutive duplicate scans for normal employee stations only (Station 1 & 2)
+    if (stationNumber == 1 || stationNumber == 2) {
+        String* lastScannedUID = (stationNumber == 1) ? &lastScannedUID_Station1 : &lastScannedUID_Station2;
+        
+        if (*lastScannedUID == uidString) {
+            // Consecutive duplicate scan detected - double beep and reject
+            doubleBeepBuzzer();
+            
+            String stationName = (stationNumber == 1) ? "Station 1" : "Station 2";
+            Serial.println(stationName + " - Consecutive duplicate scan rejected: " + uidString);
+            
+            // Display message on Station 2 LCD
+            if (stationNumber == 2) {
+                displayStation2Message("Already scanned", "Try different tag");
+                vTaskDelay(pdMS_TO_TICKS(1500)); // Show message for 1.5 seconds
+                // Restore the count display instead of "Ready to scan"
+                updateStation2Display(uidString.c_str(), station2ScanCount);
+            }
+            
+            return false; // Don't process consecutive duplicates
+        }
+        
+        // Update last scanned UID for this station
+        *lastScannedUID = uidString;
+    }
+    // Note: QC station (stationNumber == 3) has no duplicate prevention
     
     // Beep immediately for product card detection (instant feedback)
     beepBuzzer(100); // 100ms beep for immediate scan confirmation
