@@ -21,9 +21,8 @@ router.get('/', async (req, res) => {
     if (search) {
       // search across rfidNumber, unit, workplace (case-insensitive)
       query.$or = [
-        { rfidNumber: { $regex: search, $options: 'i' } },
-        { unit: { $regex: search, $options: 'i' } },
-        { workplace: { $regex: search, $options: 'i' } }
+        { rfidNumber: { $regex: search, $options: 'i' } }
+        
       ];
     }
     if (unit && unit !== 'All Units') query.unit = unit;
