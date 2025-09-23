@@ -9,12 +9,20 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     empId: '',
     status: 'ACTIVE',
     department: '',
-    position: '',
     phoneNumber: '',
     email: ''
   });
 
   const [errors, setErrors] = useState({});
+
+  //Department options
+  const departmentOptions = [
+    'Quality control',
+    'Cutting',
+    'sewing',
+    'Finishing',
+    'Packing',
+  ]
 
   useEffect(() => {
     if (initialData) {
@@ -24,7 +32,6 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
         empId: initialData.empId || '',
         status: initialData.status || 'ACTIVE',
         department: initialData.department || '',
-        position: initialData.position || '',
         phoneNumber: initialData.phoneNumber || '',
         email: initialData.email || ''
       });
@@ -35,7 +42,6 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
         empId: '',
         status: 'ACTIVE',
         department: '',
-        position: '',
         phoneNumber: '',
         email: ''
       });
@@ -125,25 +131,18 @@ const RfidModal = ({ isOpen, onClose, onSave, initialData }) => {
           type="text"
           value={formData.empId}
           onChange={(value) => handleInputChange('empId', value)}
-          placeholder="e.g. EMP001"
+          placeholder="e.g. EMP 001"
           required
           error={errors.empId}
         />
 
         <FormField
           label="Department"
-          type="text"
+          type="select"
           value={formData.department}
           onChange={(value) => handleInputChange('department', value)}
-          placeholder="Enter department"
-        />
-
-        <FormField
-          label="Position"
-          type="text"
-          value={formData.position}
-          onChange={(value) => handleInputChange('position', value)}
-          placeholder="Enter position"
+          options = {departmentOptions}
+          placeholder="select department"
         />
 
         <FormField

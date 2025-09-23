@@ -25,10 +25,7 @@ const rfidEmployeeSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    trim: true
-  },
-  position: {
-    type: String,
+    enum: ['Quality Control', 'Cutting', 'Sewing', 'Packing'],
     trim: true
   },
   phoneNumber: {

@@ -68,7 +68,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/rfid-employees - නව RFID employee එකක් හදන්න
 router.post('/', async (req, res) => {
   try {
-    const { rfidNumber, empName, empId, status, department, position, phoneNumber, email } = req.body;
+    const { rfidNumber, empName, empId, status, department, phoneNumber, email } = req.body;
     
     // Validation
     if (!rfidNumber || !empName || !empId) {
@@ -101,10 +101,9 @@ router.post('/', async (req, res) => {
       empName,
       empId,
       status: status || 'ACTIVE',
-      department,
-      position,
-      phoneNumber,
-      email
+      department: department || '',
+      phoneNumber: phoneNumber || '',
+      email: email || ''
     });
     
     const savedEmployee = await newEmployee.save();
