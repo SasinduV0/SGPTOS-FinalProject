@@ -9,7 +9,7 @@ import ActionButton from '../../components/AdminPanal/ActionButton';
 import EmpRfidModal from '../../components/AdminPanal/EmpRfidModal';
 import AddButton from '../../components/AdminPanal/AddButton';
 
-const API_BASE_URL = 'http://localhost:8001/api/rfid-employees';
+const API_URL = 'http://localhost:8001/api/rfid-employees';
 
 const EmployeeRfidMan = () => {
   const [rfidEntries, setRfidEntries] = useState([]);
@@ -23,7 +23,7 @@ const EmployeeRfidMan = () => {
     try {
       setLoading(true); setError('');
       const params = searchTerm ? { search: searchTerm } : {};
-      const res = await axios.get(API_BASE_URL, { params });
+      const res = await axios.get(API_URL, { params });
       setRfidEntries(res.data.data || []);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Error fetching employees');
