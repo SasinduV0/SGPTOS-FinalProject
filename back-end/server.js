@@ -16,7 +16,6 @@ const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 
-const lineManagementRoutes = require('./routes/lineManagement');
 const productionRoutes = require("./routes/production");
 
 const userRoute = require('./routes/userRoute');

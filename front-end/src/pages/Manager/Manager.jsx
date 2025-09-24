@@ -5,6 +5,7 @@ import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 import LineWiseProductivity from '../../components/Manager/LineWiseProductivity';
 import OverallTargetChart from '../../components/Charts/Live-Dashboard/OverallTargetChart';
 import RemainingTime from '../../components/live-dashboard/RemainingTime';
+import UpdatedLineManagement from '../../components/Manager/UpdatedLineManagement';
 
 const ManagerHome = ({ lineData }) => {
 
