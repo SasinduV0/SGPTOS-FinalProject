@@ -112,6 +112,10 @@ int qcTypesCount = 0;
 String defectDefinitionsVersion = "";
 bool defectDefinitionsLoaded = false;
 
+// Flag to track if defect definitions have been successfully updated from database
+// This prevents continuous database checking after first successful update
+bool defect_def_updated = false;
+
 // QC Parts selection variables (updated to use dynamic data)
 volatile int qcSelectedPart = 0;
 volatile int qcScrollOffset = 0;
@@ -381,15 +385,15 @@ void checkNTPSync() {
 void checkDefectDefinitionsSync() {
     if (!wifiConnected) return;
     
-    // Only retry if using fallback definitions or it's been a while since last sync
-    if ((!defectDefinitionsLoaded || defectDefinitionsVersion == "Fallback v1.0") && 
-        (millis() - lastDefectDefinitionsSync >= DEFECT_DEFINITIONS_RETRY_INTERVAL)) {
+    // Only check database if not already updated successfully since startup
+    if (!defect_def_updated && (millis() - lastDefectDefinitionsSync >= DEFECT_DEFINITIONS_RETRY_INTERVAL)) {
         
         Serial.println("Attempting to refresh defect definitions from server...");
         if (fetchDefectDefinitions()) {
             Serial.println("Successfully updated defect definitions from server!");
+            defect_def_updated = true; // Set flag to prevent further automatic checks
         } else {
-            Serial.println("Failed to refresh defect definitions, keeping current data");
+            Serial.println("Failed to refresh defect definitions, keeping fallback data");
         }
         lastDefectDefinitionsSync = millis();
     }
@@ -1633,18 +1637,18 @@ void connectivityTask(void *parameter) {
         // Initialize WebSocket
         initWebSocket();
         
-        // Fetch defect definitions from server
-        Serial.println("Fetching defect definitions...");
+        // Attempt to update defect definitions from server (only once after startup)
+        Serial.println("Attempting to update defect definitions from server...");
         if (fetchDefectDefinitions()) {
-            Serial.println("Defect definitions loaded successfully");
+            Serial.println("Successfully updated defect definitions from server!");
+            defect_def_updated = true; // Mark as updated to prevent further automatic checks
         } else {
-            Serial.println("!! Failed to load defect definitions, using fallback");
-            loadFallbackDefectDefinitions();
+            Serial.println("Failed to update from server, keeping fallback defect definitions");
         }
     } else {
-        Serial.println("!! Skipping NTP, WebSocket, and defect definitions due to WiFi failure");
-        Serial.println("RFID scanning will work in OFFLINE mode - scans will be queued");
-        Serial.println("Data will be sent when WiFi/WebSocket connection is restored");
+        Serial.println("!! Skipping NTP, WebSocket, and database defect definitions due to WiFi failure");
+        Serial.println("RFID scanning will work in OFFLINE mode with fallback defect definitions");
+        Serial.println("Scans will be queued and sent when WiFi/WebSocket connection is restored");
     }
     
     // Signal that connectivity task is ready
@@ -1662,6 +1666,7 @@ void connectivityTask(void *parameter) {
                 if (wifiConnected) {
                     if (fetchDefectDefinitions()) {
                         Serial.println(">> Manual refresh successful!");
+                        defect_def_updated = true; // Update flag after successful manual refresh
                     } else {
                         Serial.println(">> Manual refresh failed!");
                     }
@@ -1673,6 +1678,7 @@ void connectivityTask(void *parameter) {
                 Serial.printf("   WiFi: %s\n", wifiConnected ? "Connected" : "Disconnected");
                 Serial.printf("   WebSocket: %s\n", wsConnected ? "Connected" : "Disconnected");
                 Serial.printf("   Defect Definitions: %s\n", defectDefinitionsLoaded ? "Loaded" : "Not loaded");
+                Serial.printf("   Database Updated: %s\n", defect_def_updated ? "Yes" : "No");
                 Serial.printf("   Version: %s\n", defectDefinitionsVersion.c_str());
                 Serial.printf("   Sections: %d, Types: %d\n", qcSectionsCount, qcTypesCount);
                 Serial.println("   Commands: 'refresh' to update defects, 'status' for info");
@@ -1742,10 +1748,11 @@ void connectivityTask(void *parameter) {
         if (millis() - lastStatus >= 30000) {
             int queueCount = uxQueueMessagesWaiting(scannedDataQueue);
             uint32_t totalScans = station1ScanCount + station2ScanCount + qcScanCount;
-            Serial.printf("Core 0 - Queue: %d/%d | WiFi: %s | WebSocket: %s | Total: %lu (S1:%lu S2:%lu QC:%lu)\n", 
+            Serial.printf("Core 0 - Queue: %d/%d | WiFi: %s | WebSocket: %s | DefDB: %s | Total: %lu (S1:%lu S2:%lu QC:%lu)\n", 
                          queueCount, QUEUE_SIZE,
                          wifiConnected ? "OK" : "Not-OK",
                          wsConnected ? "OK" : "Not-OK",
+                         defect_def_updated ? "Updated" : "Fallback",
                          totalScans, station1ScanCount, station2ScanCount, qcScanCount);
             
             // Show station status
@@ -1788,33 +1795,6 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         handleEmployeeAccess(uidString, stationNumber);
         return false; // Don't queue employee cards
     }
-    
-    // Check for consecutive duplicate scans for normal employee stations only (Station 1 & 2)
-    if (stationNumber == 1 || stationNumber == 2) {
-        String* lastScannedUID = (stationNumber == 1) ? &lastScannedUID_Station1 : &lastScannedUID_Station2;
-        
-        if (*lastScannedUID == uidString) {
-            // Consecutive duplicate scan detected - double beep and reject
-            doubleBeepBuzzer();
-            
-            String stationName = (stationNumber == 1) ? "Station 1" : "Station 2";
-            Serial.println(stationName + " - Consecutive duplicate scan rejected: " + uidString);
-            
-            // Display message on Station 2 LCD
-            if (stationNumber == 2) {
-                displayStation2Message("Already scanned", "Try different tag");
-                vTaskDelay(pdMS_TO_TICKS(1500)); // Show message for 1.5 seconds
-                // Restore the count display instead of "Ready to scan"
-                updateStation2Display(uidString.c_str(), station2ScanCount);
-            }
-            
-            return false; // Don't process consecutive duplicates
-        }
-        
-        // Update last scanned UID for this station
-        *lastScannedUID = uidString;
-    }
-    // Note: QC station (stationNumber == 3) has no duplicate prevention
     
     // Beep immediately for product card detection (instant feedback)
     beepBuzzer(100); // 100ms beep for immediate scan confirmation
@@ -1864,6 +1844,33 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         }
         return false;
     }
+    
+    // Check for consecutive duplicate scans for normal employee stations only (Station 1 & 2)
+    // This check happens AFTER station is confirmed to be active
+    if (stationNumber == 1 || stationNumber == 2) {
+        String* lastScannedUID = (stationNumber == 1) ? &lastScannedUID_Station1 : &lastScannedUID_Station2;
+        
+        if (*lastScannedUID == uidString) {
+            // Consecutive duplicate scan detected - double beep and reject
+            doubleBeepBuzzer();
+            
+            Serial.println(stationName + " - Consecutive duplicate scan rejected: " + uidString);
+            
+            // Display message on Station 2 LCD
+            if (stationNumber == 2) {
+                displayStation2Message("Already scanned", "Try different tag");
+                vTaskDelay(pdMS_TO_TICKS(1500)); // Show message for 1.5 seconds
+                // Restore the count display instead of "Ready to scan"
+                updateStation2Display(uidString.c_str(), station2ScanCount);
+            }
+            
+            return false; // Don't process consecutive duplicates
+        }
+        
+        // Update last scanned UID for this station
+        *lastScannedUID = uidString;
+    }
+    // Note: QC station (stationNumber == 3) has no duplicate prevention
     
     // Special handling for QC Station - show parts selection
     if (stationNumber == 3) {
@@ -2097,6 +2104,11 @@ void setup() {
     Serial.print("Initializing LCD displays... ");
     initLCDs();
     Serial.println("<> Done!");
+    
+    // Load fallback defect definitions immediately for offline QC functionality
+    Serial.print("Loading fallback defect definitions... ");
+    loadFallbackDefectDefinitions();
+    Serial.println("<> Done! QC station ready for offline operation!");
     
     Serial.println("\n" + repeatString("=", 50));
     Serial.println("<> Hardware setup complete!");
