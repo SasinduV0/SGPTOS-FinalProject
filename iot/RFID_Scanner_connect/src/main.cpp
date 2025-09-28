@@ -230,6 +230,14 @@ void waitForQCButtonRelease();
 void displayQCPartsList();
 bool handleQCPartsSelection();
 
+// Volatile variables for ISR-safe power detection
+volatile bool powerStateChanged = false;
+volatile bool currentPowerState = false;
+volatile bool previousPowerState = false;
+// Forward declarations for power detection functions
+void initPowerDetection();
+void IRAM_ATTR powerDetectISR();
+
 // Helper function to repeat a string
 String repeatString(const char* str, int count) {
     String result = "";
@@ -262,6 +270,9 @@ const uint8_t QC_DOWN_BUTTON = 27;
 
 // Buzzer pin
 const uint8_t BUZZER_PIN = 15;
+
+// Power detection pin
+const uint8_t POWER_DETECT_PIN = 16;
 
 // Shared SPI pins on ESP32
 const uint8_t SCK_PIN = 18;
@@ -1022,6 +1033,29 @@ void initButtons() {
     // Initialize buzzer pin
     pinMode(BUZZER_PIN, OUTPUT);
     digitalWrite(BUZZER_PIN, LOW); // Ensure buzzer is off initially
+}
+
+// Power detection interrupt service routine
+void IRAM_ATTR powerDetectISR() {
+    bool newState = digitalRead(POWER_DETECT_PIN);
+    if (newState != currentPowerState) {
+        previousPowerState = currentPowerState;
+        currentPowerState = newState;
+        powerStateChanged = true;
+    }
+}
+
+// Initialize power detection with interrupt
+void initPowerDetection() {
+    // Configure GPIO 16 as input with pull-down resistor
+    pinMode(POWER_DETECT_PIN, INPUT_PULLDOWN);
+    // Attach interrupt for both rising and falling edges
+    attachInterrupt(digitalPinToInterrupt(POWER_DETECT_PIN), powerDetectISR, CHANGE);
+    // Initialize both current and previous state
+    currentPowerState = digitalRead(POWER_DETECT_PIN);
+    previousPowerState = currentPowerState;
+    Serial.print("Initial power state: ");
+    Serial.println(currentPowerState ? "Available" : "Out");
 }
 
 // Buzzer beep function
@@ -2083,6 +2117,11 @@ void setup() {
     initButtons();
     Serial.println("<> Done!");
     
+    // Initialize power detection
+    Serial.print("Configuring power detection on GPIO 16... ");
+    initPowerDetection();
+    Serial.println("<> Done!");
+    
     // Initialize SPI
     SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN);
     SPI.setFrequency(100000);  // 100kHz for stability
@@ -2198,5 +2237,17 @@ void rfidScanningTask(void *parameter) {
 }
 
 void loop() {
+    // Handle power state change detected in ISR
+    if (powerStateChanged) {
+        powerStateChanged = false; // Reset the flag immediately
+        // Check if this is a rising edge (power became available)
+        if (currentPowerState && !previousPowerState) {
+            Serial.println("Power available");
+        }
+        // Check if this is a falling edge (power went out)
+        else if (!currentPowerState && previousPowerState) {
+            Serial.println("Power out");
+        }
+    }
     delay(1000); // Prevent tight loop
 }
