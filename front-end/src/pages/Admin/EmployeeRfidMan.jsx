@@ -89,7 +89,7 @@ const EmployeeRfidMan = () => {
 
           </div>
 
-          <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID / Unit / Workplace" />
+          <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID Number" />
           {error && <div className="p-4 bg-red-50 text-red-600">{error}</div>}
           {loading && <div className="p-6 text-center">Loading...</div>}
           {!loading && <DataTable columns={tableColumns} data={rfidEntries} />}

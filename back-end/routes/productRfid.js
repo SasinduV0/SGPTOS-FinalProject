@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     const query = {};
 
     if (search) {
-      // search across rfidNumber, unit, workplace (case-insensitive)
+      // search across rfidNumber
       query.$or = [
         { rfidNumber: { $regex: search, $options: 'i' } }
         

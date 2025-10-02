@@ -22,7 +22,7 @@ function Final({ formData,handleBack, setFormData }) {
         lastname:'',
         email:'',
         phoneNumber:'',
-        employeeId:'',
+        userId:'',
         department:'',
         password:'',
         confirmPassword:'',

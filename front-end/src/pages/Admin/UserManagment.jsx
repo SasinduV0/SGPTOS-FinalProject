@@ -101,20 +101,15 @@ function UserManagment() {
   const departments = ['All Departments', 'Cutting', 'QC', 'Sewing', 'Packing'];
 
   return (
-    <div className='flex min-h-screen bg-gray-50'>
+    <div className="flex min-h-screen bg-gray-50">
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
 
-      {/* Main Content */}
-      <div className='flex-1 flex flex-col'>
-
-        {/* Page Content */}
-        <div className="flex-1 p-6">
-          <div className="bg-white rounded-lg shadow-sm">
-
-            <div className="flex items-center justify-between p-6 border-b">
+          <div className="flex items-center justify-between p-6 border-b">
               <Header title="User Managment" icon={<User />} />
             </div>
 
-              <div className='flex items-center gap-6 p-6 bg-gray-50'>
+              <div className='flex items-center gap-6 bg-gray-50'>
                 {/*Search Bar*/}
                 <div className='flex-1'>
                   <SearchBar
@@ -159,7 +154,7 @@ function UserManagment() {
           </div>
         </div>
       </div>
-    </div>
+    
       
   );
 };

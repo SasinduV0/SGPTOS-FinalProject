@@ -106,14 +106,14 @@ const ProductRfidMan = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <div className="flex-1 p-6">
-        <div className="bg-white rounded-lg shadow-sm">
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
           <div className="flex items-center justify-between p-6 border-b">
             <Header title="Product RFID Management" icon={<User/>} />
             <AddButton handleAddEntry={handleAdd} text="Add RFID" />
           </div>
 
-          <div className="flex items-center gap-6 p-6 bg-gray-50">
+          <div className="flex items-center gap-6 bg-gray-50">
             <div className="flex-1">
               <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID"/>
             </div>
