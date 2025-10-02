@@ -26,10 +26,25 @@ function DefectRate() {
   }, []);
 
   useEffect(() => {
-    socket.on("leadingLineUpdate", fetchDefectRate);
-    socket.on("supervisorUpdate", fetchDefectRate);
+    // Listen for defect updates (when new defects are added)
+    socket.on("defectUpdate", () => {
+      console.log("📊 DefectRate received defect update");
+      fetchDefectRate();
+    });
+
+    // Also listen for employee updates (affects total production count)
+    socket.on("leadingLineUpdate", () => {
+      console.log("📊 DefectRate received employee update");
+      fetchDefectRate();
+    });
+
+    socket.on("supervisorUpdate", () => {
+      console.log("📊 DefectRate received supervisor update");
+      fetchDefectRate();
+    });
 
     return () => {
+      socket.off("defectUpdate");
       socket.off("leadingLineUpdate");
       socket.off("supervisorUpdate");
     };
@@ -48,10 +63,6 @@ function DefectRate() {
         <p className="text-sm font-bold text-white">{defectRate}%</p>
         <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
     </div>
-
-    // <p className="text-sm font-bold text-gray-800">
-    //   Defect Rate: {defectRate}
-    // </p>
   );
 }
 
