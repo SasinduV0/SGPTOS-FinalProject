@@ -16,10 +16,10 @@ const LineTargetSum = () => {
   const total = Object.values(lineTargets).reduce((sum, val) => sum + val, 0);
 
   return (
-    <div className="flex gap-2 mt-5 ml-5">
-        <h2 className="text-sm font-semibold text-gray-300">Total Line Target</h2>
-        <p className="text-sm text-white font-bold ">{total} pcs</p>
-        <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+    <div className="flex gap-1 mt-5 ml-15">
+        <h2 className="text-xs font-semibold text-gray-300">Total Line Target</h2>
+        <p className="text-xs text-white font-bold ">{total} pcs</p>
+        <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
 
     </div>
   );

@@ -68,12 +68,12 @@ function RemainingTimeBottom() {
 
   return (
     <div className="flex mt-5 ml-4 gap-2">
-    <p className="text-gray-300 font-semibold text-sm">Shift</p>
-      <p className="text-white font-bold text-sm">{shiftName}</p>
-      <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
-      <p className=" text-gray-300 font-semibold text-sm">Remaining Time</p>
-      <p className=" text-white font-bold text-sm"> {remaining}</p>
-      <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+    <p className="text-gray-300 font-semibold text-xs">Shift</p>
+      <p className="text-white font-bold text-xs">{shiftName}</p>
+      <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+      <p className=" text-gray-300 font-semibold text-xs">Remaining Time</p>
+      <p className=" text-white font-bold text-xs"> {remaining}</p>
+      <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
     </div>
   );
 }
