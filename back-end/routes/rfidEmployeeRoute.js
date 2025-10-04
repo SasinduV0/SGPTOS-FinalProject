@@ -2,6 +2,16 @@ const express = require('express');
 const RfidEmployee = require('../models/RfidEmployee');
 const router = express.Router();
 
+// Valid RFIDs list (should match validRfids.js and productRfid.js)
+const getValidRfids = () => {
+  return [
+    '12345678', '23456789', '34567890', '45678901',
+    '56789012', '67890123', '78901234', '89012345',
+    '90123456', '01234567', '11111111', '22222222',
+    '33333333', '44444444', '55555555', '66666666'
+  ];
+};
+
 // Debug middleware to log all requests
 router.use((req, res, next) => {
   console.log(`RFID Route: ${req.method} ${req.path}`);
@@ -130,6 +140,15 @@ router.post('/', async (req, res) => {
         }
       });
     }
+
+    // Check if RFID is in valid list
+    const validRfids = getValidRfids();
+    if (!validRfids.includes(trimmedRfidNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid RFID number. Please select from valid RFIDs.'
+      });
+    }
     
     // Check if RFID number already exists
     const existingRfid = await RfidEmployee.findOne({ rfidNumber: trimmedRfidNumber });
@@ -137,11 +156,11 @@ router.post('/', async (req, res) => {
       console.log('RFID number already exists:', trimmedRfidNumber);
       return res.status(409).json({
         success: false,
-        message: 'RFID number already exists'
+        message: 'RFID number already assigned to another employee'
       });
     }
     
-    // Check if Employee ID already exists
+    // Check if Employee ID already exists  
     const existingEmpId = await RfidEmployee.findOne({ empId: trimmedEmpId });
     if (existingEmpId) {
       console.log('Employee ID already exists:', trimmedEmpId);
@@ -219,7 +238,6 @@ router.put('/:id', async (req, res) => {
     console.log('Request body:', req.body);
     console.log('Extracted fields:', { rfidNumber, empName, empId, status, department, phoneNumber, email });
     
-    
     // Basic validation
     if (!rfidNumber || !empName || !empId) {
       console.log('Validation failed: Missing required fields');
@@ -265,6 +283,15 @@ router.put('/:id', async (req, res) => {
         }
       });
     }
+
+    // Check if RFID is in valid list
+    const validRfids = getValidRfids();
+    if (!validRfids.includes(trimmedRfidNumber)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid RFID number. Please select from valid RFIDs.'
+      });
+    }
     
     // Check for duplicates (excluding current employee)
     const existingRfid = await RfidEmployee.findOne({ 
@@ -276,7 +303,7 @@ router.put('/:id', async (req, res) => {
       console.log('RFID number conflict:', trimmedRfidNumber, 'exists in:', existingRfid._id);
       return res.status(409).json({
         success: false,
-        message: 'RFID number already exists'
+        message: 'RFID number already assigned to another employee'
       });
     }
 

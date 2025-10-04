@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormField from './FormField';
 import { ChevronDown } from 'lucide-react';
+import axios from 'axios';
 
 const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
@@ -13,11 +14,33 @@ const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
 
   const [errors, setErrors] = useState({});
 
+  //rfid number
+  const [validRfids, setValidRfids] = useState([]);
+  const [loadingRfids, setLoadingRfids] = useState(false);
+
   const unitOptions = ['UNIT 1', 'UNIT 2', 'UNIT 3'];
   const workplaceOptions = ['LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
+  //fetch valid RFID numbers
+  const fetchValidRfids = async () => {
+    try {
+      setLoadingRfids(true);
+      const response = await axios.get('http://localhost:8001/api/valid-rfids');
+      setValidRfids(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching valid RFIDs:', err);
+      setValidRfids([]);
+    } finally {
+      setLoadingRfids(false);
+    }
+  };
+
   // Reset or load initial data
   useEffect(() => {
+    if (isOpen) {
+      fetchValidRfids();
+    }
+
     if (initialData) {
       setFormData({
         rfidNumber: initialData.rfidNumber || '',
@@ -77,16 +100,27 @@ const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
       title={initialData ? 'Edit Product RFID' : 'Add New Product RFID'}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* RFID Number */}
-        <FormField
-          label="RFID Number"
-          type="text"
-          value={formData.rfidNumber}
-          onChange={(v) => handleInputChange('rfidNumber', v)}
-          placeholder="Enter 8 alphanumeric characters"
-          required
-          error={errors.rfidNumber}
-        />
+        
+        {/* RFID Number dropdown*/}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">RFID Number</label>
+          <select
+            value={formData.rfidNumber}
+            onChange={(e) => handleInputChange('rfidNumber', e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={loadingRfids}
+          >
+            <option value="">
+              {loadingRfids ? 'Loading RFIDs...' : 'Select RFID Number'}
+            </option>
+            {validRfids.map(rfid => (
+              <option key={rfid} value={rfid}>
+                {rfid}
+              </option>
+            ))}
+          </select>
+          {errors.rfidNumber && <p className="text-red-600 text-sm mt-1">{errors.rfidNumber}</p>}
+        </div>
 
         {/* Unit */}
         <div>

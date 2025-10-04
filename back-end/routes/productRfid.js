@@ -1,8 +1,17 @@
-// routes/productRfid.js
 const express = require('express');
 const router = express.Router();
 const ProductRfid = require('../models/ProductRfid');
 const mongoose = require('mongoose');
+
+// Valid RFIDs list (should match validRfids.js)
+const getValidRfids = () => {
+  return [
+    '12345678', '23456789', '34567890', '45678901',
+    '56789012', '67890123', '78901234', '89012345',
+    '90123456', '01234567', '11111111', '22222222',
+    '33333333', '44444444', '55555555', '66666666'
+  ];
+};
 
 // Debug middleware
 router.use((req, res, next) => {
@@ -19,10 +28,8 @@ router.get('/', async (req, res) => {
     const query = {};
 
     if (search) {
-      // search across rfidNumber
       query.$or = [
         { rfidNumber: { $regex: search, $options: 'i' } }
-        
       ];
     }
     if (unit && unit !== 'All Units') query.unit = unit;
@@ -65,14 +72,15 @@ router.post('/', async (req, res) => {
 
     const trimmed = String(rfidNumber || '').trim();
 
-    // validate format (exactly 8 digits)
-    if (!/^[0-9]{8}$/.test(trimmed)) {
-      return res.status(400).json({ success: false, message: 'RFID must be exactly 8 digits' });
+    // Check if RFID is in valid list
+    const validRfids = getValidRfids();
+    if (!validRfids.includes(trimmed)) {
+      return res.status(400).json({ success: false, message: 'Invalid RFID number. Please select from valid RFIDs.' });
     }
 
     // check duplicate
     const exists = await ProductRfid.findOne({ rfidNumber: trimmed });
-    if (exists) return res.status(409).json({ success: false, message: 'RFID already exists' });
+    if (exists) return res.status(409).json({ success: false, message: 'RFID already assigned to another product' });
 
     const newItem = new ProductRfid({
       rfidNumber: trimmed,
@@ -82,7 +90,7 @@ router.post('/', async (req, res) => {
     });
 
     const saved = await newItem.save();
-    res.status(201).json({ success: true, message: 'Product RFID created', data: saved });
+    res.status(201).json({ success: true, message: 'Product RFID created successfully', data: saved });
   } catch (err) {
     console.error('POST /product-rfids error', err);
     if (err.name === 'ValidationError') {
@@ -90,7 +98,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Validation error', errors });
     }
     if (err.code === 11000) {
-      return res.status(409).json({ success: false, message: 'Duplicate key', details: err.keyValue });
+      return res.status(409).json({ success: false, message: 'Duplicate RFID number', details: err.keyValue });
     }
     res.status(500).json({ success: false, message: 'Error creating product RFID', error: err.message });
   }
@@ -111,8 +119,11 @@ router.put('/:id', async (req, res) => {
     }
 
     const trimmed = String(rfidNumber || '').trim();
-    if (!/^[0-9]{8}$/.test(trimmed)) {
-      return res.status(400).json({ success: false, message: 'RFID must be exactly 8 digits' });
+    
+    // Check if RFID is in valid list
+    const validRfids = getValidRfids();
+    if (!validRfids.includes(trimmed)) {
+      return res.status(400).json({ success: false, message: 'Invalid RFID number. Please select from valid RFIDs.' });
     }
 
     const item = await ProductRfid.findById(id);
@@ -128,7 +139,7 @@ router.put('/:id', async (req, res) => {
     item.status = status || item.status;
 
     const updated = await item.save();
-    res.status(200).json({ success: true, message: 'Product RFID updated', data: updated });
+    res.status(200).json({ success: true, message: 'Product RFID updated successfully', data: updated });
   } catch (err) {
     console.error('PUT /product-rfids error', err);
     if (err.name === 'ValidationError') {
@@ -147,7 +158,7 @@ router.delete('/:id', async (req, res) => {
 
     const deleted = await ProductRfid.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Product RFID not found' });
-    res.status(200).json({ success: true, message: 'Product RFID deleted', data: deleted });
+    res.status(200).json({ success: true, message: 'Product RFID deleted successfully', data: deleted });
   } catch (err) {
     console.error('DELETE error', err);
     res.status(500).json({ success: false, message: 'Error deleting product RFID', error: err.message });
@@ -166,7 +177,7 @@ router.patch('/:id/status', async (req, res) => {
 
     const updated = await ProductRfid.findByIdAndUpdate(id, { status }, { new: true, runValidators: true });
     if (!updated) return res.status(404).json({ success: false, message: 'Product RFID not found' });
-    res.status(200).json({ success: true, message: 'Status updated', data: updated });
+    res.status(200).json({ success: true, message: 'Status updated successfully', data: updated });
   } catch (err) {
     console.error('PATCH status error', err);
     res.status(500).json({ success: false, message: 'Error updating status', error: err.message });

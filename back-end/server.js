@@ -19,6 +19,7 @@ const userRoute = require('./routes/userRoute');
 const rfidEmployeeRoutes = require('./routes/rfidEmployeeRoute');
 const productRfidRoutes = require('./routes/productRfid')
 const userDetails = require('./routes/userDetails');
+const validRfidsRoutes = require('./routes/validRfids')
 
 
 connectDB();
@@ -43,6 +44,8 @@ app.use("/api/auth", forgotPasswordRoutes);
 app.use("/api/rfid-employees", rfidEmployeeRoutes);
 app.use("/api/product-rfids", productRfidRoutes);
 app.use('/api/users', userDetails);
+
+app.use('/api/valid-rfids', validRfidsRoutes);
 
 
 app.use("/", (req, res) => {
