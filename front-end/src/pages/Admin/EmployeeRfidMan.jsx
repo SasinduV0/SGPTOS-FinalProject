@@ -8,6 +8,7 @@ import StatusBadge from '../../components/AdminPanal/StatusBadge';
 import ActionButton from '../../components/AdminPanal/ActionButton';
 import EmpRfidModal from '../../components/AdminPanal/EmpRfidModal';
 import AddButton from '../../components/AdminPanal/AddButton';
+import ConfirmDeleteModal from '../../components/AdminPanal/ConfirmDeleteModal';
 
 const API_BASE_URL = 'http://localhost:8001/api/rfid-employees';
 
@@ -18,6 +19,10 @@ const EmployeeRfidMan = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  //For delete confirmation modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchRfidEmployees = async () => {
     try {
@@ -38,12 +43,26 @@ const EmployeeRfidMan = () => {
 
   const handleAddEntry = () => { setEditingEntry(null); setIsModalOpen(true); };
   const handleEditEntry = (entry) => { setEditingEntry(entry); setIsModalOpen(true); };
-  const handleDeleteEntry = async (id) => {
-    if (window.confirm('Are you sure?')) {
-      try { await axios.delete(`${API_BASE_URL}/${id}`); await fetchRfidEmployees(); alert('Deleted!'); }
-      catch (err) { alert(err.response?.data?.message || err.message); }
+
+  //Insted of deleting directly, open modal
+  const handleDeleteClick = (entry) => {
+    setDeleteTarget(entry);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/${deleteTarget._id}`);
+      fetchRfidEmployees();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message);
+    } finally {
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
     }
   };
+
 
   const handleSaveEntry = async (entryData) => {
     try {
@@ -75,7 +94,7 @@ const EmployeeRfidMan = () => {
     { header:'EMPLOYEE ID', key:'empId' },
     { header:'DEPARTMENT', key:'department' },
     { header:'STATUS', key:'status', render:(entry)=><StatusBadge status={entry.status} onChange={(s)=>handleStatusChange(entry._id,s)} /> },
-    { header:'ACTION', key:'actions', render:(entry)=><ActionButton onEdit={()=>handleEditEntry(entry)} onDelete={()=>handleDeleteEntry(entry._id)} /> }
+    { header:'ACTION', key:'actions', render:(entry)=><ActionButton onEdit={()=>handleEditEntry(entry)} onDelete={()=>handleDeleteClick(entry)} /> }
   ];
 
   return (
@@ -95,6 +114,17 @@ const EmployeeRfidMan = () => {
           {!loading && <DataTable columns={tableColumns} data={rfidEntries} />}
         </div>
       </div>
+
+      {/*Delete confirmation modal*/}
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          isOpen={deleteModalOpen}
+          onClose={()=> setDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          rfidNumber={deleteTarget.rfidNumber}
+          entityType='employee'/>
+      )}
+
       <EmpRfidModal
         isOpen={isModalOpen}
         onClose={()=>{ setIsModalOpen(false); setEditingEntry(null); }}

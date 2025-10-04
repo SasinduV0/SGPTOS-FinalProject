@@ -10,6 +10,7 @@ import StatusBadge from '../../components/AdminPanal/StatusBadge';
 import ActionButton from '../../components/AdminPanal/ActionButton';
 import ProRfidModal from '../../components/AdminPanal/ProRfidModal';
 import AddButton from '../../components/AdminPanal/AddButton';
+import ConfirmDeleteModal from '../../components/AdminPanal/ConfirmDeleteModal';
 
 const API_BASE_URL = "http://localhost:8001/api/product-rfids";
 
@@ -23,6 +24,10 @@ const ProductRfidMan = () => {
   const [workplaceFilter, setWorkplaceFilter] = useState('All Workplaces');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  //delete modal stste
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const units = ['All Units', 'UNIT 1', 'UNIT 2', 'UNIT 3'];
   const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
@@ -53,14 +58,24 @@ const ProductRfidMan = () => {
 
   const handleAdd = () => { setEditingEntry(null); setIsModalOpen(true); };
   const handleEdit = (entry) => { setEditingEntry(entry); setIsModalOpen(true); };
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure to delete?')) return;
+ 
+  //open delete modal
+  const handleDeleteClick = (entry) => {
+    setDeleteTarget(entry);
+    setDeleteModalOpen(true);
+  };
+
+  //confirm delete after RFID check
+  const confirmDelete = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/${id}`);
+      await axios.delete(`${API_BASE_URL}/${deleteTarget._id}`);
       fetchData();
-      alert('Deleted');
     } catch (err) {
+      console.error(err);
       alert(err.response?.data?.message || err.message);
+    } finally {
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -100,8 +115,8 @@ const ProductRfidMan = () => {
     { header: 'RFID NUMBER', key: 'rfidNumber', className: 'font-mono text-sm' },
     { header: 'UNIT', key: 'unit' },
     { header: 'WORKPLACE', key: 'workplace' },
-    { header: 'STATUS', key: 'status', render: (row) => <StatusBadge status={row.status} onChange={(s) => handleStatusChange(row._id, s)} /> },
-    { header: 'ACTION', key: 'actions', render: (row) => <ActionButton onEdit={() => handleEdit(row)} onDelete={() => handleDelete(row._id)} /> }
+    { header: 'STATUS', key: 'status', render: (entry) => <StatusBadge status={entry.status} onChange={(s) => handleStatusChange(entry._id, s)} /> },
+    { header: 'ACTION', key: 'actions', render: (entry) => <ActionButton onEdit={() => handleEdit(entry)} onDelete={() => handleDeleteClick(entry)} /> }
   ];
 
   return (
@@ -137,6 +152,16 @@ const ProductRfidMan = () => {
         onSave={handleSave}
         initialData={editingEntry}
       />
+
+      {deleteTarget &&(
+        <ConfirmDeleteModal
+          isOpen={deleteModalOpen}
+          onClose={()=> setDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          rfidNumber={deleteTarget.rfidNumber}
+          entityType='product'/>
+      )}
+
     </div>
   );
 };

@@ -11,7 +11,7 @@ function Final({ formData,handleBack, setFormData }) {
   const handleSubmit = async () => {
     console.log('Sending data:', formData)
     try{
-      const response = await axios.post('http://localhost:8000/api/auth/signup', formData);
+      const response = await axios.post('http://localhost:8001/api/auth/signup', formData);
 
       alert(response.data.message);
 
