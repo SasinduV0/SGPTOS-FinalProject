@@ -126,7 +126,7 @@ function DefectRateChart() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center bg-white px-8 rounded-2xl w-[500px] h-[200px]">
+      <div className="flex items-center justify-center bg-white px-8 rounded-2xl w-[400px] h-[200px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-500">Loading defect data...</p>
@@ -136,8 +136,8 @@ function DefectRateChart() {
   }
 
   return (
-    <div className="flex items-center bg-white px-8 rounded-2xl gap-4 w-[500px]">
-      <div className="relative w-[200px] h-[200px] flex">
+    <div className="flex items-center bg-white  rounded-2xl gap-2 w-[440px]">
+      <div className="relative w-[200px] h-[170px] flex mt-2">
         <Doughnut data={data} options={options} />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
           <p className="text-lg font-bold text-gray-800">{defectData.defectRate}</p>
@@ -145,7 +145,7 @@ function DefectRateChart() {
         </div>
       </div>
       <div className="flex flex-col">
-        <p className={`text-center text-lg font-semibold ${color} mb-2`}>
+        <p className={`text-center text-md font-semibold ${color} mb-2`}>
           {text}
         </p>
         <div className="space-y-2 text-center">
