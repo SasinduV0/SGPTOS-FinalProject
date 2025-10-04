@@ -7,6 +7,7 @@ import { initialEmployee } from '../Data/initialEmployee'
 import SearchBar from '../../components/AdminPanal/SearchBar';
 import FilterBar from '../../components/AdminPanal/FilterBar';
 import DataTable from '../../components/AdminPanal/DataTable';
+import ConfirmDeleteUser from '../../components/AdminPanal/ConfirmDeleteUser'; 
 
 function UserManagment() {
   // State variables
@@ -16,6 +17,10 @@ function UserManagment() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [employees, setEmployees] = useState(initialEmployee);
   const [filteredEmployees, setFilteredEmployees] = useState(initialEmployee);
+
+  // Add delete modal states
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Debug log to check data structure
   useEffect(() => {
@@ -49,8 +54,17 @@ function UserManagment() {
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    setEmployees(prev => prev.filter(emp => emp.id !== id));
+  // Updated delete handler - opens confirmation modal
+  const handleDeleteClick = (employee) => {
+    setDeleteTarget(employee);
+    setDeleteModalOpen(true);
+  };
+
+  // Actual delete function after confirmation
+  const confirmDelete = () => {
+    setEmployees(prev => prev.filter(emp => emp.id !== deleteTarget.id));
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
   };
 
   const handleCloseModal = () => {
@@ -94,7 +108,7 @@ function UserManagment() {
       render: (row) => (
         <ActionButton
           onEdit={() => handleEdit(row)}
-          onDelete={() => handleDelete(row.id)}
+          onDelete={() => handleDeleteClick(row)} // Updated to use handleDeleteClick
           editTooltip="Edit Employee"
           deleteTooltip="Delete Employee"
         />
@@ -149,6 +163,16 @@ function UserManagment() {
                   employee={editingEmployee}
                   onClose={handleCloseModal}
                   onUpdate={handleUpdateEmployee}
+                />
+              )}
+
+              {/*Delete Confirmation Modal */}
+              {deleteTarget && (
+                <ConfirmDeleteUser
+                  isOpen={deleteModalOpen}
+                  onClose={() => setDeleteModalOpen(false)}
+                  onConfirm={confirmDelete}
+                  employee={deleteTarget}
                 />
               )}
             </div>  
