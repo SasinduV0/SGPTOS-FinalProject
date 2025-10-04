@@ -129,12 +129,30 @@ function EmployeeDetails({formData, setFormData}) {
             </div>
           </div>
 
+          {/*Username - NEW FIELD*/}
+          <div className="relative">
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={e => setFormData({ ...formData, username: e.target.value})}
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                placeholder="Enter username"
+              />
+            </div>
+          </div>
+
           {/*Role*/}
           <div className="relative">
             <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
               User Role
             </label>
-            
+
             <div className="relative">
               <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <select

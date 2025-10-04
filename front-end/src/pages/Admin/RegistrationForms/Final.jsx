@@ -23,7 +23,9 @@ function Final({ formData,handleBack, setFormData }) {
         email:'',
         phoneNumber:'',
         userId:'',
+        username:'',
         department:'',
+        role:'',
         password:'',
         confirmPassword:'',
       });
@@ -31,7 +33,7 @@ function Final({ formData,handleBack, setFormData }) {
       handleBack();   //Go back to step 1
     } catch(err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Registration failes');
+      alert(err.response?.data?.msg || err.response?.data?.error || 'Registration failed');
     }
   };
 
