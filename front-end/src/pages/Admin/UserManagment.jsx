@@ -84,6 +84,11 @@ function UserManagment() {
       className: 'font-mono text-gray-800'
     },
     {
+      header: 'User Role',
+      key: 'role',
+      className: 'font-mono text-gray-800'
+    },
+    {
       header: 'Actions',
       key: 'actions',
       render: (row) => (
