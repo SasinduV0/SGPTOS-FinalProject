@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { X, Eye, EyeOff, Lock, Check, AlertCircle } from 'lucide-react';
+import { X, Eye, EyeOff, Lock, Check, AlertCircle, Shield } from 'lucide-react';
+import axios from 'axios';
 
-const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
+const EditUserModal = ({ isOpen, user, onClose, onUpdate }) => {
 
-    const [editingEmployee, setEditingEmployee] = useState(employee || {});
+    const [editingUser, setEditingUser] = useState(user || {});
     const [activeTab, setActiveTab] = useState('Profile');
     
     // Password states
@@ -20,15 +21,16 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
     });
     
     const [passwordErrors, setPasswordErrors] = useState({});
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
     React.useEffect(()=>{
-        if (employee){
-            setEditingEmployee({...employee});
+        if (user){
+            setEditingUser({...user});
         }
-    }, [employee]);
+    }, [user]);
 
     const handleInputChange = (field, value) => {
-        setEditingEmployee(prev => ({...prev, [field]: value}))
+        setEditingUser(prev => ({...prev, [field]: value}))
     };
 
     const handlePasswordChange = (field, value) => {
@@ -53,8 +55,8 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
         
         if (!passwordData.newPassword) {
             errors.newPassword = 'New password is required';
-        } else if (passwordData.newPassword.length < 8) {
-            errors.newPassword = 'Password must be at least 8 characters';
+        } else if (passwordData.newPassword.length < 6) {
+            errors.newPassword = 'Password must be at least 6 characters';
         }
         
         if (!passwordData.confirmPassword) {
@@ -71,20 +73,39 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
         return Object.keys(errors).length === 0;
     };
 
-    const handlePasswordUpdate = () => {
-        if (validatePassword()) {
-            // Handle password update logic here
+    const handlePasswordUpdate = async () => {
+        if (!validatePassword()) return;
+
+        setIsUpdatingPassword(true);
+        try {
+            const response = await axios.put(`http://localhost:8001/api/users/${editingUser._id}/change-password`, {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            });
+
             alert('Password updated successfully!');
             setPasswordData({
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: ''
             });
+            setPasswordErrors({});
+        } catch (error) {
+            console.error('Password update error:', error);
+            if (error.response?.data?.message === 'Current password is incorrect') {
+                setPasswordErrors({
+                    currentPassword: 'Current password is incorrect'
+                });
+            } else {
+                alert(error.response?.data?.message || 'Failed to update password');
+            }
+        } finally {
+            setIsUpdatingPassword(false);
         }
     };
 
     const handleUpdate = () => {
-        onUpdate(editingEmployee);
+        onUpdate(editingUser);
         onClose();
     };
 
@@ -97,17 +118,17 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
         setPasswordErrors({});
     };
 
-    if (!isOpen || !employee) return null;
+    if (!isOpen || !user) return null;
 
     return (
-        <div className='fixed inset-0 backdrop-blur bg-opacity-50 flex items-center justify-center z-50'>
+        <div className='fixed inset-0 backdrop-blur bg-opacity-50 flex items-center justify-center z-50'> {/* FIXED: Added bg-black */}
             <div className='bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto'>
 
                 {/*Modal Header*/}
                 <div className='flex justify-between items-center mb-6'>
                     <div>
                         <h2 className='text-xl font-semibold text-gray-900'>Edit User</h2>
-                        <p className='text-sm text-gray-500'>Employee ID: {editingEmployee.empId}</p>
+                        <p className='text-sm text-gray-500'>User ID: {editingUser.userID}</p>
                     </div>
 
                     <button
@@ -154,8 +175,8 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                                     <label className='block text-sm font-medium text-gray-700 mb-1'>First Name*</label>
                                     <input
                                         type='text'
-                                        value={editingEmployee.firstName || ''}
-                                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                                        value={editingUser.firstname || ''}
+                                        onChange={(e) => handleInputChange('firstname', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'/>
                                 </div>
 
@@ -163,8 +184,8 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                                     <label className='block text-sm font-medium text-gray-700 mb-1'>Last Name*</label>
                                     <input
                                         type='text'
-                                        value={editingEmployee.lastName || ''}
-                                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                                        value={editingUser.lastname || ''}
+                                        onChange={(e) => handleInputChange('lastname', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'/>
                                 </div>
 
@@ -172,7 +193,7 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                                     <label className='block text-sm font-medium text-gray-700 mb-1'>Phone Number</label>
                                     <input
                                         type='text'
-                                        value={editingEmployee.phoneNumber || ''}
+                                        value={editingUser.phoneNumber || ''}
                                         onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'/>
                                 </div>
@@ -181,7 +202,7 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                                     <label className='block text-sm font-medium text-gray-700 mb-1'>Email Address*</label>
                                     <input
                                         type='email'
-                                        value={editingEmployee.email || ''}
+                                        value={editingUser.email || ''}
                                         onChange={(e) => handleInputChange('email', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'/>
                                 </div>
@@ -193,32 +214,42 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                             <h3 className='text-lg font-medium text-gray-900 mb-4'>Work Information</h3>
                             <div className='space-y-4'>
                                 <div>
-                                    <label className='block text-sm font-medium text-gray-700 mb-1'>Employee ID*</label>
+                                    <label className='block text-sm font-medium text-gray-700 mb-1'>User ID*</label>
                                     <input
                                         type='text'
-                                        value={editingEmployee.empId || ''}
-                                        onChange={(e) => handleInputChange('empId', e.target.value)}
+                                        value={editingUser.userID || ''}
+                                        onChange={(e) => handleInputChange('userID', e.target.value)}
+                                        className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'/>
+                                </div>
+
+                                <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-1'>Username*</label>
+                                    <input
+                                        type='text'
+                                        value={editingUser.username || ''}
+                                        onChange={(e) => handleInputChange('username', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'/>
                                 </div>
 
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 mb-1'>Department*</label>
                                     <select
-                                        value={editingEmployee.section || ''}
-                                        onChange={(e) => handleInputChange('section', e.target.value)}
+                                        value={editingUser.department || ''}
+                                        onChange={(e) => handleInputChange('department', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'>
                                         <option value=''>Select Department</option>
                                         <option value='Cutting'>Cutting</option>
                                         <option value='Sewing'>Sewing</option>
-                                        <option value='QC'>Quality Control</option>
+                                        <option value='Quality Control'>Quality Control</option>
                                         <option value='Packing'>Packing</option>
+                                        <option value='Finishing'>Finishing</option>
                                     </select>
                                 </div>
 
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 mb-1'>Role*</label>
                                     <select
-                                        value={editingEmployee.role || ''}
+                                        value={editingUser.role || ''}
                                         onChange={(e) => handleInputChange('role', e.target.value)}
                                         className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200'>
                                         <option value=''>Select Role</option>
@@ -308,7 +339,7 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                                     </p>
                                 )}
                                 <div className="mt-1 text-xs text-gray-500">
-                                    Password must be at least 8 characters long
+                                    Password must be at least 6 characters long
                                 </div>
                             </div>
 
@@ -357,14 +388,14 @@ const EditUserModal = ({ isOpen, employee, onClose, onUpdate }) => {
                             <div className="pt-4">
                                 <button
                                     onClick={handlePasswordUpdate}
-                                    disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                                    disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword || isUpdatingPassword}
                                     className={`w-full py-2 px-4 rounded-lg font-medium transition-colors duration-200 ${
-                                        passwordData.currentPassword && passwordData.newPassword && passwordData.confirmPassword
+                                        passwordData.currentPassword && passwordData.newPassword && passwordData.confirmPassword && !isUpdatingPassword
                                         ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                     }`}
                                 >
-                                    Update Password
+                                    {isUpdatingPassword ? 'Updating...' : 'Update Password'}
                                 </button>
                             </div>
                         </div>

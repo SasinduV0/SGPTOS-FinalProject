@@ -3,98 +3,137 @@ import {User} from 'lucide-react'
 import EditUserModal from '../../components/AdminPanal/EditUserModal';
 import Header from '../../components/AdminPanal/Header';
 import ActionButton from '../../components/AdminPanal/ActionButton';
-import { initialEmployee } from '../Data/initialEmployee'
 import SearchBar from '../../components/AdminPanal/SearchBar';
 import FilterBar from '../../components/AdminPanal/FilterBar';
 import DataTable from '../../components/AdminPanal/DataTable';
-import ConfirmDeleteUser from '../../components/AdminPanal/ConfirmDeleteUser'; 
+import ConfirmDeleteUser from '../../components/AdminPanal/ConfirmDeleteUser';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8001/api/users';
 
 function UserManagment() {
   // State variables
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [employees, setEmployees] = useState(initialEmployee);
-  const [filteredEmployees, setFilteredEmployees] = useState(initialEmployee);
+  const [editingUser, setEditingUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Add delete modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Debug log to check data structure
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await axios.get(API_BASE_URL);
+      console.log('Fetched users:', response.data);
+      setUsers(response.data.users || response.data || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError(err.response?.data?.message || err.message || 'Error fetching users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch users on component mount
   useEffect(() => {
-    console.log('Initial employee data:', employees[0]);
+    fetchUsers();
   }, []);
 
-  // Filter employees based on search and department
+  // Filter users based on search and department
   useEffect(() => {
-    let filtered = [...employees];
+    let filtered = [...users];
     
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(emp => 
-        emp.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.empId?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(user => 
+        user.firstname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.lastname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.userID?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.username?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply department filter
     if (selectedDepartment !== 'All Departments') {
-      filtered = filtered.filter(emp => emp.section === selectedDepartment);
+      filtered = filtered.filter(user => user.department === selectedDepartment);
     }
 
-    setFilteredEmployees(filtered);
-  }, [searchTerm, selectedDepartment, employees]);
+    setFilteredUsers(filtered);
+  }, [searchTerm, selectedDepartment, users]);
 
   // Handler functions
-  const handleEdit = (employee) => {
-    setEditingEmployee(employee);
+  const handleEdit = (user) => {
+    setEditingUser(user);
     setIsEditModalOpen(true);
   };
 
   // Updated delete handler - opens confirmation modal
-  const handleDeleteClick = (employee) => {
-    setDeleteTarget(employee);
+  const handleDeleteClick = (user) => {
+    setDeleteTarget(user);
     setDeleteModalOpen(true);
   };
 
   // Actual delete function after confirmation
-  const confirmDelete = () => {
-    setEmployees(prev => prev.filter(emp => emp.id !== deleteTarget.id));
-    setDeleteModalOpen(false);
-    setDeleteTarget(null);
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/${deleteTarget._id}`);
+      await fetchUsers(); // Refresh the list
+      alert('User deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert(err.response?.data?.message || err.message || 'Error deleting user');
+    } finally {
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
+    }
   };
 
   const handleCloseModal = () => {
     setIsEditModalOpen(false);
-    setEditingEmployee(null);
+    setEditingUser(null);
   };
 
-  const handleUpdateEmployee = (updatedEmployee) => {
-    setEmployees(prev => 
-      prev.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp)
-    );
-    handleCloseModal();
+  const handleUpdateUser = async (updatedUser) => {
+    try {
+      await axios.put(`${API_BASE_URL}/${updatedUser._id}`, updatedUser);
+      await fetchUsers(); // Refresh the list
+      alert('User updated successfully!');
+      handleCloseModal();
+    } catch (err) {
+      console.error('Error updating user:', err);
+      alert(err.response?.data?.message || err.message || 'Error updating user');
+    }
   };
 
   // Table columns configuration
   const columns = [
     {
-      header: 'Employee Name',
+      header: 'User Name',
       key: 'name',
-      render: (row) => `${row.firstName || ''} ${row.lastName || ''}`,
+      render: (row) => `${row.firstname || ''} ${row.lastname || ''}`,
       className: 'font-medium text-gray-900'
     },
     {
       header: 'Department',
-      key: 'section',
+      key: 'department',
       className: 'text-gray-800'
     },
     {
-      header: 'Employee ID',
-      key: 'empId',
+      header: 'User ID',
+      key: 'userID',
+      className: 'font-mono text-gray-800'
+    },
+    {
+      header: 'Username',
+      key: 'username',
       className: 'font-mono text-gray-800'
     },
     {
@@ -108,16 +147,23 @@ function UserManagment() {
       render: (row) => (
         <ActionButton
           onEdit={() => handleEdit(row)}
-          onDelete={() => handleDeleteClick(row)} // Updated to use handleDeleteClick
-          editTooltip="Edit Employee"
-          deleteTooltip="Delete Employee"
+          onDelete={() => handleDeleteClick(row)}
+          editTooltip="Edit User"
+          deleteTooltip="Delete User"
         />
       )
     }
   ];
 
-  //For filter bar
-  const departments = ['All Departments', 'Cutting', 'QC', 'Sewing', 'Packing'];
+  // Updated departments list
+  const departments = [
+    'All Departments', 
+    'Cutting', 
+    'Quality Control', 
+    'Sewing', 
+    'Packing',
+    'Finishing'
+  ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -125,7 +171,7 @@ function UserManagment() {
         <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
 
           <div className="flex items-center justify-between p-6 border-b">
-              <Header title="User Managment" icon={<User />} />
+              <Header title="User Management" icon={<User />} />
             </div>
 
               <div className='flex items-center gap-6 bg-gray-50'>
@@ -142,44 +188,48 @@ function UserManagment() {
                   <SearchBar
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
-                  searchPlaceholder="Search Name or Employee ID"
+                  searchPlaceholder="Search Name, User ID or Username"
                   />
                 </div>
-
               </div>
 
+              {/* Add error and loading states */}
+              {error && <div className="p-4 text-red-600">{error}</div>}
+              {loading && <div className="p-6 text-center">Loading users...</div>}
+
               <div className="p-6">
-                <h2 className="text-lg font-medium">Users ({filteredEmployees.length})</h2>
+                <h2 className="text-lg font-medium">Users ({filteredUsers.length})</h2>
                 <DataTable
                   columns={columns}
-                  data={filteredEmployees}
-                  emptyMessage="Try adjusting search or filters"
+                  data={filteredUsers}
+                  emptyMessage="No users found. Try adjusting search or filters"
                 />
               </div>
 
               {isEditModalOpen && (
                 <EditUserModal
                   isOpen={isEditModalOpen}
-                  employee={editingEmployee}
+                  user={editingUser}
                   onClose={handleCloseModal}
-                  onUpdate={handleUpdateEmployee}
+                  onUpdate={handleUpdateUser}
                 />
               )}
 
               {/*Delete Confirmation Modal */}
-              {deleteTarget && (
+              {deleteModalOpen && deleteTarget && (
                 <ConfirmDeleteUser
                   isOpen={deleteModalOpen}
-                  onClose={() => setDeleteModalOpen(false)}
+                  onClose={() => {
+                    setDeleteModalOpen(false);
+                    setDeleteTarget(null); // Clear target when closing
+                  }}
                   onConfirm={confirmDelete}
-                  employee={deleteTarget}
+                  user={deleteTarget}
                 />
               )}
             </div>  
           </div>
         </div>
-    
-      
   );
 };
 

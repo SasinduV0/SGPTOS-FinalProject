@@ -18,6 +18,7 @@ const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 const userRoute = require('./routes/userRoute');
 const rfidEmployeeRoutes = require('./routes/rfidEmployeeRoute');
 const productRfidRoutes = require('./routes/productRfid')
+const userDetails = require('./routes/userDetails');
 
 
 connectDB();
@@ -41,6 +42,7 @@ app.use("/api/auth", forgotPasswordRoutes);
 
 app.use("/api/rfid-employees", rfidEmployeeRoutes);
 app.use("/api/product-rfids", productRfidRoutes);
+app.use('/api/users', userDetails);
 
 
 app.use("/", (req, res) => {

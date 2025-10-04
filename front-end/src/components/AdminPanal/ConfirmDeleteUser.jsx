@@ -1,43 +1,43 @@
 import React, { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
-const ConfirmDeleteUser = ({ isOpen, onClose, onConfirm, employee }) => {
-  const [inputEmployeeId, setInputEmployeeId] = useState("");
-  const [inputRole, setInputRole] = useState("");
+const ConfirmDeleteUser = ({ isOpen, onClose, onConfirm, user }) => { // Make sure parameter is 'user'
+  const [inputUserID, setInputUserID] = useState("");
   const [errors, setErrors] = useState({});
 
   const handleDelete = () => {
     const newErrors = {};
 
-    if (inputEmployeeId.trim() !== employee.empId) {
-      newErrors.employeeId = "Employee ID does not match. Please try again.";
+    if (inputUserID.trim() !== user?.userID) { // Use optional chaining for safety
+      newErrors.userID = "User ID does not match. Please try again.";
     }
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
       onConfirm();
-      setInputEmployeeId("");
+      setInputUserID("");
       setErrors({});
     }
   };
 
   const handleClose = () => {
-    setInputEmployeeId("");
+    setInputUserID("");
     setErrors({});
     onClose();
   };
 
   const handleInputChange = (field, value) => {
-    if (field === 'employeeId') {
-      setInputEmployeeId(value);
-      if (errors.employeeId) {
-        setErrors(prev => ({ ...prev, employeeId: '' }));
+    if (field === 'userID') {
+      setInputUserID(value);
+      if (errors.userID) {
+        setErrors(prev => ({ ...prev, userID: '' }));
       }
-    } 
+    }
   };
 
-  if (!isOpen) return null;
+  // Add safety checks - don't render if modal is closed or user is undefined
+  if (!isOpen || !user) return null; 
 
   return (
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-opacity-50 backdrop-blur-sm">
@@ -49,21 +49,24 @@ const ConfirmDeleteUser = ({ isOpen, onClose, onConfirm, employee }) => {
           <h3 className="text-lg font-semibold text-red-600">Delete User Account</h3>
         </div>
 
-        {/* Employee Info */}
+        {/* User Info */}
         <div className="bg-gray-50 rounded-lg p-3 mb-4">
           <p className="text-sm text-gray-600">You are about to delete:</p>
           <p className="font-medium text-gray-900">
-            {employee.firstName} {employee.lastName}
+            {user.firstname || 'N/A'} {user.lastname || 'N/A'}
           </p>
           <div className="grid grid-cols-1 gap-1 mt-2 text-sm">
             <p className="text-gray-600">
-              <span className="font-medium">Department:</span> {employee.section}
+              <span className="font-medium">Department:</span> {user.department || 'N/A'}
             </p>
             <p className="text-gray-600">
-              <span className="font-medium">Employee ID:</span> {employee.empId}
+              <span className="font-medium">User ID:</span> {user.userID || 'N/A'}
             </p>
             <p className="text-gray-600">
-              <span className="font-medium">Current Role:</span> <span className="font-semibold text-blue-600">{employee.role}</span>
+              <span className="font-medium">Username:</span> {user.username || 'N/A'}
+            </p>
+            <p className="text-gray-600">
+              <span className="font-medium">Current Role:</span> <span className="font-semibold text-blue-600">{user.role || 'N/A'}</span>
             </p>
           </div>
         </div>
@@ -77,24 +80,23 @@ const ConfirmDeleteUser = ({ isOpen, onClose, onConfirm, employee }) => {
         <div className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Enter Employee ID to confirm: <span className="font-mono font-semibold text-red-600">{employee.empId}</span>
+              Enter User ID to confirm: <span className="font-mono font-semibold text-red-600">{user.userID || 'N/A'}</span>
             </label>
             <input
               type="text"
-              value={inputEmployeeId}
-              onChange={(e) => handleInputChange('employeeId', e.target.value)}
-              placeholder="Type Employee ID here"
+              value={inputUserID}
+              onChange={(e) => handleInputChange('userID', e.target.value)}
+              placeholder="Type User ID here"
               className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 transition-colors ${
-                errors.employeeId
+                errors.userID
                   ? 'border-red-300 focus:ring-red-500'
                   : 'border-gray-300 focus:ring-blue-500'
               }`}
             />
-            {errors.employeeId && (
-              <p className="text-sm text-red-500 mt-1">{errors.employeeId}</p>
+            {errors.userID && (
+              <p className="text-sm text-red-500 mt-1">{errors.userID}</p>
             )}
           </div>
-
         </div>
 
         {/* Action Buttons */}
@@ -107,12 +109,12 @@ const ConfirmDeleteUser = ({ isOpen, onClose, onConfirm, employee }) => {
           </button>
           <button
             className={`px-4 py-2 rounded-md transition-colors ${
-              inputEmployeeId
+              inputUserID
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
             onClick={handleDelete}
-            disabled={!inputEmployeeId}
+            disabled={!inputUserID}
           >
             Delete User
           </button>
