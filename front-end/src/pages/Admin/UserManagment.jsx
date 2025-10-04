@@ -110,6 +110,14 @@ function UserManagment() {
             </div>
 
               <div className='flex items-center gap-6 bg-gray-50'>
+                {/*Department filter*/}
+                <FilterBar
+                selectedOption={selectedDepartment}
+                setSelectedOption={setSelectedDepartment}
+                options={departments}
+                selectLabel='Department'
+                searchPlaceholder=''/>
+
                 {/*Search Bar*/}
                 <div className='flex-1'>
                   <SearchBar
@@ -119,28 +127,16 @@ function UserManagment() {
                   />
                 </div>
 
-                {/*Department filter*/}
-                <FilterBar
-                selectedOption={selectedDepartment}
-                setSelectedOption={setSelectedDepartment}
-                options={departments}
-                selectLabel='Department'
-                searchPlaceholder=''/>
-
               </div>
 
               <div className="p-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-medium text-gray-800">
-                  Users ({filteredEmployees.length})
-                </h2>
+                <h2 className="text-lg font-medium">Users ({filteredEmployees.length})</h2>
+                <DataTable
+                  columns={columns}
+                  data={filteredEmployees}
+                  emptyMessage="Try adjusting search or filters"
+                />
               </div>
-
-              <DataTable
-                columns={columns}
-                data={filteredEmployees}
-                emptyMessage="Add employees to see them listed here"
-              />
 
               {isEditModalOpen && (
                 <EditUserModal
@@ -153,7 +149,6 @@ function UserManagment() {
             </div>  
           </div>
         </div>
-      </div>
     
       
   );

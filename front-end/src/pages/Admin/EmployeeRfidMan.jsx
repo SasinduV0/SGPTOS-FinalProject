@@ -109,9 +109,14 @@ const EmployeeRfidMan = () => {
           </div>
 
           <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID Number" />
-          {error && <div className="p-4 bg-red-50 text-red-600">{error}</div>}
+          
+          {error && <div className="p-4 text-red-600">{error}</div>}
           {loading && <div className="p-6 text-center">Loading...</div>}
-          {!loading && <DataTable columns={tableColumns} data={rfidEntries} />}
+
+          <div className="p-6">
+            <h2 className="text-lg font-medium">RFID Entries ({rfidEntries.length})</h2>
+            <DataTable columns={tableColumns} data={rfidEntries} emptyMessage="Try adjusting search or filters" />
+          </div>
         </div>
       </div>
 

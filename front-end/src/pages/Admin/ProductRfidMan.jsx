@@ -129,11 +129,11 @@ const ProductRfidMan = () => {
           </div>
 
           <div className="flex items-center gap-6 bg-gray-50">
+            <FilterBar selectedOption={unitFilter} setSelectedOption={setUnitFilter} options={units} selectLabel="Unit" />
+            <FilterBar selectedOption={workplaceFilter} setSelectedOption={setWorkplaceFilter} options={workplaces} selectLabel="Workplace" />
             <div className="flex-1">
               <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID"/>
             </div>
-            <FilterBar selectedOption={unitFilter} setSelectedOption={setUnitFilter} options={units} selectLabel="Unit" />
-            <FilterBar selectedOption={workplaceFilter} setSelectedOption={setWorkplaceFilter} options={workplaces} selectLabel="Workplace" />
           </div>
 
           {error && <div className="p-4 text-red-600">{error}</div>}
