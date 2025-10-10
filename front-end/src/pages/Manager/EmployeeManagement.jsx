@@ -131,7 +131,7 @@ const LineManagement = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow ml-70">
+    <div className="bg-white rounded-lg shadow mt-20 ml-70">
       <SideBar title="Manager Panel" links={ManagerLinks} />
       <div className="p-6 border-b">
         <h3 className="text-lg font-semibold text-gray-800">Line Management</h3>

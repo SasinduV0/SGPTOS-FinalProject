@@ -36,53 +36,92 @@ function DefectRateChart() {
 
   // Listen for real-time updates via Socket.IO
   useEffect(() => {
+    // Listen for defect updates (when new defects are added)
+    socket.on("defectUpdate", () => {
+      console.log("📊 DefectRateChart received defect update");
+      fetchDefectRate();
+    });
+
     // Listen for employee updates (affects total production)
     socket.on("leadingLineUpdate", () => {
+      console.log("📊 DefectRateChart received employee update");
       fetchDefectRate();
     });
 
     // Listen for supervisor updates (might affect data)
     socket.on("supervisorUpdate", () => {
+      console.log("📊 DefectRateChart received supervisor update");
       fetchDefectRate();
     });
 
     // Cleanup
     return () => {
+      socket.off("defectUpdate");
       socket.off("leadingLineUpdate");
       socket.off("supervisorUpdate");
     };
   }, []);
 
-  const defectRateNumber = parseFloat(defectData.defectRate.replace('%', ''));
+  // Safe parsing of defect rate
+  const defectRateNumber = parseFloat((defectData.defectRate || "0%").replace('%', ''));
 
   // Get message & color based on defect rate
   const getDefectMessage = (rate) => {
+    if (rate <= 2)
+      return { text: "Excellent quality! Minimal defects detected.", color: "text-green-600" };
     if (rate <= 5)
-      return { text: "Excellent quality minimal defects!", color: "text-gray-900" };
+      return { text: "Good quality. Keep monitoring defects.", color: "text-yellow-600" };
     if (rate <= 10)
-      return { text: "Quality is acceptable, but keep monitoring.", color: "text-yellow-600" };
-    if (rate <= 20)
-      return { text: "Defects count is higher than expected.", color: "text-orange-600" };
+      return { text: "Quality needs attention. Review processes.", color: "text-orange-600" };
     return { text: "Critical! Immediate action required to reduce defects.", color: "text-red-600" };
   };
 
   const { text, color } = getDefectMessage(defectRateNumber);
 
+  // Safer data structure for chart
   const data = {
     labels: ["Defects", "Good"],
     datasets: [
       {
-        data: [defectRateNumber, 100 - defectRateNumber],
-        backgroundColor: ["#8B0000", "#A9A9A9"], // red for defects, gray for good
+        data: [
+          defectRateNumber, 
+          Math.max(0, 100 - defectRateNumber) // Ensure no negative values
+        ],
+        backgroundColor: [
+          defectRateNumber > 10 ? "#DC2626" : // Red for high defects
+          defectRateNumber > 5 ? "#F59E0B" :  // Orange for medium defects
+          "#EF4444", // Light red for low defects
+          "#696969"  // Green for good parts
+        ],
+        borderColor: ["#FFFFFF", "#FFFFFF"],
         borderWidth: 2,
+        hoverOffset: 4,
       },
     ],
   };
 
   const options = {
     cutout: "70%",
-    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    responsive: true,
     maintainAspectRatio: false,
+    plugins: { 
+      legend: { display: false }, 
+      tooltip: { 
+        enabled: true,
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.parsed;
+            return `${label}: ${value.toFixed(2)}%`;
+          }
+        }
+      }
+    },
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 1000
+    }
   };
 
   if (loading) {
@@ -106,15 +145,18 @@ function DefectRateChart() {
         </div>
       </div>
       <div className="flex flex-col">
-        <p className={`text-center text-xl font-semibold ${color}`}>
+        <p className={`text-center text-lg font-semibold ${color} mb-2`}>
           {text}
         </p>
-        <div className="mt-3 text-center">
-          <p className="text-md text-gray-600">
-            <span className="font-medium">Total :</span> {defectData.total} pcs
+        <div className="space-y-2 text-center">
+          <p className="text-lg text-gray-600">
+            <span className="font-medium">Total:</span> {defectData.total.toLocaleString()} pcs
           </p>
-          <p className="text-xl text-red-600">
-            <span className="font-medium">Defects:</span> {defectData.defects} pcs
+          <p className="text-lg text-red-600">
+            <span className="font-medium">Defects:</span> {defectData.defects.toLocaleString()} pcs
+          </p>
+          <p className="text-sm text-gray-500">
+            Good: {(defectData.total - defectData.defects).toLocaleString()} pcs ({(100 - defectRateNumber).toFixed(2)}%)
           </p>
         </div>
       </div>

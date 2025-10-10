@@ -101,6 +101,7 @@ router.get("/defects/:tagUID", async (req, res) => {
 });
 
 // Add or update defect for a garment
+// Add or update defect for a garment
 router.post("/defect", async (req, res) => {
   try {
     const { ID, Section, Type, Subtype, Tag_UID, Station_ID, Time_Stamp } = req.body;
@@ -135,6 +136,17 @@ router.post("/defect", async (req, res) => {
       garmentDefects.Time_Stamp = Time_Stamp;
       await garmentDefects.save();
 
+      // Emit real-time update
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("defectUpdate", { 
+          message: "New defect added to existing garment", 
+          data: garmentDefects,
+          newDefect: newDefectEntry 
+        });
+        console.log("🔥 Emitted defectUpdate event for existing garment");
+      }
+
       res.status(200).json({ 
         message: "Defect added to existing garment", 
         data: garmentDefects,
@@ -151,6 +163,18 @@ router.post("/defect", async (req, res) => {
       });
 
       await garmentDefects.save();
+
+      // ✅ ADD THIS: Emit real-time update for NEW garment too!
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("defectUpdate", { 
+          message: "New garment defects document created", 
+          data: garmentDefects,
+          newDefect: newDefectEntry 
+        });
+        console.log("🔥 Emitted defectUpdate event for new garment");
+      }
+
       res.status(201).json({ 
         message: "New garment defects document created", 
         data: garmentDefects 
