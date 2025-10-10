@@ -68,7 +68,7 @@ const FollowingLine = () => {
     .slice(0, 5);
 
   return (
-    <div className="p-2">
+    <div className="p-0">
       <div className="text-white rounded-2xl px-3">
         <h2 className="text-lg font-bold text-center">Delayed Line</h2>
 
@@ -79,11 +79,11 @@ const FollowingLine = () => {
           </p>
         )}
 
-        <div className="mt-3 space-y-1">
+        <div className="mt-3 space-y-2/3">
           {lowestEmployees.map((emp) => (
             <div
               key={emp._id}
-              className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+              className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-red-400 transition"
             >
               <div className="flex items-center gap-4">
                 <FaUser className="text-red-400" />
