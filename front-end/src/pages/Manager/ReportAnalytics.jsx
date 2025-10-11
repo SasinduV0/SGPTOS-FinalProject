@@ -34,7 +34,7 @@ const ReportAnalytics = () => {
       name: 'Target Achievement', 
       description: 'Compare actual vs planned production goals',
       icon: '🎯',
-      endpoint: 'production-plans'
+      endpoint: 'product'
     },
     { 
       name: 'Defect Rate', 
@@ -64,19 +64,23 @@ const ReportAnalytics = () => {
       switch(selectedReport) {
         case 'Employee Efficiency':
           response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
-          const employees = await response.json();
+          const employeesResponse = await response.json();
+          const employees = Array.isArray(employeesResponse) ? employeesResponse : (employeesResponse.data || employeesResponse.employees || []);
           setReportData(transformEmployeeData(employees, selectedPeriod));
           break;
 
         case 'Line Efficiency':
           response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
-          const lineData = await response.json();
+          const lineDataResponse = await response.json();
+          const lineData = Array.isArray(lineDataResponse) ? lineDataResponse : (lineDataResponse.data || lineDataResponse.lines || []);
           setReportData(transformLineData(lineData, selectedPeriod));
           break;
 
         case 'Target Achievement':
           response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
-          const plans = await response.json();
+          const plansResponse = await response.json();
+          // Handle both array and object with data property
+          const plans = Array.isArray(plansResponse) ? plansResponse : (plansResponse.data || plansResponse.plans || []);
           setReportData(transformTargetData(plans, selectedPeriod));
           break;
 
@@ -84,13 +88,15 @@ const ReportAnalytics = () => {
           response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
           const defectData = await response.json();
           const defectsResponse = await fetch(`${API_BASE_URL}/iot/defects`);
-          const allDefects = await defectsResponse.json();
+          const allDefectsResponse = await defectsResponse.json();
+          const allDefects = Array.isArray(allDefectsResponse) ? allDefectsResponse : (allDefectsResponse.data || allDefectsResponse.defects || []);
           setReportData(transformDefectData(defectData, allDefects, selectedPeriod));
           break;
 
         case 'Supervisor Management':
           response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
-          const supervisors = await response.json();
+          const supervisorsResponse = await response.json();
+          const supervisors = Array.isArray(supervisorsResponse) ? supervisorsResponse : (supervisorsResponse.data || supervisorsResponse.supervisors || []);
           setReportData(transformSupervisorData(supervisors, selectedPeriod));
           break;
 
@@ -170,6 +176,12 @@ const ReportAnalytics = () => {
 
   // Data transformation functions
   const transformEmployeeData = (employees, period) => {
+    // Ensure employees is an array
+    if (!Array.isArray(employees)) {
+      console.error('transformEmployeeData: Expected array but got:', typeof employees);
+      return [];
+    }
+
     const transformed = employees.map(emp => {
       const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
       const target = getLineTarget(emp.line) * multiplier;
@@ -195,6 +207,12 @@ const ReportAnalytics = () => {
   };
 
   const transformLineData = (lineData, period) => {
+    // Ensure lineData is an array
+    if (!Array.isArray(lineData)) {
+      console.error('transformLineData: Expected array but got:', typeof lineData);
+      return [];
+    }
+
     const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
     
     return lineData.map(line => ({
@@ -209,23 +227,42 @@ const ReportAnalytics = () => {
   };
 
   const transformTargetData = (plans, period) => {
+    // Ensure plans is an array
+    if (!Array.isArray(plans)) {
+      console.error('transformTargetData: Expected array but got:', typeof plans);
+      return [];
+    }
+
     const transformed = plans.map(plan => {
+      // Calculate achievement percentage
       const achievement = plan.totalStock > 0 
         ? ((plan.finishedUnits / plan.totalStock) * 100).toFixed(1) 
         : 0;
       
+      // Calculate remaining units
+      const remainingUnits = plan.remainingUnits || (plan.totalStock - plan.finishedUnits);
+      
+      // Format dates
+      const startDate = plan.startDate ? new Date(plan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      const endDate = plan.endDate ? new Date(plan.endDate).toISOString().split('T')[0] : 'N/A';
+      
       return {
-        date: new Date(plan.startDate).toISOString().split('T')[0],
+        date: startDate,
+        productName: plan.product,
         line: plan.product,
-        actual: plan.finishedUnits,
-        target: plan.totalStock,
+        actual: plan.finishedUnits || 0,
+        target: plan.totalStock || 0,
+        remaining: remainingUnits,
         achievement: parseFloat(achievement),
         status: getStatus(parseFloat(achievement)),
-        variance: plan.finishedUnits - plan.totalStock,
-        remainingDays: plan.remainingDays,
-        dailyTarget: plan.dailyTarget,
-        createdAt: plan.createdAt,
-        startDate: plan.startDate
+        variance: (plan.finishedUnits || 0) - (plan.totalStock || 0),
+        remainingDays: plan.remainingDays || 0,
+        dailyTarget: plan.dailyTarget || 0,
+        weeklyTarget: plan.weeklyTarget || 0,
+        dueDate: endDate,
+        createdAt: plan.createdAt || startDate,
+        startDate: startDate,
+        endDate: endDate
       };
     });
 
@@ -233,6 +270,12 @@ const ReportAnalytics = () => {
   };
 
   const transformDefectData = (defectRate, allDefects, period) => {
+    // Ensure allDefects is an array
+    if (!Array.isArray(allDefects)) {
+      console.error('transformDefectData: Expected array but got:', typeof allDefects);
+      return [];
+    }
+
     const defectsByWorker = {};
     
     const filteredDefects = allDefects.filter(defectDoc => {
@@ -282,6 +325,12 @@ const ReportAnalytics = () => {
   };
 
   const transformSupervisorData = (supervisors, period) => {
+    // Ensure supervisors is an array
+    if (!Array.isArray(supervisors)) {
+      console.error('transformSupervisorData: Expected array but got:', typeof supervisors);
+      return [];
+    }
+
     const transformed = supervisors.map(sup => ({
       date: new Date(sup.createdAt).toISOString().split('T')[0],
       supervisorId: sup._id.substring(0, 8),
@@ -434,16 +483,18 @@ const ReportAnalytics = () => {
         break;
 
       case 'Target Achievement':
-        tableHeaders = '<th>Date</th><th>Product</th><th>Actual</th><th>Target</th><th>Achievement %</th><th>Days Left</th><th>Daily Target</th><th>Status</th>';
+        tableHeaders = '<th>Product</th><th>Total Units</th><th>Finished</th><th>Remaining</th><th>Achievement %</th><th>Due Date</th><th>Days Left</th><th>Daily Target</th><th>Weekly Target</th><th>Status</th>';
         tableRows = data.map(row => `
           <tr>
-            <td>${row.date}</td>
-            <td><strong>${row.line}</strong></td>
-            <td>${row.actual}</td>
+            <td><strong>${row.productName || row.line}</strong></td>
             <td>${row.target}</td>
+            <td>${row.actual}</td>
+            <td>${row.remaining || 0}</td>
             <td>${row.achievement}%</td>
-            <td>${row.remainingDays || 'N/A'}</td>
+            <td>${row.dueDate || row.endDate || 'N/A'}</td>
+            <td>${row.remainingDays || 0} days</td>
             <td>${row.dailyTarget || 'N/A'}</td>
+            <td>${row.weeklyTarget || 'N/A'}</td>
             <td class="status-${row.status.toLowerCase()}">${row.status}</td>
           </tr>
         `).join('');
@@ -560,13 +611,15 @@ const ReportAnalytics = () => {
       case 'Target Achievement':
         return (
           <>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
             <th className="px-6 py-4 text-left text-sm font-semibold">Product</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Actual</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Target</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Total Units</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Finished</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Remaining</th>
             <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Due Date</th>
             <th className="px-6 py-4 text-left text-sm font-semibold">Days Left</th>
             <th className="px-6 py-4 text-left text-sm font-semibold">Daily Target</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Weekly Target</th>
             <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
           </>
         );
@@ -646,13 +699,32 @@ const ReportAnalytics = () => {
       case 'Target Achievement':
         return (
           <tr key={index} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 text-gray-700">{row.date}</td>
-            <td className="px-6 py-4 font-medium text-gray-800">{row.line}</td>
-            <td className="px-6 py-4 text-gray-700">{row.actual}</td>
+            <td className="px-6 py-4 font-medium text-gray-900">{row.productName || row.line}</td>
             <td className="px-6 py-4 text-gray-700">{row.target}</td>
-            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
-            <td className="px-6 py-4 text-gray-700">{row.remainingDays || 'N/A'}</td>
-            <td className="px-6 py-4 text-gray-700">{row.dailyTarget || 'N/A'}</td>
+            <td className="px-6 py-4 text-gray-700">{row.actual}</td>
+            <td className="px-6 py-4 text-gray-700">{row.remaining || 0}</td>
+            <td className="px-6 py-4">
+              <span className={`font-semibold ${
+                row.achievement >= 95 ? 'text-green-600' : 
+                row.achievement >= 85 ? 'text-blue-600' : 
+                row.achievement >= 70 ? 'text-yellow-600' : 
+                'text-red-600'
+              }`}>
+                {row.achievement}%
+              </span>
+            </td>
+            <td className="px-6 py-4 text-gray-700">{row.dueDate || row.endDate || 'N/A'}</td>
+            <td className="px-6 py-4 text-gray-700">{row.remainingDays || 0} days</td>
+            <td className="px-6 py-4">
+              <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                {row.dailyTarget || 'N/A'}
+              </span>
+            </td>
+            <td className="px-6 py-4">
+              <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                {row.weeklyTarget || 'N/A'}
+              </span>
+            </td>
             <td className="px-6 py-4">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
                 {row.status}
