@@ -145,12 +145,12 @@ function UserRegistration() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl rounded-2xl bg-white pb-2 shadow-xl">
+    <div className="mx-auto w-full max-w-6xl rounded-2xl bg-white pb-2 shadow-xl font-sans text-base text-gray-800">
       <div className="container horizontal mt-5">
         <AdminNav steps={steps} currentStep={currentStep} />
       </div>
 
-      <div className="my-10 p-10">{displayStep(currentStep)}</div>
+  <div className="my-10 p-10">{displayStep(currentStep)}</div>
 
       {currentStep !== steps.length && (
         <AdminNavControl

@@ -166,7 +166,7 @@ function UserManagment() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 font-sans text-base text-gray-800">
       <div className="flex-1 flex flex-col">
         <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
 
@@ -198,7 +198,7 @@ function UserManagment() {
               {loading && <div className="p-6 text-center">Loading users...</div>}
 
               <div className="p-6">
-                <h2 className="text-xl font-semibold">Users ({filteredUsers.length})</h2>
+                <h2 className="text-2xl font-semibold text-gray-900">Users ({filteredUsers.length})</h2>
                 <DataTable
                   columns={columns}
                   data={filteredUsers}

@@ -120,7 +120,7 @@ const ProductRfidMan = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 font-sans text-base text-gray-800">
       <div className="flex-1 flex flex-col">
         <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
           <div className="flex items-center justify-between p-6 border-b">
@@ -140,7 +140,7 @@ const ProductRfidMan = () => {
           {loading && <div className="p-6 text-center">Loading...</div>}
 
           <div className="p-6">
-            <h2 className="text-xl font-semibold">RFID Entries ({rfidEntries.length})</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">RFID Entries ({rfidEntries.length})</h2>
             <DataTable columns={tableColumns} data={rfidEntries} emptyMessage="Try adjusting search or filters" />
           </div>
         </div>
