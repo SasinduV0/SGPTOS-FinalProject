@@ -140,7 +140,7 @@ const ProductRfidMan = () => {
           {loading && <div className="p-6 text-center">Loading...</div>}
 
           <div className="p-6">
-            <h2 className="text-lg font-medium">RFID Entries ({rfidEntries.length})</h2>
+            <h2 className="text-xl font-semibold">RFID Entries ({rfidEntries.length})</h2>
             <DataTable columns={tableColumns} data={rfidEntries} emptyMessage="Try adjusting search or filters" />
           </div>
         </div>

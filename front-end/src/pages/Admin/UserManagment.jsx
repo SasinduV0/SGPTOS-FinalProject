@@ -129,17 +129,17 @@ function UserManagment() {
     {
       header: 'User ID',
       key: 'userID',
-      className: 'font-mono text-gray-800'
+      className: 'font-mono text-sm'
     },
     {
       header: 'Username',
       key: 'username',
-      className: 'font-mono text-gray-800'
+      className: 'font-mono text-sm'
     },
     {
       header: 'User Role',
       key: 'role',
-      className: 'font-mono text-gray-800'
+      className: 'font-mono text-sm'
     },
     {
       header: 'Actions',
@@ -198,7 +198,7 @@ function UserManagment() {
               {loading && <div className="p-6 text-center">Loading users...</div>}
 
               <div className="p-6">
-                <h2 className="text-lg font-medium">Users ({filteredUsers.length})</h2>
+                <h2 className="text-xl font-semibold">Users ({filteredUsers.length})</h2>
                 <DataTable
                   columns={columns}
                   data={filteredUsers}
