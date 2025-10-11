@@ -52,13 +52,13 @@ const ProductivityPage = ({ dashboardData }) => {
 
           {/* Worker Performance Table */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Individual Worker Performance</h3>
+            {/* <h3 className="text-xl font-bold text-gray-800 mb-4">Individual Worker Performance</h3> */}
               <DailyEmployeesList/>
           </div>
 
           {/* Production Targets */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Production Targets vs Actual</h3>
+            {/* <h3 className="text-xl font-bold text-gray-800 mb-4">Production Targets vs Actual</h3> */}
             <div className="space-y-4">
               <ProductionTargets/>
               
