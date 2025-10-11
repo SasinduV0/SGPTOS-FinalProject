@@ -66,7 +66,7 @@ const Login = () => {
         <div className="absolute bottom-40 left-20 w-24 h-20 bg-slate-400 bg-opacity-20 rounded-full blur-md transform rotate-45"></div>
         <div className="absolute bottom-20 right-20 w-18 h-32 bg-blue-300 bg-opacity-30 rounded-b-full blur-sm transform -rotate-12"></div>
         
-      <div className="flex w-full max-w-5xl bg-white shadow-3xl rounded-3xl overflow-hidden">
+      <div className="flex w-full max-w-5xl bg-white shadow-3xl h-150 rounded-3xl overflow-hidden">
 
 
         {/* Left Side - Enhanced Brand & Feature Showcase */}
