@@ -22,6 +22,9 @@ import AssignmentPage from './pages/Supervisor/AssignmentPage';
 // import SupervisorAssignmentWrapper from './pages/Supervisor/SupervisorAssignmentWrapper';
 import ProductivityPage from './pages/Supervisor/ProductivityPage';
 
+
+
+
 function AppWrapper() {
   const location = useLocation();
 
@@ -78,6 +81,8 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
             </ProtectedRoute>
           }
         />
+
+
 
         {/* Supervisor */}
 
