@@ -15,6 +15,7 @@ const productionRoutes = require("./routes/production");
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 
+const analyticsRoutes = require("./routes/analytics");
 
 
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
@@ -40,7 +41,7 @@ app.use("/api/product", productionRoutes);
 app.use("/api/iot", iotDefectRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
 
-
+app.use("/api/analytics", analyticsRoutes);
 
 app.use("/", (req, res) => {
   res.json({

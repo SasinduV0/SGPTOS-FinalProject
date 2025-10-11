@@ -1,457 +1,752 @@
-import React, { useState } from 'react';
-import { X, Download, BarChart3, FileText } from 'lucide-react';
-import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
+import React, { useState, useEffect } from 'react';
+import { X, Download, BarChart3, FileText, Filter, RefreshCw, AlertCircle } from 'lucide-react';
 import SideBar from '../../components/SideBar';
+import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 
 const ReportAnalytics = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('Today');
-  // Sample data for different report types and periods
-  const reportData = {
-    'Employee Efficiency': {
-      Today: [
-        { category: 'Line A', value: 16, percentage: 85, target: 20, status: 'Good' },
-        { category: 'Line B', value: 45, percentage: 92, target: 50, status: 'Excellent' },
-        { category: 'Line C', value: 37, percentage: 88, target: 42, status: 'Good' },
-        { category: 'Line D', value: 7, percentage: 70, target: 10, status: 'Average' }
-      ],
-      Weekly: [
-        { category: 'Line A', value: 120, percentage: 86, target: 140, status: 'Good' },
-        { category: 'Line B', value: 300, percentage: 93, target: 320, status: 'Excellent' },
-        { category: 'Line C', value: 250, percentage: 89, target: 280, status: 'Good' },
-        { category: 'Line D', value: 80, percentage: 73, target: 110, status: 'Average' }
-      ],
-      Monthly: [
-        { category: 'Line A', value: 480, percentage: 87, target: 550, status: 'Good' },
-        { category: 'Line B', value: 1200, percentage: 94, target: 1280, status: 'Excellent' },
-        { category: 'Line C', value: 1000, percentage: 89, target: 1120, status: 'Good' },
-        { category: 'Line D', value: 320, percentage: 76, target: 420, status: 'Average' }
-      ],
-      Annually: [
-        { category: 'Line A', value: 5760, percentage: 88, target: 6600, status: 'Good' },
-        { category: 'Line B', value: 14400, percentage: 94, target: 15360, status: 'Excellent' },
-        { category: 'Line C', value: 12000, percentage: 90, target: 13440, status: 'Good' },
-        { category: 'Line D', value: 3840, percentage: 77, target: 5040, status: 'Average' }
-      ]
-    },
-    'Line Efficiency': {
-      Today: [
-        { category: 'Line A', value: 25, percentage: 83, target: 30, status: 'Good' },
-        { category: 'Line B', value: 35, percentage: 88, target: 40, status: 'Good' },
-        { category: 'Line C', value: 42, percentage: 95, target: 44, status: 'Excellent' },
-        { category: 'Line D', value: 18, percentage: 75, target: 24, status: 'Average' }
-      ],
-      Weekly: [
-        { category: 'Line A', value: 175, percentage: 83, target: 210, status: 'Good' },
-        { category: 'Line B', value: 245, percentage: 88, target: 280, status: 'Good' },
-        { category: 'Line C', value: 294, percentage: 95, target: 308, status: 'Excellent' },
-        { category: 'Line D', value: 126, percentage: 75, target: 168, status: 'Average' }
-      ],
-      Monthly: [
-        { category: 'Line A', value: 700, percentage: 84, target: 840, status: 'Good' },
-        { category: 'Line B', value: 980, percentage: 88, target: 1120, status: 'Good' },
-        { category: 'Line C', value: 1176, percentage: 96, target: 1232, status: 'Excellent' },
-        { category: 'Line D', value: 504, percentage: 75, target: 672, status: 'Average' }
-      ],
-      Annually: [
-        { category: 'Line A', value: 8400, percentage: 84, target: 10080, status: 'Good' },
-        { category: 'Line B', value: 11760, percentage: 88, target: 13440, status: 'Good' },
-        { category: 'Line C', value: 14112, percentage: 96, target: 14784, status: 'Excellent' },
-        { category: 'Line D', value: 6048, percentage: 75, target: 8064, status: 'Average' }
-      ]
-    },
-    'Target Achievement': {
-      Today: [
-        { category: 'Line A', value: 30, percentage: 75, target: 40, status: 'Average' },
-        { category: 'Line B', value: 40, percentage: 91, target: 44, status: 'Excellent' },
-        { category: 'Line C', value: 25, percentage: 86, target: 29, status: 'Good' },
-        { category: 'Line D', value: 15, percentage: 79, target: 19, status: 'Average' }
-      ],
-      Weekly: [
-        { category: 'Line A', value: 210, percentage: 75, target: 280, status: 'Average' },
-        { category: 'Line B', value: 280, percentage: 91, target: 308, status: 'Excellent' },
-        { category: 'Line C', value: 175, percentage: 86, target: 203, status: 'Good' },
-        { category: 'Line D', value: 105, percentage: 79, target: 133, status: 'Average' }
-      ],
-      Monthly: [
-        { category: 'Line A', value: 840, percentage: 75, target: 1120, status: 'Average' },
-        { category: 'Line B', value: 1120, percentage: 91, target: 1232, status: 'Excellent' },
-        { category: 'Line C', value: 700, percentage: 86, target: 812, status: 'Good' },
-        { category: 'Line D', value: 420, percentage: 79, target: 532, status: 'Average' }
-      ],
-      Annually: [
-        { category: 'Line A', value: 10080, percentage: 75, target: 13440, status: 'Average' },
-        { category: 'Line B', value: 13440, percentage: 91, target: 14784, status: 'Excellent' },
-        { category: 'Line C', value: 8400, percentage: 86, target: 9744, status: 'Good' },
-        { category: 'Line D', value: 5040, percentage: 79, target: 6384, status: 'Average' }
-      ]
-    },
-    'Defect Rate': {
-      Today: [
-        { category: 'Line A', value: 5, percentage: 2.5, target: 3, status: 'Poor' },
-        { category: 'Line B', value: 12, percentage: 3.2, target: 5, status: 'Poor' },
-        { category: 'Line C', value: 8, percentage: 2.8, target: 4, status: 'Poor' },
-        { category: 'Line D', value: 3, percentage: 1.8, target: 2, status: 'Good' }
-      ],
-      Weekly: [
-        { category: 'Line A', value: 35, percentage: 2.5, target: 21, status: 'Poor' },
-        { category: 'Line B', value: 84, percentage: 3.2, target: 35, status: 'Poor' },
-        { category: 'Line C', value: 56, percentage: 2.8, target: 28, status: 'Poor' },
-        { category: 'Line D', value: 21, percentage: 1.8, target: 14, status: 'Good' }
-      ],
-      Monthly: [
-        { category: 'Line A', value: 140, percentage: 2.5, target: 84, status: 'Poor' },
-        { category: 'Line B', value: 336, percentage: 3.2, target: 140, status: 'Poor' },
-        { category: 'Line C', value: 224, percentage: 2.8, target: 112, status: 'Poor' },
-        { category: 'Line D', value: 84, percentage: 1.8, target: 56, status: 'Good' }
-      ],
-      Annually: [
-        { category: 'Line A', value: 1680, percentage: 2.5, target: 1008, status: 'Poor' },
-        { category: 'Line B', value: 4032, percentage: 3.2, target: 1680, status: 'Poor' },
-        { category: 'Line C', value: 2688, percentage: 2.8, target: 1344, status: 'Poor' },
-        { category: 'Line D', value: 1008, percentage: 1.8, target: 672, status: 'Good' }
-      ]
-    },
-    'Productivity': {
-      Today: [
-        { category: 'Line A', value: 28, percentage: 82, target: 34, status: 'Good' },
-        { category: 'Line B', value: 52, percentage: 93, target: 56, status: 'Excellent' },
-        { category: 'Line C', value: 34, percentage: 85, target: 40, status: 'Good' },
-        { category: 'Line D', value: 16, percentage: 76, target: 21, status: 'Average' }
-      ],
-      Weekly: [
-        { category: 'Line A', value: 196, percentage: 82, target: 238, status: 'Good' },
-        { category: 'Line B', value: 364, percentage: 93, target: 392, status: 'Excellent' },
-        { category: 'Line C', value: 238, percentage: 85, target: 280, status: 'Good' },
-        { category: 'Line D', value: 112, percentage: 76, target: 147, status: 'Average' }
-      ],
-      Monthly: [
-        { category: 'Line A', value: 784, percentage: 82, target: 952, status: 'Good' },
-        { category: 'Line B', value: 1456, percentage: 93, target: 1568, status: 'Excellent' },
-        { category: 'Line C', value: 952, percentage: 85, target: 1120, status: 'Good' },
-        { category: 'Line D', value: 448, percentage: 76, target: 588, status: 'Average' }
-      ],
-      Annually: [
-        { category: 'Line A', value: 9408, percentage: 82, target: 11424, status: 'Good' },
-        { category: 'Line B', value: 17472, percentage: 93, target: 18816, status: 'Excellent' },
-        { category: 'Line C', value: 11424, percentage: 85, target: 13440, status: 'Good' },
-        { category: 'Line D', value: 5376, percentage: 76, target: 7056, status: 'Average' }
-      ]
-    }
-  };
+  const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [reportData, setReportData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const API_BASE_URL = 'http://localhost:8001/api'; // Adjust to your backend URL
+
   const reportOptions = [
-    {
-      name: 'Employee Efficiency',
-      description: 'Track individual and team performance metrics',
-      icon: '👥'
+    { 
+      name: 'Employee Efficiency', 
+      description: 'Track individual worker performance and output',
+      icon: '👥',
+      endpoint: 'employees'
     },
-    {
-      name: 'Line Efficiency',
-      description: 'Monitor production line performance and output',
-      icon: '🏭'
+    { 
+      name: 'Line Efficiency', 
+      description: 'Monitor production line performance metrics',
+      icon: '🏭',
+      endpoint: 'line-performance'
     },
-    {
-      name: 'Target Achievement',
-      description: 'Compare actual vs target production goals',
-      icon: '🎯'
+    { 
+      name: 'Target Achievement', 
+      description: 'Compare actual vs planned production goals',
+      icon: '🎯',
+      endpoint: 'production-plans'
     },
-    {
-      name: 'Defect Rate',
-      description: 'Quality control and defect tracking analysis',
-      icon: '⚠️'
+    { 
+      name: 'Defect Rate', 
+      description: 'Quality control and defect analysis',
+      icon: '⚠️',
+      endpoint: 'iot/defect-rate'
     },
-    {
-      name: 'Productivity',
-      description: 'Overall productivity and efficiency trends',
-      icon: '📈'
+    { 
+      name: 'Supervisor Management', 
+      description: 'Line supervisor assignments and coverage',
+      icon: '👨‍💼',
+      endpoint: 'line-management'
     }
   ];
-  const getCurrentData = () => {
-    if (!selectedReport) return [];
-    return reportData[selectedReport][selectedPeriod] || [];
+
+  // Fetch data based on report type and period
+  const fetchReportData = async () => {
+    if (!selectedReport) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const reportConfig = reportOptions.find(r => r.name === selectedReport);
+      let response;
+
+      switch(selectedReport) {
+        case 'Employee Efficiency':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const employees = await response.json();
+          setReportData(transformEmployeeData(employees, selectedPeriod));
+          break;
+
+        case 'Line Efficiency':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const lineData = await response.json();
+          setReportData(transformLineData(lineData, selectedPeriod));
+          break;
+
+        case 'Target Achievement':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const plans = await response.json();
+          setReportData(transformTargetData(plans, selectedPeriod));
+          break;
+
+        case 'Defect Rate':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const defectData = await response.json();
+          const defectsResponse = await fetch(`${API_BASE_URL}/iot/defects`);
+          const allDefects = await defectsResponse.json();
+          setReportData(transformDefectData(defectData, allDefects, selectedPeriod));
+          break;
+
+        case 'Supervisor Management':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const supervisors = await response.json();
+          setReportData(transformSupervisorData(supervisors, selectedPeriod));
+          break;
+
+        default:
+          throw new Error('Invalid report type');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch data');
+      console.error('Error fetching report data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Re-fetch data when period changes
+  useEffect(() => {
+    if (showDashboard && selectedReport) {
+      fetchReportData();
+    }
+  }, [selectedPeriod]);
+
+  // Helper to filter data by period
+  const filterDataByPeriod = (data, period) => {
+    const now = new Date();
+    const filtered = data.filter(item => {
+      const itemDate = new Date(item.date || item.updatedAt || item.createdAt);
+      
+      switch(period) {
+        case 'today':
+          return itemDate.toDateString() === now.toDateString();
+        case 'weekly':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return itemDate >= weekAgo;
+        case 'monthly':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return itemDate >= monthAgo;
+        case 'annually':
+          const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          return itemDate >= yearAgo;
+        default:
+          return true;
+      }
+    });
+    return filtered;
+  };
+
+  // Aggregate data based on period
+  const aggregateByPeriod = (data, period, groupKey) => {
+    if (period === 'today') return data;
+
+    const grouped = {};
+    data.forEach(item => {
+      const key = item[groupKey];
+      if (!grouped[key]) {
+        grouped[key] = { ...item, pieces: 0, actual: 0, defects: 0, count: 0 };
+      }
+      grouped[key].pieces += item.pieces || 0;
+      grouped[key].actual += item.actual || 0;
+      grouped[key].defects += item.defects || 0;
+      grouped[key].count += 1;
+    });
+
+    return Object.values(grouped).map(item => {
+      const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : 365;
+      const target = getLineTarget(parseInt(item.line?.replace('Line ', '') || 1)) * multiplier;
+      const achievement = target > 0 ? ((item.pieces / target) * 100).toFixed(1) : 0;
+      
+      return {
+        ...item,
+        efficiency: parseFloat(achievement),
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: item.pieces - target
+      };
+    });
+  };
+
+  // Data transformation functions
+  const transformEmployeeData = (employees, period) => {
+    const transformed = employees.map(emp => {
+      const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
+      const target = getLineTarget(emp.line) * multiplier;
+      const actualPieces = (emp.pcs || 0) * (period === 'today' ? 1 : multiplier);
+      const achievement = target > 0 ? ((actualPieces / target) * 100).toFixed(1) : 0;
+      const variance = actualPieces - target;
+      
+      return {
+        date: new Date(emp.updatedAt).toISOString().split('T')[0],
+        workerId: emp.employeeId,
+        workerName: emp.name,
+        line: `Line ${emp.line}`,
+        pieces: actualPieces,
+        efficiency: parseFloat(achievement),
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: variance,
+        updatedAt: emp.updatedAt
+      };
+    });
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  const transformLineData = (lineData, period) => {
+    const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
+    
+    return lineData.map(line => ({
+      date: new Date().toISOString().split('T')[0],
+      line: line.line,
+      pieces: line.actual * multiplier,
+      efficiency: line.efficiency,
+      achievement: line.efficiency,
+      status: getStatus(line.efficiency),
+      variance: (line.actual - line.target) * multiplier
+    }));
+  };
+
+  const transformTargetData = (plans, period) => {
+    const transformed = plans.map(plan => {
+      const achievement = plan.totalStock > 0 
+        ? ((plan.finishedUnits / plan.totalStock) * 100).toFixed(1) 
+        : 0;
+      
+      return {
+        date: new Date(plan.startDate).toISOString().split('T')[0],
+        line: plan.product,
+        actual: plan.finishedUnits,
+        target: plan.totalStock,
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: plan.finishedUnits - plan.totalStock,
+        remainingDays: plan.remainingDays,
+        dailyTarget: plan.dailyTarget,
+        createdAt: plan.createdAt,
+        startDate: plan.startDate
+      };
+    });
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  const transformDefectData = (defectRate, allDefects, period) => {
+    const defectsByWorker = {};
+    
+    const filteredDefects = allDefects.filter(defectDoc => {
+      const defectDate = new Date(defectDoc.Time_Stamp);
+      const now = new Date();
+      
+      switch(period) {
+        case 'today':
+          return defectDate.toDateString() === now.toDateString();
+        case 'weekly':
+          return defectDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        case 'monthly':
+          return defectDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        case 'annually':
+          return defectDate >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        default:
+          return true;
+      }
+    });
+
+    filteredDefects.forEach(defectDoc => {
+      defectDoc.Defects.forEach(defect => {
+        const key = defectDoc.Station_ID;
+        if (!defectsByWorker[key]) {
+          defectsByWorker[key] = {
+            stationId: defectDoc.Station_ID,
+            tagUID: defectDoc.Tag_UID,
+            defects: [],
+            timestamp: defectDoc.Time_Stamp
+          };
+        }
+        defectsByWorker[key].defects.push(defect);
+      });
+    });
+
+    return Object.values(defectsByWorker).map((item, index) => ({
+      date: new Date(item.timestamp).toISOString().split('T')[0],
+      workerId: `ST-${item.stationId}`,
+      workerName: `Station ${item.stationId}`,
+      line: `Line ${Math.ceil(item.stationId / 2)}`,
+      defectType: item.defects.map(d => getDefectName(d.Type, d.Subtype)).join(', '),
+      defects: item.defects.length,
+      achievement: (100 - (item.defects.length * 0.5)).toFixed(1),
+      status: item.defects.length <= 2 ? 'Excellent' : item.defects.length <= 5 ? 'Good' : 'Poor',
+      variance: item.defects.length
+    }));
+  };
+
+  const transformSupervisorData = (supervisors, period) => {
+    const transformed = supervisors.map(sup => ({
+      date: new Date(sup.createdAt).toISOString().split('T')[0],
+      supervisorId: sup._id.substring(0, 8),
+      supervisorName: sup.name,
+      assignedLines: Array.isArray(sup.lineNo) ? sup.lineNo.join(', ') : sup.lineNo,
+      lineCount: Array.isArray(sup.lineNo) ? sup.lineNo.length : 1,
+      status: 'Active',
+      efficiency: 100,
+      achievement: 100,
+      createdAt: sup.createdAt
+    }));
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  // Helper functions
+  const getLineTarget = (lineNumber) => {
+    const targets = { 1: 1000, 2: 800, 3: 900, 4: 1100, 5: 950, 6: 1050, 7: 700, 8: 850 };
+    return targets[lineNumber] || 800;
+  };
+
+  const getStatus = (percentage) => {
+    if (percentage >= 95) return 'Excellent';
+    if (percentage >= 85) return 'Good';
+    if (percentage >= 70) return 'Average';
+    return 'Poor';
+  };
+
+  const getDefectName = (type, subtype) => {
+    const defectMap = {
+      0: { name: 'Fabric', subtypes: { 0: 'Hole', 1: 'Stain', 2: 'Shading', 3: 'Slub' } },
+      1: { name: 'Stitching', subtypes: { 0: 'Broken', 1: 'Uneven' } },
+      2: { name: 'Button', subtypes: { 0: 'Missing', 1: 'Loose' } }
+    };
+    return defectMap[type]?.subtypes[subtype] || `Type ${type}-${subtype}`;
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Excellent': return 'bg-green-100 text-green-800';
+      case 'Good': return 'bg-blue-100 text-blue-800';
+      case 'Average': return 'bg-yellow-100 text-yellow-800';
+      case 'Poor': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Filter and sort data
+  const getCurrentData = () => {
+    let data = [...reportData];
+
+    // Apply status filter
+    if (filterStatus !== 'All') {
+      data = data.filter(item => item.status === filterStatus);
+    }
+
+    // Apply sorting
+    data.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch(sortBy) {
+        case 'date':
+          aValue = new Date(a.date);
+          bValue = new Date(b.date);
+          break;
+        case 'achievement':
+          aValue = a.achievement;
+          bValue = b.achievement;
+          break;
+        case 'variance':
+          aValue = a.variance;
+          bValue = b.variance;
+          break;
+        default:
+          return 0;
+      }
+
+      return sortOrder === 'asc' 
+        ? (aValue > bValue ? 1 : -1)
+        : (aValue < bValue ? 1 : -1);
+    });
+
+    return data;
+  };
+
   const generateReport = () => {
     if (!selectedReport) return;
     setShowPopup(false);
     setShowDashboard(true);
+    fetchReportData();
   };
-  const generatePDFContent = () => {
-    const data = getCurrentData();
-    const totalValue = data.reduce((sum, item) => sum + item.value, 0);
-    const totalTarget = data.reduce((sum, item) => sum + item.target, 0);
-    const avgPercentage = (data.reduce((sum, item) => sum + item.percentage, 0) / data.length).toFixed(1);
 
-    return `
+  // ==================================================================
+  // ===== MODIFIED FUNCTIONS FOR PDF/PRINT EXPORT ====================
+  // ==================================================================
 
-<!DOCTYPE html>
-<html>
-<head>
-<title>${selectedReport} - ${selectedPeriod} Report</title>
-<style>
-body {
-font-family: Arial, sans-serif;
-padding: 40px;
-color: #333;
-}
-.header {
-text-align: center;
-margin-bottom: 30px;
-border-bottom: 3px solid #1f2937;
-padding-bottom: 20px;
-}
-.header h1 {
-color: #1f2937;
-margin: 0 0 10px 0;
-}
-.header p {
-color: #6b7280;
-margin: 5px 0;
-}
-.summary {
-display: flex;
-justify-content: space-around;
-margin: 30px 0;
-padding: 20px;
-background-color: #f3f4f6;
-border-radius: 8px;
-}
-.summary-item {
-text-align: center;
-}
-.summary-item h3 {
-color: #6b7280;
-font-size: 14px;
-margin: 0 0 5px 0;
-}
-.summary-item p {
-color: #1f2937;
-font-size: 24px;
-font-weight: bold;
-margin: 0;
-}
-table {
-width: 100%;
-border-collapse: collapse;
-margin-top: 20px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-thead {
-background-color: #1f2937;
-color: white;
-}
-th {
-padding: 12px;
-text-align: left;
-font-weight: 600;
-}
-td {
-padding: 12px;
-border-bottom: 1px solid #e5e7eb;
-}
-tbody tr:hover {
-background-color: #f9fafb;
-}
-tfoot {
-background-color: #f3f4f6;
-font-weight: bold;
-}
-.status-excellent { color: #059669; }
-.status-good { color: #2563eb; }
-.status-average { color: #d97706; }
-.status-poor { color: #dc2626; }
-.positive { color: #059669; }
-.negative { color: #dc2626; }
-.footer {
-margin-top: 40px;
-text-align: center;
-color: #6b7280;
-font-size: 12px;
-border-top: 1px solid #e5e7eb;
-padding-top: 20px;
-}
-@media print {
-body { padding: 20px; }
-.no-print { display: none; }
-}
-</style>
-</head>
-<body>
-<div class="header">
-<h1>${selectedReport}</h1>
-<p><strong>Period:</strong> ${selectedPeriod}</p>
-<p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-</div>
-<div class="summary">
-<div class="summary-item">
-<h3>Total Value</h3>
-<p>${totalValue}</p>
-</div>
-<div class="summary-item">
-<h3>Total Target</h3>
-<p>${totalTarget}</p>
-</div>
-<div class="summary-item">
-<h3>Average Performance</h3>
-<p>${avgPercentage}%</p>
-</div>
-<div class="summary-item">
-<h3>Total Lines</h3>
-<p>${data.length}</p>
-</div>
-</div>
-<table>
-<thead>
-<tr>
-<th>Category</th>
-<th>Actual Value</th>
-<th>Target Value</th>
-<th>Achievement %</th>
-<th>Status</th>
-<th>Variance</th>
-</tr>
-</thead>
-<tbody>
-${data.map(row => {
-const variance = row.value - row.target;
-const variancePercent = ((variance / row.target) * 100).toFixed(1);
-const statusClass = `status-${row.status.toLowerCase()}`;
-const varianceClass = variance >= 0 ? 'positive' : 'negative';
-
-return `
-<tr>
-<td><strong>${row.category}</strong></td>
-<td>${row.value}</td>
-<td>${row.target}</td>
-<td>${row.percentage}%</td>
-<td class="${statusClass}">${row.status}</td>
-<td class="${varianceClass}">${variance >= 0 ? '+' : ''}${variance} (${variancePercent}%)</td>
-</tr>
-`;
-}).join('')}
-</tbody>
-<tfoot>
-<tr>
-<td>Total</td>
-<td>${totalValue}</td>
-<td>${totalTarget}</td>
-<td>${avgPercentage}%</td>
-<td>-</td>
-<td class="${totalValue >= totalTarget ? 'positive' : 'negative'}">${totalValue - totalTarget}</td>
-</tr>
-</tfoot>
-</table>
-<div class="footer">
-<p>This report was automatically generated by the Report Analytics System</p>
-<p>&copy; ${new Date().getFullYear()} - All Rights Reserved</p>
-</div>
-<div class="no-print" style="margin-top: 30px; text-align: center;">
-<button onclick="window.print()" style="padding: 10px 20px; background-color: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px;">Print Report</button>
-<button onclick="downloadPDF()" style="padding: 10px 20px; background-color: #059669; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px;">Download as PDF</button>
-<button onclick="window.close()" style="padding: 10px 20px; background-color: #6b7280; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Close</button>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script>
-function downloadPDF() {
-const { jsPDF } = window.jspdf;
-const doc = new jsPDF('p', 'pt', 'a4');
-
-// Hide buttons before capturing
-document.querySelector('.no-print').style.display = 'none';
-
-html2canvas(document.body, {
-scale: 2,
-useCORS: true,
-logging: false
-}).then(canvas => {
-const imgData = canvas.toDataURL('image/png');
-const imgWidth = 595.28; // A4 width in points
-const pageHeight = 841.89; // A4 height in points
-const imgHeight = (canvas.height * imgWidth) / canvas.width;
-let heightLeft = imgHeight;
-let position = 0;
-doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-heightLeft -= pageHeight;
-while (heightLeft >= 0) {
-position = heightLeft - imgHeight;
-doc.addPage();
-doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-heightLeft -= pageHeight;
-}
-doc.save('${selectedReport.replace(/\s+/g, '_')}_${selectedPeriod}_Report.pdf');
-
-// Show buttons again
-document.querySelector('.no-print').style.display = 'block';
-});
-}
-</script>
-</body>
-</html>
-`;
-  };
-  const downloadReport = () => {
+  // This function is now the single point for exporting.
+  // It opens the print dialog, where users can choose to print or "Save as PDF".
+  const exportReport = () => {
     const printWindow = window.open('', '_blank');
     const htmlContent = generatePDFContent();
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-  };
-  const printReport = () => {
-    const printWindow = window.open('', '_blank');
-    const htmlContent = generatePDFContent();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    // Use a timeout to ensure the content is fully rendered before printing
     setTimeout(() => {
+      printWindow.focus(); // Focus on the new window
       printWindow.print();
     }, 500);
   };
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Excellent':
-        return 'bg-green-100 text-green-800';
-      case 'Good':
-        return 'bg-blue-100 text-blue-800';
-      case 'Average':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Poor':
-        return 'bg-red-100 text-red-800';
+
+  // The 'downloadReport' function is removed as 'exportReport' now handles it.
+  // The 'printReport' function is also removed for the same reason.
+
+  const generatePDFContent = () => {
+    const data = getCurrentData();
+    let tableHeaders = '';
+    let tableRows = '';
+
+    switch(selectedReport) {
+      case 'Employee Efficiency':
+        tableHeaders = '<th>Date</th><th>Worker ID</th><th>Name</th><th>Line</th><th>Pieces</th><th>Efficiency %</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
+        tableRows = data.map(row => `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.workerId}</td>
+            <td><strong>${row.workerName}</strong></td>
+            <td>${row.line}</td>
+            <td>${row.pieces}</td>
+            <td>${row.efficiency}%</td>
+            <td>${row.achievement}%</td>
+            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
+            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
+          </tr>
+        `).join('');
+        break;
+
+      case 'Line Efficiency':
+        tableHeaders = '<th>Date</th><th>Line</th><th>Pieces</th><th>Efficiency %</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
+        tableRows = data.map(row => `
+          <tr>
+            <td>${row.date}</td>
+            <td><strong>${row.line}</strong></td>
+            <td>${row.pieces}</td>
+            <td>${row.efficiency}%</td>
+            <td>${row.achievement}%</td>
+            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
+            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
+          </tr>
+        `).join('');
+        break;
+
+      case 'Target Achievement':
+        tableHeaders = '<th>Date</th><th>Product</th><th>Actual</th><th>Target</th><th>Achievement %</th><th>Days Left</th><th>Daily Target</th><th>Status</th>';
+        tableRows = data.map(row => `
+          <tr>
+            <td>${row.date}</td>
+            <td><strong>${row.line}</strong></td>
+            <td>${row.actual}</td>
+            <td>${row.target}</td>
+            <td>${row.achievement}%</td>
+            <td>${row.remainingDays || 'N/A'}</td>
+            <td>${row.dailyTarget || 'N/A'}</td>
+            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
+          </tr>
+        `).join('');
+        break;
+
+      case 'Defect Rate':
+        tableHeaders = '<th>Date</th><th>Worker ID</th><th>Name</th><th>Line</th><th>Defect Type</th><th>Count</th><th>Achievement %</th><th>Status</th>';
+        tableRows = data.map(row => `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.workerId}</td>
+            <td><strong>${row.workerName}</strong></td>
+            <td>${row.line}</td>
+            <td>${row.defectType}</td>
+            <td>${row.defects}</td>
+            <td>${row.achievement}%</td>
+            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
+          </tr>
+        `).join('');
+        break;
+
+      case 'Supervisor Management':
+        tableHeaders = '<th>Date</th><th>ID</th><th>Supervisor Name</th><th>Assigned Lines</th><th>Line Count</th><th>Status</th>';
+        tableRows = data.map(row => `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.supervisorId}</td>
+            <td><strong>${row.supervisorName}</strong></td>
+            <td>${row.assignedLines}</td>
+            <td>${row.lineCount}</td>
+            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
+          </tr>
+        `).join('');
+        break;
+    }
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <title>${selectedReport} - ${selectedPeriod} Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1f2937; padding-bottom: 20px; }
+    .header h1 { color: #1f2937; margin: 0 0 10px 0; }
+    .header p { color: #6b7280; margin: 5px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    thead { background-color: #1f2937; color: white; }
+    th { padding: 12px; text-align: left; font-weight: 600; font-size: 12px; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+    tbody tr:hover { background-color: #f9fafb; }
+    .status-excellent { color: #059669; font-weight: bold; }
+    .status-good { color: #2563eb; font-weight: bold; }
+    .status-average { color: #d97706; font-weight: bold; }
+    .status-poor { color: #dc2626; font-weight: bold; }
+    .status-active { color: #059669; font-weight: bold; }
+    .positive { color: #059669; font-weight: bold; }
+    .negative { color: #dc2626; font-weight: bold; }
+    .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+      .header { border-bottom: 2px solid #1f2937; padding-bottom: 15px; margin-bottom: 20px; }
+      table { box-shadow: none; }
+      .footer { border-top: 1px solid #e5e7eb; padding-top: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${selectedReport}</h1>
+    <p><strong>Period:</strong> ${selectedPeriod}</p>
+    <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+    <p><strong>Filter:</strong> ${filterStatus} | <strong>Sort:</strong> ${sortBy} (${sortOrder})</p>
+  </div>
+  <table>
+    <thead><tr>${tableHeaders}</tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+  <div class="footer">
+    <p>Report Analytics System - Real-time Production Data</p>
+    <p>&copy; ${new Date().getFullYear()} - All Rights Reserved</p>
+  </div>
+</body>
+</html>`;
+  };
+
+  const renderTableHeaders = () => {
+    switch(selectedReport) {
+      case 'Employee Efficiency':
+        return (
+          <>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Worker ID</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Pieces</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Efficiency %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
+          </>
+        );
+      case 'Line Efficiency':
+        return (
+          <>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Pieces</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Efficiency %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
+          </>
+        );
+      case 'Target Achievement':
+        return (
+          <>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Product</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Actual</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Target</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Days Left</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Daily Target</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+          </>
+        );
+      case 'Defect Rate':
+        return (
+          <>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Worker ID</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Defect Type</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Count</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+          </>
+        );
+      case 'Supervisor Management':
+        return (
+          <>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Supervisor ID</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Assigned Lines</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Line Count</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
+          </>
+        );
       default:
-        return 'bg-gray-100 text-gray-800';
+        return null;
+    }
+  };
+
+  const renderTableRow = (row, index) => {
+    switch(selectedReport) {
+      case 'Employee Efficiency':
+        return (
+          <tr key={index} className="hover:bg-gray-50 transition-colors">
+            <td className="px-6 py-4 text-gray-700">{row.date}</td>
+            <td className="px-6 py-4 text-gray-700">{row.workerId}</td>
+            <td className="px-6 py-4 font-medium text-gray-800">{row.workerName}</td>
+            <td className="px-6 py-4 text-gray-700">{row.line}</td>
+            <td className="px-6 py-4 text-gray-700">{row.pieces}</td>
+            <td className="px-6 py-4 text-gray-700">{row.efficiency}%</td>
+            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
+            <td className="px-6 py-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                {row.status}
+              </span>
+            </td>
+            <td className="px-6 py-4">
+              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {row.variance >= 0 ? '+' : ''}{row.variance}
+              </span>
+            </td>
+          </tr>
+        );
+      case 'Line Efficiency':
+        return (
+          <tr key={index} className="hover:bg-gray-50 transition-colors">
+            <td className="px-6 py-4 text-gray-700">{row.date}</td>
+            <td className="px-6 py-4 font-medium text-gray-800">{row.line}</td>
+            <td className="px-6 py-4 text-gray-700">{row.pieces}</td>
+            <td className="px-6 py-4 text-gray-700">{row.efficiency}%</td>
+            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
+            <td className="px-6 py-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                {row.status}
+              </span>
+            </td>
+            <td className="px-6 py-4">
+              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {row.variance >= 0 ? '+' : ''}{row.variance}
+              </span>
+            </td>
+          </tr>
+        );
+      case 'Target Achievement':
+        return (
+          <tr key={index} className="hover:bg-gray-50 transition-colors">
+            <td className="px-6 py-4 text-gray-700">{row.date}</td>
+            <td className="px-6 py-4 font-medium text-gray-800">{row.line}</td>
+            <td className="px-6 py-4 text-gray-700">{row.actual}</td>
+            <td className="px-6 py-4 text-gray-700">{row.target}</td>
+            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
+            <td className="px-6 py-4 text-gray-700">{row.remainingDays || 'N/A'}</td>
+            <td className="px-6 py-4 text-gray-700">{row.dailyTarget || 'N/A'}</td>
+            <td className="px-6 py-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                {row.status}
+              </span>
+            </td>
+          </tr>
+        );
+      case 'Defect Rate':
+        return (
+          <tr key={index} className="hover:bg-gray-50 transition-colors">
+            <td className="px-6 py-4 text-gray-700">{row.date}</td>
+            <td className="px-6 py-4 text-gray-700">{row.workerId}</td>
+            <td className="px-6 py-4 font-medium text-gray-800">{row.workerName}</td>
+            <td className="px-6 py-4 text-gray-700">{row.line}</td>
+            <td className="px-6 py-4 text-gray-700">{row.defectType}</td>
+            <td className="px-6 py-4 text-gray-700">{row.defects}</td>
+            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
+            <td className="px-6 py-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                {row.status}
+              </span>
+            </td>
+          </tr>
+        );
+      case 'Supervisor Management':
+        return (
+          <tr key={index} className="hover:bg-gray-50 transition-colors">
+            <td className="px-6 py-4 text-gray-700">{row.date}</td>
+            <td className="px-6 py-4 text-gray-700">{row.supervisorId}</td>
+            <td className="px-6 py-4 font-medium text-gray-800">{row.supervisorName}</td>
+            <td className="px-6 py-4 text-gray-700">{row.assignedLines}</td>
+            <td className="px-6 py-4 text-gray-700">{row.lineCount}</td>
+            <td className="px-6 py-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                {row.status}
+              </span>
+            </td>
+          </tr>
+        );
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="flex bg-gray-50 min-h-screen ml-70 mt-25">
-      {/* Sidebar is now correctly placed as a main layout component */}
+    <div className="flex bg-gray-50 min-h-screen mt-18 ml-62">
       <SideBar title="Manager Panel" links={ManagerLinks} />
-
-      {/* Main content area that will display either the dashboard or the initial view */}
       <main className="flex-grow p-6">
         <div className="max-w-7xl mx-auto">
           {showDashboard ? (
-            // --- REPORT DASHBOARD VIEW ---
             <div>
               {/* Header */}
               <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-3xl font-bold text-gray-800">{selectedReport}</h2>
-                    <p className="text-gray-600 mt-1">Comprehensive analysis and detailed insights</p>
+                    <p className="text-gray-600 mt-1">Real-time data analysis from MongoDB</p>
                   </div>
-                  <button
-                    onClick={() => setShowDashboard(false)}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  >
-                    ← Back
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={fetchReportData}
+                      disabled={loading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                      Refresh
+                    </button>
+                    <button
+                      onClick={() => setShowDashboard(false)}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      ← Back
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Error Alert */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                  <AlertCircle className="text-red-600 mt-0.5" size={20} />
+                  <div>
+                    <h4 className="text-red-800 font-semibold">Error Loading Data</h4>
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Controls */}
               <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                  {/* Period Selection */}
                   <div className="flex bg-gray-100 rounded-lg p-1">
-                    {['Today', 'Weekly', 'Monthly', 'Annually'].map((period) => (
+                    {['today', 'weekly', 'monthly', 'annually'].map((period) => (
                       <button
                         key={period}
                         onClick={() => setSelectedPeriod(period)}
@@ -461,172 +756,203 @@ document.querySelector('.no-print').style.display = 'block';
                             : 'text-gray-600 hover:text-gray-800'
                         }`}
                       >
-                        {period}
+                        {period.charAt(0).toUpperCase() + period.slice(1)}
                       </button>
                     ))}
                   </div>
-                  <div className="flex gap-3">
+
+                  {/* Filters and Actions */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-2">
+                      <Filter size={16} className="text-gray-600" />
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="All">All Status</option>
+                        <option value="Excellent">Excellent</option>
+                        <option value="Good">Good</option>
+                        <option value="Average">Average</option>
+                        <option value="Poor">Poor</option>
+                      </select>
+                    </div>
+
+                    {/* Sort By */}
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="date">Sort by Date</option>
+                      <option value="achievement">Sort by Achievement</option>
+                      <option value="variance">Sort by Variance</option>
+                    </select>
+
+                    {/* Sort Order */}
                     <button
-                      onClick={downloadReport}
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
+                    </button>
+
+                    {/* ===== MODIFIED EXPORT BUTTONS ===== */}
+                    <button
+                      onClick={exportReport}
+                      disabled={loading || reportData.length === 0}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
                     >
                       <Download size={16} />
-                      DOWNLOAD PDF
+                      SAVE AS PDF
                     </button>
                     <button
-                      onClick={printReport}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+                      onClick={exportReport}
+                      disabled={loading || reportData.length === 0}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
                     >
                       <FileText size={16} />
-                      PRINT REPORT
+                      PRINT
                     </button>
                   </div>
                 </div>
               </div>
-              {/* Summary Cards and Data Table... */}
-              {(() => {
-                const data = getCurrentData();
-                const totalValue = data.reduce((sum, item) => sum + item.value, 0);
-                const avgPercentage = (data.reduce((sum, item) => sum + item.percentage, 0) / data.length).toFixed(1);
-                return (
-                  <>
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-gray-600 text-sm">Total Value</p>
-                            <p className="text-3xl font-bold text-gray-800 mt-1">{totalValue}</p>
-                          </div>
-                          <div className="bg-blue-100 p-3 rounded-full">
-                            <FileText className="text-blue-600" size={24} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-gray-600 text-sm">Average Performance</p>
-                            <p className="text-3xl font-bold text-gray-800 mt-1">{avgPercentage}%</p>
-                          </div>
-                          <div className="bg-green-100 p-3 rounded-full">
-                            <BarChart3 className="text-green-600" size={24} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-gray-600 text-sm">Total Lines</p>
-                            <p className="text-3xl font-bold text-gray-800 mt-1">{data.length}</p>
-                          </div>
-                          <div className="bg-purple-100 p-3 rounded-full">
-                            <span className="text-2xl">🏭</span>
-                          </div>
-                        </div>
-                      </div>
+
+              {/* Data Table */}
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="animate-spin text-blue-600 mr-3" size={24} />
+                    <span className="text-gray-600">Loading report data...</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-800 text-white">
+                        <tr>
+                          {renderTableHeaders()}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {getCurrentData().length > 0 ? (
+                          getCurrentData().map((row, index) => renderTableRow(row, index))
+                        ) : (
+                          <tr>
+                            <td colSpan="9" className="px-6 py-8 text-center text-gray-500">
+                              {error ? 'Failed to load data' : 'No data available for the selected filters'}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Summary Stats */}
+                {!loading && reportData.length > 0 && (
+                  <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">
+                        Total Records: <strong className="text-gray-800">{getCurrentData().length}</strong>
+                      </span>
+                      <span className="text-gray-600">
+                        Last Updated: <strong className="text-gray-800">{new Date().toLocaleString()}</strong>
+                      </span>
                     </div>
-                    {/* Data Table */}
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-800 text-white">
-                            <tr>
-                              <th className="px-6 py-4 text-left text-sm font-semibold">Category</th>
-                              <th className="px-6 py-4 text-left text-sm font-semibold">Actual Value</th>
-                              <th className="px-6 py-4 text-left text-sm font-semibold">Target Value</th>
-                              <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
-                              <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                              <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {data.map((row, index) => {
-                              const variance = row.value - row.target;
-                              const variancePercent = ((variance / row.target) * 100).toFixed(1);
-                              return (
-                                <tr key={index} className="hover:bg-gray-50 transition-colors">
-                                  <td className="px-6 py-4"><div className="font-medium text-gray-800">{row.category}</div></td>
-                                  <td className="px-6 py-4"><div className="text-gray-800 font-semibold">{row.value}</div></td>
-                                  <td className="px-6 py-4"><div className="text-gray-600">{row.target}</div></td>
-                                  <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-24 bg-gray-200 rounded-full h-2">
-                                        <div className={`h-2 rounded-full ${row.percentage >= 90 ? 'bg-green-500' : row.percentage >= 75 ? 'bg-blue-500' : row.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(row.percentage, 100)}%` }} />
-                                      </div>
-                                      <span className="font-medium text-gray-700">{row.percentage}%</span>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>{row.status}</span></td>
-                                  <td className="px-6 py-4"><div className={`font-medium ${variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{variance >= 0 ? '+' : ''}{variance} ({variancePercent}%)</div></td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                          <tfoot className="bg-gray-50 font-semibold">
-                            <tr>
-                              <td className="px-6 py-4 text-gray-800">Total</td>
-                              <td className="px-6 py-4 text-gray-800">{totalValue}</td>
-                              <td className="px-6 py-4 text-gray-600">{data.reduce((sum, item) => sum + item.target, 0)}</td>
-                              <td className="px-6 py-4 text-gray-700">{avgPercentage}%</td>
-                              <td className="px-6 py-4"></td>
-                              <td className="px-6 py-4 text-gray-700">{totalValue - data.reduce((sum, item) => sum + item.target, 0)}</td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            // --- INITIAL VIEW (GENERATE REPORT BUTTON) ---
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-8">
               <div className="text-center">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Report Analytics</h3>
-                <p className="text-gray-600 mb-6">Generate comprehensive reports and analytics</p>
-                <button
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                  <BarChart3 size={32} className="text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Report Analytics Dashboard</h3>
+                <p className="text-gray-600 mb-8">Generate comprehensive reports from real-time production data</p>
+                
+                <button 
                   onClick={() => setShowPopup(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto shadow-lg"
                 >
                   <BarChart3 size={20} />
                   Generate Report Analysis
                 </button>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
+                    <div className="text-blue-600 text-3xl mb-2">📊</div>
+                    <h4 className="font-semibold text-gray-800 mb-1">Real-Time Data</h4>
+                    <p className="text-sm text-gray-600">Connected to live MongoDB database</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
+                    <div className="text-green-600 text-3xl mb-2">📈</div>
+                    <h4 className="font-semibold text-gray-800 mb-1">5 Report Types</h4>
+                    <p className="text-sm text-gray-600">Comprehensive analytics coverage</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg">
+                    <div className="text-purple-600 text-3xl mb-2">📄</div>
+                    <h4 className="font-semibold text-gray-800 mb-1">Export Ready</h4>
+                    <p className="text-sm text-gray-600">Print & download reports instantly</p>
+                  </div>
+                </div>
               </div>
+
               {/* Popup Modal */}
               {showPopup && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                   <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="flex justify-between items-center p-6 border-b">
+                    <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
                       <div>
                         <h2 className="text-2xl font-bold text-gray-800">Select Report Type</h2>
                         <p className="text-gray-600 mt-1">Choose the type of analysis you want to generate</p>
                       </div>
-                      <button onClick={() => setShowPopup(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                      <button 
+                        onClick={() => {
+                          setShowPopup(false);
+                          setSelectedReport(null);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
                         <X size={24} />
                       </button>
                     </div>
+
                     <div className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         {reportOptions.map((option) => (
                           <div
                             key={option.name}
                             onClick={() => setSelectedReport(option.name)}
-                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${selectedReport === option.name ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                            className={`p-6 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg ${
+                              selectedReport === option.name
+                                ? 'border-blue-500 bg-blue-50 shadow-md'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
                           >
-                            <div className="text-2xl mb-2">{option.icon}</div>
-                            <h3 className="font-semibold text-gray-800 mb-1">{option.name}</h3>
-                            <p className="text-sm text-gray-600">{option.description}</p>
+                            <div className="text-3xl mb-3">{option.icon}</div>
+                            <h3 className="font-bold text-gray-800 mb-2 text-lg">{option.name}</h3>
+                            <p className="text-sm text-gray-600 mb-3">{option.description}</p>
+                            <div className="flex items-center text-xs text-gray-500">
+                              <code className="bg-gray-100 px-2 py-1 rounded">/{option.endpoint}</code>
+                            </div>
                           </div>
                         ))}
                       </div>
+
                       <button
                         onClick={generateReport}
                         disabled={!selectedReport}
-                        className={`w-full py-3 rounded-lg font-medium transition-colors ${selectedReport ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                        className={`w-full py-4 rounded-lg font-semibold transition-all text-lg ${
+                          selectedReport
+                            ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
-                        Generate Report
+                        {selectedReport ? `Generate ${selectedReport} Report` : 'Select a Report Type'}
                       </button>
                     </div>
                   </div>
