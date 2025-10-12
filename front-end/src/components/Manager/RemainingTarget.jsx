@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Doughnut } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import io from "socket.io-client";
-
-ChartJS.register(ArcElement, Tooltip, Legend);
+import {Target } from 'lucide-react';
 
 // Socket connection
 const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
-const OverallTargetChart = () => {
+const RemainingTarget = () => {
   const [lineData, setLineData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,11 +54,7 @@ const OverallTargetChart = () => {
 
     const aggregated = Object.keys(lineTargets).map((line) => {
       const total = lineTotals[line] || 0;
-      const percentage = Math.min(
-        ((total / lineTargets[line]) * 100).toFixed(2),
-        150
-      );
-      return { name: line, totalPcs: total, percentage: Number(percentage) };
+      return { name: line, totalPcs: total };
     });
 
     setLineData(aggregated);
@@ -75,42 +68,27 @@ const OverallTargetChart = () => {
     );
   }
 
-  // Compute totals for doughnut
+  // Compute totals
   const totalCompleted = lineData.reduce((sum, line) => sum + line.totalPcs, 0);
   const totalTarget = Object.values(lineTargets).reduce((sum, val) => sum + val, 0);
-  const completionPercentage = totalTarget
-    ? ((totalCompleted / totalTarget) * 100).toFixed(2)
-    : 0;
-
-  // Chart data
-  const data = {
-    labels: ["Completed", "Remaining"],
-    datasets: [
-      {
-        data: [completionPercentage, 100 - completionPercentage],
-        backgroundColor: ["#3b82f6", "#f3f4f6"],
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const options = {
-    cutout: "70%",
-    plugins: { legend: { display: false }, tooltip: { enabled: true } },
-  };
+  const remainingTarget = totalTarget - totalCompleted;
 
   return (
-    <div className="relative flex flex-col items-center bg-white rounded-2xl p-4 w-[260px]">
-      <h2 className="text-center text-gray-800 font-bold text-2xl mb-4">
-        Overall Target
-      </h2>
-      <Doughnut data={data} options={options} className="w-40" />
-      <div className="absolute top-1/2 mt-5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-        <div className="text-xl font-bold text-black">{totalCompleted} Pcs</div>
-        <div className="text-sm text-gray-700">{completionPercentage}%</div>
+    <>
+    <div className="bg-white p-6 rounded-2xl shadow w-82">
+      <div className="flex items-center justify-between">
+        {/* Left side (text) */}
+        <div className="text-left">
+          <h3 className="text-lg font-semibold text-gray-700">Remaining Target</h3>
+          <p className="text-2xl font-bold text-red-600">{remainingTarget} Pcs</p>
+        </div>
+
+        {/* Right side (icon) */}
+        <Target className="w-12 h-12 text-red-600 bg-red-200 p-2 rounded-full opacity-80" />
       </div>
     </div>
+</>
   );
 };
 
-export default OverallTargetChart;
+export default RemainingTarget;

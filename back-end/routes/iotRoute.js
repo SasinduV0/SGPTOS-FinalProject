@@ -1,6 +1,7 @@
 const express = require("express");
 const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
-const DefectDefinitions = require("../models/defectDefinitions"); // Add DefectDefinitions import
+const DefectDefinitions = require("../models/defectDefinitions");  // Updated import
+const Employee = require("../models/Employee"); // Add Employee model
 const router = express.Router();
 
 // Get all RFID tag scans
@@ -100,6 +101,7 @@ router.get("/defects/:tagUID", async (req, res) => {
 });
 
 // Add or update defect for a garment
+// Add or update defect for a garment
 router.post("/defect", async (req, res) => {
   try {
     const { ID, Section, Type, Subtype, Tag_UID, Station_ID, Time_Stamp } = req.body;
@@ -134,6 +136,17 @@ router.post("/defect", async (req, res) => {
       garmentDefects.Time_Stamp = Time_Stamp;
       await garmentDefects.save();
 
+      // Emit real-time update
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("defectUpdate", { 
+          message: "New defect added to existing garment", 
+          data: garmentDefects,
+          newDefect: newDefectEntry 
+        });
+        console.log("🔥 Emitted defectUpdate event for existing garment");
+      }
+
       res.status(200).json({ 
         message: "Defect added to existing garment", 
         data: garmentDefects,
@@ -150,6 +163,18 @@ router.post("/defect", async (req, res) => {
       });
 
       await garmentDefects.save();
+
+      // ✅ ADD THIS: Emit real-time update for NEW garment too!
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("defectUpdate", { 
+          message: "New garment defects document created", 
+          data: garmentDefects,
+          newDefect: newDefectEntry 
+        });
+        console.log("🔥 Emitted defectUpdate event for new garment");
+      }
+
       res.status(201).json({ 
         message: "New garment defects document created", 
         data: garmentDefects 
@@ -228,6 +253,32 @@ router.get("/defect-stats", async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching defect statistics:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Get defect rate (defect count vs total production from employees)
+router.get("/defect-rate", async (req, res) => {
+  try {
+    // Get total production from employees
+    const employees = await Employee.find();
+    const totalProduction = employees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
+
+    // Total garments with defects
+    const defectCount = await GarmentDefects.countDocuments();
+
+    // Calculate defect rate (%)
+    const defectRate = totalProduction > 0 
+      ? ((defectCount / totalProduction) * 100).toFixed(2) 
+      : 0;
+
+    res.json({
+      total: totalProduction,
+      defects: defectCount,
+      defectRate: `${defectRate}%`,
+    });
+  } catch (err) {
+    console.error("Error fetching defect rate:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
