@@ -85,7 +85,6 @@ const HomePage = ({ dashboardData }) => {
         <div className='mb-10 mt-5'>
             <TopPerformers/>
         </div>
-        
       </div>
       </div>
     </div>
