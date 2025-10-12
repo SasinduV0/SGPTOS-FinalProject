@@ -6,8 +6,6 @@ import io from "socket.io-client";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// WebSocket connection
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 function DefectRateChart() {
   const [defectData, setDefectData] = useState({
@@ -34,31 +32,59 @@ function DefectRateChart() {
     fetchDefectRate();
   }, []);
 
-  // Listen for real-time updates via Socket.IO
+  // Setup Socket.IO inside the component and provide a polling fallback
   useEffect(() => {
-    // Listen for defect updates (when new defects are added)
-    socket.on("defectUpdate", () => {
-      console.log("📊 DefectRateChart received defect update");
-      fetchDefectRate();
-    });
+    let socket;
+    let pollId = null;
 
-    // Listen for employee updates (affects total production)
-    socket.on("leadingLineUpdate", () => {
-      console.log("📊 DefectRateChart received employee update");
-      fetchDefectRate();
-    });
+    const setupPolling = () => {
+      if (pollId) return;
+      pollId = setInterval(() => {
+        fetchDefectRate();
+      }, 10000); // poll every 10s when socket not available
+      console.warn("⚠️ DefectRateChart polling enabled (10s)");
+    };
 
-    // Listen for supervisor updates (might affect data)
-    socket.on("supervisorUpdate", () => {
-      console.log("📊 DefectRateChart received supervisor update");
-      fetchDefectRate();
-    });
+    try {
+      socket = io("http://localhost:8001", { transports: ["websocket"] });
 
-    // Cleanup
+      socket.on("connect", () => {
+        console.log("� DefectRateChart socket connected", socket.id);
+        // Immediately refresh when socket connects
+        fetchDefectRate();
+        // clear polling if it was running
+        if (pollId) {
+          clearInterval(pollId);
+          pollId = null;
+        }
+      });
+
+      // handle relevant server events
+      const events = ["defectUpdate", "leadingLineUpdate", "supervisorUpdate"];
+      events.forEach((ev) => socket.on(ev, () => {
+        console.log(`📊 DefectRateChart received ${ev}`);
+        fetchDefectRate();
+      }));
+
+      // If socket fails to connect within a short time, enable polling
+      setTimeout(() => {
+        if (!socket.connected) setupPolling();
+      }, 3000);
+    } catch (err) {
+      console.error("DefectRateChart socket error:", err);
+      setupPolling();
+    }
+
     return () => {
-      socket.off("defectUpdate");
-      socket.off("leadingLineUpdate");
-      socket.off("supervisorUpdate");
+      try {
+        if (socket) {
+          socket.removeAllListeners();
+          socket.disconnect();
+        }
+      } catch (e) {
+        // ignore cleanup errors
+      }
+      if (pollId) clearInterval(pollId);
     };
   }, []);
 
