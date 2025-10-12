@@ -65,6 +65,7 @@ const DailyEmployeesList = () => {
         workerId: emp.workerId || `SW-${(index + 1).toString().padStart(3, "0")}`,
         name: emp.name,
         line: emp.line,
+        pcs: emp.pcs || 0, // Added pcs data
         efficiency: (((emp.pcs || 0) / DAILY_TARGET) * 100).toFixed(0),
       }));
     
@@ -139,6 +140,7 @@ const DailyEmployeesList = () => {
               <th className="p-2 border-b">Worker ID</th>
               <th className="p-2 border-b">Worker</th>
               <th className="p-2 border-b">Line</th>
+              <th className="p-2 border-b">Pieces</th>
               <th className="p-2 border-b">Efficiency</th>
             </tr>
           </thead>
@@ -152,6 +154,7 @@ const DailyEmployeesList = () => {
                   <td className="p-2 border-b text-blue-600">{emp.workerId}</td>
                   <td className="p-2 border-b">{emp.name}</td>
                   <td className="p-2 border-b">{emp.line}</td>
+                  <td className="p-2 border-b font-medium text-gray-800">{emp.pcs}</td>
                   <td
                     className={`p-2 border-b font-semibold ${
                       emp.efficiency >= 85
@@ -167,7 +170,7 @@ const DailyEmployeesList = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="p-4 text-center text-gray-500">
+                <td colSpan="5" className="p-4 text-center text-gray-500">
                   No employees found.
                 </td>
               </tr>

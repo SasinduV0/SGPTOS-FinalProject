@@ -21,6 +21,10 @@ import ResetPassword from './pages/ResetPassword';
 import AssignmentPage from './pages/Supervisor/AssignmentPage';
 // import SupervisorAssignmentWrapper from './pages/Supervisor/SupervisorAssignmentWrapper';
 import ProductivityPage from './pages/Supervisor/ProductivityPage';
+import LineReallocationApp from './pages/Supervisor/LineReallocationApp';
+
+
+
 
 function AppWrapper() {
   const location = useLocation();
@@ -79,6 +83,8 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           }
         />
 
+
+
         {/* Supervisor */}
 
         <Route
@@ -94,6 +100,14 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           element={
             <ProtectedRoute allowedRoles={['supervisor']}>
               <AssignmentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/worker-reallocation"
+          element={
+            <ProtectedRoute allowedRoles={['supervisor']}>
+              <LineReallocationApp />
             </ProtectedRoute>
           }
         />

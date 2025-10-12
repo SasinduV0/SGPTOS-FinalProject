@@ -24,72 +24,71 @@ import ReallocatedEmployees from '../components/live-dashboard/ReallocatedEmploy
 function LiveDashboard({ lineData }) {
 
   const lineTargets = {
-  1: 1000,
-  2: 800,
-  3: 900,
-  4: 1100,
-  5: 950,
-  6: 1050,
-  7: 700,
-  8: 850,
-};
+    1: 1000,
+    2: 800,
+    3: 900,
+    4: 1100,
+    5: 950,
+    6: 1050,
+    7: 700,
+    8: 850,
+  };
 
   return (
-    <div className='h-screen flex flex-col bg-gray-100'>
-      {/* Main content area */}
-      <div className='flex-1 px-7'>
-        <div className='p-5 w-full flex items-center justify-center gap-6 bg-gray-100 '>
+    <div className=' w-screen flex flex-col bg-gray-100 overflow-hidden'>
+      {/* Main content area - takes remaining height after bottom bar */}
+      <div className='flex-1'>
+        <div className='h-full w-full flex items-center justify-center gap-6 bg-gray-100 p-5'>
           {/* Left-section */}
-          <div className='w-[30%] flex flex-col gap-4'>
-            <div className='bg-blue-800 rounded-xl shadow-lg p-4 h-[310px] shadow-gray-500'>
+          <div className='w-[30%] h-full flex flex-col gap-4'>
+            <div className='bg-blue-800 rounded-xl shadow-lg px-4 py-2 h-[270px] shadow-gray-500'>
               <LeadingLineCard/>
             </div>
-            <div className='bg-yellow-300 rounded-xl shadow-lg p-4 h-[250px] shadow-gray-500'>
+            <div className='bg-yellow-300 rounded-xl shadow-lg p-4 h-[226px]  shadow-gray-500'>
               {/* <FastestEmployees/> */}
               <TopEmployees/>
             </div>
-            <div className='bg-white rounded-xl shadow-lg p-4 h-[270px] shadow-gray-500'>
+            <div className='bg-white rounded-xl shadow-lg p-4 flex-[200] shadow-gray-500'>
               <AssignSupervisor/>
             </div>
           </div>
 
           {/* Middle-section */}
-          <div className="w-[35%]">
-            <div className="bg-white rounded-xl shadow-lg  h-[860px] flex items-center justify-center flex-col shadow-gray-500">
-                {/* <Greetings/> */}
+          <div className="w-[35%] h-[765px]">
+            <div className="bg-white rounded-xl shadow-lg h-full flex items-center justify-center flex-col shadow-gray-500 p-4">
+              {/* <Greetings/> */}
+              <div className='flex'>
                 <RemainingTime/>
-                <div className='flex'>
-                  <OverallTargetChart lineTargets={lineTargets} />
-                  <RemainingTarget/>
-                </div>
-                
-                <div className="mt-10">
-                  < LineTargetChart />
-                </div>
+              </div>
+              <div className='flex items-center justify-center flex-1'>
+                <OverallTargetChart lineTargets={lineTargets} />
+                <RemainingTarget/>
+              </div>
+              <div className="flex mt-4">
+                <LineTargetChart />
+              </div>
             </div>
           </div>
 
-
           {/* Right-section */}
-          <div className='w-[30%] flex flex-col gap-4'>
-            <div className=' bg-red-700 rounded-xl shadow-lg p-4 h-[300px] shadow-gray-500'>
+          <div className='w-[30%] h-full flex flex-col gap-4'>
+            <div className='bg-red-700 rounded-xl shadow-lg p-4 h-[270px]  shadow-gray-500'>
               <FollowingLine/>
             </div>
-            <div className='bg-white rounded-xl shadow-lg p-4 h-[270px] shadow-gray-500'>
+            <div className='bg-white rounded-xl shadow-lg p-4 h-[245px] shadow-gray-500'>
               <ReallocatedEmployees/>
-
             </div>
-            <div className='bg-white rounded-xl shadow-lg p-4 pt-5 h-[260px] shadow-gray-500'>
-                <div className='flex items-center justify-center mt-2'>
-                  <DefectRateChart defects={20} total={500} />
-                </div>
+            <div className='bg-white rounded-xl shadow-lg p-4 pt-5 h-[220px] shadow-gray-500'>
+              <div className='h-full flex items-center justify-center'>
+                <DefectRateChart defects={20} total={500} />
+              </div>
             </div>
           </div>
         </div> 
       </div>
 
-      {/* Bottom bar - will always be at the bottom */}
-      <div className='w-full h-16 bg-black overflow-hidden flex '>
+      {/* Bottom bar - fixed at bottom */}
+      <div className='w-full h-14 bg-black overflow-hidden flex'>
         <LineTargetSum/>
         <TotalProduction/>
         <Remain/>

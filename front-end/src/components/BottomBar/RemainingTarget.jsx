@@ -80,8 +80,8 @@ const RemainingTarget = () => {
       <p className="text-4xl font-bold text-red-600">{remainingTarget} Pcs</p>
 
       <div className="flex flex-col">
-        <p className="text-gray-600 mt-2 text-sm">Total Target: {totalTarget}</p>
-        <p className="text-gray-600 mt-2 text-sm">Completedt: {totalCompleted}</p>
+        <p className="text-gray-600 mt-2 text-xs">Total Target: {totalTarget}</p>
+        <p className="text-gray-600 mt-2 text-xs">Completedt: {totalCompleted}</p>
       </div>
     </div>
   );

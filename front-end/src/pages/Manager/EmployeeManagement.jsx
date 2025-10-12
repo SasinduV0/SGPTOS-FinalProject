@@ -131,7 +131,7 @@ const LineManagement = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow mt-20 ml-70">
+    <div className="bg-white rounded-lg shadow mt-20 ml-70 mr-5">
       <SideBar title="Manager Panel" links={ManagerLinks} />
       <div className="p-6 border-b">
         <h3 className="text-lg font-semibold text-gray-800">Line Management</h3>
@@ -256,7 +256,7 @@ const LineManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto mt-4">
+      <div className="overflow-x-auto mt-4 mb-10">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>

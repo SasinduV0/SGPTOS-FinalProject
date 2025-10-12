@@ -38,10 +38,10 @@ const EfficiencyRate = () => {
   }, []);
 
   return (
-    <div className="flex mt-5 ml-4 gap-2">
-        <h3 className="text-gray-300 font-semibold text-sm">Overall Efficiency</h3>
-        <p className="text-sm font-bold text-white">{efficiency}%</p>
-        <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+    <div className="flex mt-5 ml-4 gap-1">
+        <h3 className="text-gray-300 font-semibold text-xs">Overall Efficiency</h3>
+        <p className="text-xs font-bold text-white">{efficiency}%</p>
+        <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
     </div>
   );
 };

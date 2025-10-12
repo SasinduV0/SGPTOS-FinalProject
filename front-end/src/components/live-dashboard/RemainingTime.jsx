@@ -67,7 +67,7 @@ function RemainingTime() {
   };
 
   return (
-    <div className="text-center mt-2">
+    <div className="text-center mt-4">
       <p className="text-blue-600 text-xl font-semibold">{shiftName}</p>
       <p className="text-red-600 text-lg font-semibold">
         Remaining Time: {remaining}

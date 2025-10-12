@@ -14,6 +14,10 @@ const lineReallocation = require("./routes/LineReallocation");
 const productionRoutes = require("./routes/production");
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
+
+const analyticsRoutes = require("./routes/analytics");
+
+
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 const userRoute = require('./routes/userRoute');
 const rfidEmployeeRoutes = require('./routes/rfidEmployeeRoute');
@@ -41,6 +45,9 @@ app.use("/api/product", productionRoutes);
 app.use("/api/iot", iotDefectRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
 
+app.use("/api/analytics", analyticsRoutes);
+
+
 app.use("/api/rfid-employees", rfidEmployeeRoutes);
 app.use("/api/product-rfids", productRfidRoutes);
 app.use('/api/users', userDetails);
@@ -55,6 +62,7 @@ app.use("/", (req, res) => {
     "status": "WebSocket server running"
   });
 });
+
 
 io.on("connection", (socket) => {
   console.log("⚡ Client connected:", socket.id);

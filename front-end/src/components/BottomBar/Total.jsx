@@ -27,10 +27,10 @@ const TotalProduction = () => {
 
   return (
     <div className="">
-      <div className="flex mt-5 ml-3 gap-2">
-          <h3 className="text-sm font-semibold text-gray-300">Total Production</h3>
-          <p className="text-sm font-bold text-white">{totalProduction} Pcs</p>
-           <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+      <div className="flex mt-5 ml-3 gap-1">
+          <h3 className="text-xs font-semibold text-gray-300">Total Production</h3>
+          <p className="text-xs font-bold text-white">{totalProduction} Pcs</p>
+           <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
      
       </div>
      
