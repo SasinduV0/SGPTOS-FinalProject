@@ -14,6 +14,7 @@ import ProductionLineStatus from '../../components/Supervisor/ProductionLineStat
 import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
 import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
 
 const ManagerHome = ({ lineData }) => {
 
@@ -114,7 +115,9 @@ const ManagerHome = ({ lineData }) => {
        {/* Overall Target */}
       <div className="bg-white rounded-lg shadow p-6 mt-2">
         <div className="flex items-center justify-center">
-          <OverallTargetChart lineTargets={lineTargets} />
+          {/* <OverallTargetChart lineTargets={lineTargets} /> */}
+
+          <OverallTargetChartsRFID/>
         </div>
         <div className="text-center mt-2">
          <RemainingTime/>

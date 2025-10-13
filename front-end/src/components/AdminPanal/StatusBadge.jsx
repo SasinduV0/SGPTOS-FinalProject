@@ -18,7 +18,7 @@ const StatusBadge = ({ status, onChange, options = ['ACTIVE', 'INACTIVE'] }) => 
       <select
         value={status}
         onChange={(e) => onChange && onChange(e.target.value)}
-        className={`appearance-none border-0 rounded-full px-3 py-1 text-sm font-medium cursor-pointer transition-colors ${getStatusStyles(status)}`}
+        className={`appearance-none border-0 rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${getStatusStyles(status)}`}
       >
         {options.map(option => (
           <option key={option} value={option}>{option}</option>

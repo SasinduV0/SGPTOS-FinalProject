@@ -1,189 +1,176 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import io from "socket.io-client";
-
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 function ProductionTargets() {
-  const [dailyTarget, setDailyTarget] = useState(2500); // from backend or fixed
+  // Fixed Targets (Assuming these are still client-side constants)
+  const DAILY_TARGET_BASE = 250; 
+  const WEEKLY_TARGET_BASE = 1250; 
+
+  const [dailyTarget] = useState(DAILY_TARGET_BASE); 
   const [dailyCompleted, setDailyCompleted] = useState(0);
-  const [weeklyTarget, setWeeklyTarget] = useState(12500); // from backend or fixed
+  const [weeklyTarget] = useState(WEEKLY_TARGET_BASE); 
   const [weeklyCompleted, setWeeklyCompleted] = useState(0);
+  
   const [qualityRate, setQualityRate] = useState(100);
   const [defectRate, setDefectRate] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Fetch production data
-  const fetchProduction = async () => {
+  // Function to fetch all necessary data
+  const fetchData = async () => {
+    let currentDailyCompleted = 0;
+    let currentTotalDefects = 0;
+    
     try {
-      const response = await axios.get("http://localhost:8001/api/employees"); 
-      const employees = response.data;
+      // 1. Fetch total production count (Daily Production)
+      const productionResponse = await axios.get("http://localhost:8001/api/scan-count");
+      currentDailyCompleted = productionResponse.data?.count || 0;
+      setDailyCompleted(currentDailyCompleted);
+      
+      // Placeholder calculation for weekly completion
+      setWeeklyCompleted(currentDailyCompleted * 5); 
 
-      // Calculate daily production (sum of all employee pcs for today)
-      const today = new Date().toLocaleDateString();
-      const todaysEmployees = employees.filter(emp => 
-        new Date(emp.createdAt).toLocaleDateString() === today
-      );
-      
-      const dailyProduced = todaysEmployees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
-      const dailyTargetCalc = todaysEmployees.length * 120; // 120 pcs per employee per day
-      
-      // Calculate weekly production (last 7 days)
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      
-      const weeklyEmployees = employees.filter(emp => 
-        new Date(emp.createdAt) >= weekAgo
-      );
-      
-      const weeklyProduced = weeklyEmployees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
-      const weeklyTargetCalc = dailyTargetCalc * 5; // 5 working days
-
-      setDailyTarget(dailyTargetCalc || 2500);
-      setDailyCompleted(dailyProduced);
-      setWeeklyTarget(weeklyTargetCalc || 12500);
-      setWeeklyCompleted(weeklyProduced);
-
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching production data:", error);
-      // Set fallback values
-      setDailyTarget(2500);
-      setDailyCompleted(0);
-      setWeeklyTarget(12500);
-      setWeeklyCompleted(0);
-      setLoading(false);
     }
-  };
 
-  // Fetch defect rate to calculate quality rate
-  const fetchDefectRate = async () => {
     try {
-      const response = await axios.get("http://localhost:8001/api/iot/defect-rate");
-      const defectRateValue = parseFloat(response.data.defectRate) || 0;
-      const quality = (100 - defectRateValue).toFixed(1);
-      setDefectRate(defectRateValue.toFixed(1));
-      setQualityRate(quality);
+      // 2. Fetch total defect count
+      const defectStatsResponse = await axios.get("http://localhost:8001/api/defect-stats");
+      currentTotalDefects = defectStatsResponse.data?.totalGarmentsWithDefects || 0;
     } catch (error) {
-      console.error("Error fetching defect rate:", error);
+      console.error("Error fetching defect data:", error);
     }
+
+    // 3. Calculate Defect and Quality Rates
+    let calculatedDefectRate = 0;
+    if (currentDailyCompleted > 0) {
+      calculatedDefectRate = ((currentTotalDefects / currentDailyCompleted) * 100);
+    }
+    
+    const calculatedQualityRate = (100 - calculatedDefectRate).toFixed(1);
+    
+    setDefectRate(calculatedDefectRate.toFixed(1));
+    setQualityRate(calculatedQualityRate);
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchProduction();
-    fetchDefectRate();
-  }, []);
+    // Initial data fetch
+    fetchData();
 
-  useEffect(() => {
-    // Listen for real-time updates
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      console.log("📊 ProductionTargets received update:", updatedEmployees.length, "employees");
-      // Recalculate production targets with new data
-      fetchProduction();
-    });
+    // Set up polling for continuous updates every 5 seconds
+    const intervalId = setInterval(fetchData, 5000);
 
-    // Also listen for defect rate updates
-    socket.on("defectRateUpdate", () => {
-      fetchDefectRate();
-    });
-
-    return () => {
-      socket.off("leadingLineUpdate");
-      socket.off("defectRateUpdate");
-    };
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-40">
-        <span className="text-gray-500 text-lg font-medium">Loading...</span>
+      <div className="flex justify-center items-center h-40 bg-gray-100 rounded-xl shadow-lg">
+        <span className="text-blue-600 text-lg font-medium">Loading Data...</span>
       </div>
     );
   }
 
+  // Calculate percentages (ensuring they don't exceed 100%)
   const dailyPercent = dailyTarget > 0 ? Math.min(((dailyCompleted / dailyTarget) * 100), 100).toFixed(0) : 0;
   const weeklyPercent = weeklyTarget > 0 ? Math.min(((weeklyCompleted / weeklyTarget) * 100), 100).toFixed(0) : 0;
-  const qualityPercent = Math.min(qualityRate, 100);
+  const qualityPercent = Math.min(parseFloat(qualityRate), 100);
+
+  // Helper function to determine bar color based on performance
+  const getPerformanceBarColor = (percent) => {
+    if (percent >= 90) return 'bg-green-600'; // Increased green shade for contrast
+    if (percent >= 70) return 'bg-yellow-500';
+    return 'bg-red-600'; // Increased red shade for contrast
+  };
+
+  // Helper function to determine defect bar color (inverse logic)
+  const getDefectBarColor = (rate) => {
+    if (rate <= 1.5) return 'bg-green-600'; // Excellent
+    if (rate <= 4.0) return 'bg-yellow-500'; // Acceptable
+    return 'bg-red-600'; // High Defect
+  };
 
   return (
-    <div className="bg-white rounded-2xl shadow p-8 w-full max-w-3xl">
+    <div className="bg-white border border-gray-200 text-gray-800 rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-3xl">
+      <h2 className="text-xl font-bold text-gray-800 mb-6 border-b border-gray-300 pb-2">
+        Production & Quality Overview
+      </h2>
+
       {/* Daily Target */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm font-semibold text-gray-700">
-          <span>Daily Target</span>
-          <span>{dailyTarget.toLocaleString()} units</span>
+      <div className="mb-8">
+        <div className="flex justify-between text-sm font-semibold text-gray-700 mb-1">
+          <span className="text-blue-600">Daily Target</span>
+          <span className="font-bold text-gray-900">{dailyTarget.toLocaleString()} units</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
           <div
-            className={`h-3 rounded-full transition-all duration-500 ${
-              dailyPercent >= 100 ? 'bg-green-500' : 
-              dailyPercent >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
+            className={`h-2.5 rounded-full transition-all duration-700 ${getPerformanceBarColor(dailyPercent)}`}
             style={{ width: `${dailyPercent}%` }}
           ></div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {dailyCompleted.toLocaleString()} units completed ({dailyPercent}%)
+        <p className="text-xs text-gray-500 mt-2">
+          <span className="font-bold text-gray-900">{dailyCompleted.toLocaleString()}</span> units completed (<span className="font-bold">{dailyPercent}%</span>)
         </p>
       </div>
 
       {/* Weekly Target */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm font-semibold text-gray-700">
-          <span>Weekly Target</span>
-          <span>{weeklyTarget.toLocaleString()} units</span>
+      <div className="mb-8">
+        <div className="flex justify-between text-sm font-semibold text-gray-700 mb-1">
+          <span className="text-blue-600">Weekly Target</span>
+          <span className="font-bold text-gray-900">{weeklyTarget.toLocaleString()} units</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
           <div
-            className={`h-3 rounded-full transition-all duration-500 ${
-              weeklyPercent >= 100 ? 'bg-green-500' : 
-              weeklyPercent >= 70 ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
+            className={`h-2.5 rounded-full transition-all duration-700 ${getPerformanceBarColor(weeklyPercent)}`}
             style={{ width: `${weeklyPercent}%` }}
           ></div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {weeklyCompleted.toLocaleString()} units completed ({weeklyPercent}%)
+        <p className="text-xs text-gray-500 mt-2">
+          <span className="font-bold text-gray-900">{weeklyCompleted.toLocaleString()}</span> units completed (<span className="font-bold">{weeklyPercent}%</span>)
         </p>
       </div>
 
+      {/* --- Divider --- */}
+      <hr className="my-8 border-gray-300" />
+
       {/* Defect Rate */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm font-semibold text-gray-700">
-          <span>Defect Rate</span>
-          <span>Target: &lt; 2%</span>
+      <div className="mb-8">
+        <div className="flex justify-between text-sm font-semibold text-gray-700 mb-1">
+          <span className="text-red-600">Defect Rate</span>
+          <span className="text-red-600">Target: &lt; 5.0%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+        {/* Defect Bar: Bar width represents the actual rate against a max scale of 20% (rate * 5) */}
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
           <div
-            className={`h-3 rounded-full transition-all duration-500 ${
-              defectRate <= 2 ? 'bg-green-500' : 
-              defectRate <= 5 ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
-            style={{ width: `${Math.min(defectRate * 5, 100)}%` }}
+            className={`h-2.5 rounded-full transition-all duration-700 ${getDefectBarColor(parseFloat(defectRate))}`}
+            // Max bar width is 100%, achieved if defect rate hits 20% (20 * 5 = 100)
+            style={{ width: `${Math.min(parseFloat(defectRate) * 5, 100)}%` }} 
           ></div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {defectRate}% current defect rate
+        <p className="text-xs text-gray-500 mt-2">
+          <span className="font-bold text-red-600">{defectRate}%</span> current defect rate (lower is better)
         </p>
       </div>
 
       {/* Quality Rate */}
       <div>
-        <div className="flex justify-between text-sm font-semibold text-gray-700">
-          <span>Quality Rate</span>
-          <span>98% Target</span>
+        <div className="flex justify-between text-sm font-semibold text-gray-700 mb-1">
+          <span className="text-green-600">Quality Rate</span>
+          <span className="text-green-600">98.0% Target</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
           <div
-            className={`h-3 rounded-full transition-all duration-500 ${
-              qualityPercent >= 98 ? 'bg-green-500' : 
-              qualityPercent >= 95 ? 'bg-yellow-500' : 'bg-red-500'
+            className={`h-2.5 rounded-full transition-all duration-700 ${
+              qualityPercent >= 70 ? 'bg-green-600' : 
+              qualityPercent >= 50 ? 'bg-yellow-500' : 'bg-red-600'
             }`}
             style={{ width: `${qualityPercent}%` }}
           ></div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {qualityRate}% achieved
+        <p className="text-xs text-gray-500 mt-2">
+          <span className="font-bold text-green-600">{qualityRate}%</span> achieved
         </p>
       </div>
     </div>

@@ -14,24 +14,29 @@ import DefectRateChart from '../components/live-dashboard/DefectRateChart'
 import TotalProduction from '../components/BottomBar/Total'
 import LineTargetSum from '../components/BottomBar/LineTargetSum'
 import RemainingTarget from '../components/BottomBar/RemainingTarget'
+
 import Remain from '../components/BottomBar/Remain'
 import RemainingTimeBottom from '../components/BottomBar/RemainingTimeBottom'
 import EfficiencyRate from '../components/BottomBar/EffeciencyRate'
 import DefectRate from '../components/BottomBar/DefectRate'
 import AssignSupervisor from '../components/live-dashboard/AssignSupervisor'
 import ReallocatedEmployees from '../components/live-dashboard/ReallocatedEmployees'
+import LineTargetCharts from '../components/live-dashboard/LineTargetCharts'
+import OverallTargetChartsRFID from '../components/Charts/Live-Dashboard/OverallTargetChartsRFID'
+// import RemainingTargetRFID from '../components/Manager/RemainingTargetRFID'
+import RemainingTargetRFIDYY from '../components/BottomBar/RemainingTargetRFIDYY'
 
 function LiveDashboard({ lineData }) {
 
   const lineTargets = {
-    1: 1000,
-    2: 800,
-    3: 900,
-    4: 1100,
-    5: 950,
-    6: 1050,
-    7: 700,
-    8: 850,
+    1: 100,
+    2: 80,
+    3: 90,
+    4: 110,
+    5: 95,
+    6: 105,
+    7: 70,
+    8: 85,
   };
 
   return (
@@ -61,11 +66,17 @@ function LiveDashboard({ lineData }) {
                 <RemainingTime/>
               </div>
               <div className='flex items-center justify-center flex-1'>
-                <OverallTargetChart lineTargets={lineTargets} />
-                <RemainingTarget/>
+                {/* <OverallTargetChart lineTargets={lineTargets} /> */}
+                <OverallTargetChartsRFID/>
+
+                {/* <RemainingTarget/> */}
+                {/* <RemainingTargetRFID/>    this is manager dashboard card = wrong entry */}
+                <RemainingTargetRFIDYY/>
+
               </div>
               <div className="flex mt-4">
-                <LineTargetChart />
+                {/* <LineTargetChart /> */}
+                <LineTargetCharts/>
               </div>
             </div>
           </div>
