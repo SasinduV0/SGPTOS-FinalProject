@@ -21,8 +21,11 @@ function DefectRate() {
     try {
       // 2. Fetch total defect count
       const defectResponse = await axios.get("http://localhost:8001/api/defect-stats");
-      // Assuming 'totalDefects' is the correct property name from your backend for defect count
-      totalDefects = defectResponse.data?.totalDefects || 0; 
+      
+      // FIX: Changed from 'totalDefects' to 'totalGarmentsWithDefects' 
+      // based on successful implementations in other components.
+      totalDefects = defectResponse.data?.totalGarmentsWithDefects || 0; 
+      
     } catch (error) {
       console.error("Error fetching total defects:", error);
     }
