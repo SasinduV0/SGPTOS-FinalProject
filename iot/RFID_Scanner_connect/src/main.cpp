@@ -13,7 +13,7 @@
 // WiFi credentials - Replace with your network credentials
 const char* ssid = "Redmi Note 9 Pro";
 const char* password = "1234r65i";
-const char* wifi_ip = "192.168.64.159";
+const char* wifi_ip = "192.168.50.159";
 
 // WebSocket server configuration
 const char* websocket_server = wifi_ip; // Wi-fi Server IP
@@ -32,7 +32,7 @@ const int daylightOffset_sec = 0;   // Sri Lanka doesn't use daylight saving tim
 // WebSocket client
 WebSocketsClient webSocket;
 
-// LCD configuration for Station 2 (1602A)
+// LCD configuration for Line 2-Station 5 (1602A)
 const uint8_t LCD_S2_I2C_ADDR = 0x27;
 const uint8_t LCD_S2_COLS = 16;
 const uint8_t LCD_S2_ROWS = 2;
@@ -173,10 +173,11 @@ volatile bool wsConnected = false;
 struct ScannedData {
     time_t timestamp;             // Unix timestamp
     uint8_t stationNumber;       // Scanner ID (1, 2, or 3)
+    uint8_t lineNumber;          // Line number (1, 2, or 3)
     uint8_t uid[10];            // RFID UID (max 10 bytes for MIFARE)
     uint8_t uidSize;           // Actual UID size
     char scanID[16];           // Generated scan ID
-    char stationID[8];         // Station ID (e.g., "1A01")
+    char stationID[8];         // Station ID (e.g., "A105", "A205", "QC01")
 };
 
 // FreeRTOS Queue handle
@@ -249,8 +250,8 @@ String repeatString(const char* str, int count) {
 
 // RFID Scanner pins
 const uint8_t SCANNER_SS_PINS[] = {
-    5,   // Station 1
-    4,   // Station 2
+    5,   // Line 1-Station 5
+    4,   // Line 2-Station 5
     2    // QC Station
 };
 
@@ -259,8 +260,8 @@ const struct {
     uint8_t ok;
     uint8_t cancel;
 } BUTTON_PINS[] = {
-    {32, 34},  // Station 1 - OK: 32, Cancel: 34
-    {13, 14},  // Station 2 - OK: 13, Cancel: 14
+    {32, 12},  // Line 1-Station 5 - OK: 32, Cancel: 12
+    {13, 14},  // Line 2-Station 5 - OK: 13, Cancel: 14
     {33, 25}   // QC Station - OK: 27, Cancel: 26
 };
 
@@ -737,8 +738,8 @@ String getEmployeeName(String uid) {
 
 // Function to get the assigned station number for an employee
 uint8_t getAssignedStation(String uid) {
-    if (uid == emp1Sta) return 1;  // Employee 1 -> Station 1
-    if (uid == emp2Sta) return 2;  // Employee 2 -> Station 2
+    if (uid == emp1Sta) return 1;  // Employee 1 -> Line 1-Station 5
+    if (uid == emp2Sta) return 2;  // Employee 2 -> Line 2-Station 5
     if (uid == qcSta) return 3;    // QC Employee -> QC Station
     return 0; // Unknown
 }
@@ -746,14 +747,14 @@ uint8_t getAssignedStation(String uid) {
 // Function to get station name
 String getStationName(uint8_t stationNumber) {
     switch(stationNumber) {
-        case 1: return "Station 1";
-        case 2: return "Station 2"; 
+        case 1: return "Line 1-Station 5";
+        case 2: return "Line 2-Station 5"; 
         case 3: return "QC Station";
         default: return "Unknown";
     }
 }
 
-// Function to display message on Station 2 LCD
+// Function to display message on Line 2-Station 5 LCD
 void displayStation2Message(String line1, String line2) {
     lcdStation2.clear();
     lcdStation2.setCursor(0, 0);
@@ -791,11 +792,11 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
         String message = "Wrong station, Go to " + assignedStationName;
         Serial.println(employeeName + " tried to access " + stationName + " - " + message);
         
-        // Display message on LCD for Station 2
+        // Display message on LCD for Line 2-Station 5
         if (stationNumber == 2) {
             displayStation2Message("Wrong Station!", "Go to " + assignedStationName);
             vTaskDelay(pdMS_TO_TICKS(2500)); // Use vTaskDelay instead of delay()
-            displayStation2Message("Station 2", "Scan your card");
+            displayStation2Message("Line 2-Station 5", "Scan your card");
         }
         // Display message on LCD for QC Station
         else if (stationNumber == 3) {
@@ -808,10 +809,10 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
     
     // Employee is at their correct station - handle state-based logic
     switch(stationNumber) {
-        case 1: // Station 1 - Employee 1
+        case 1: // Line 1-Station 5 - Employee 1
             if (station1State == WAITING_FOR_CARD && !station1Active) {
                 // Request confirmation to start shift
-                Serial.println("Station 1: " + employeeName + " requesting to start shift");
+                Serial.println("Line 1-Station 5: " + employeeName + " requesting to start shift");
                 station1State = WAITING_START_CONFIRMATION;
                 
                 // Wait for button press (OK to start, Cancel to postpone)
@@ -821,15 +822,15 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station1Employee = employeeName;
                     station1State = ACTIVE_SCANNING;
                     lastScannedUID_Station1 = ""; // Reset duplicate prevention for new shift
-                    Serial.println("Station 1: Shift starting... - " + employeeName);
+                    Serial.println("Line 1-Station 5: Shift starting... - " + employeeName);
                 } else {
                     // Cancel pressed or timeout - postpone
                     station1State = WAITING_FOR_CARD;
-                    Serial.println("Station 1: Shift postponed - " + employeeName);
+                    Serial.println("Line 1-Station 5: Shift postponed - " + employeeName);
                 }
             } else if (station1State == ACTIVE_SCANNING && station1Employee == employeeName) {
                 // Request confirmation to end shift
-                Serial.println("Station 1: " + employeeName + " requesting to end shift");
+                Serial.println("Line 1-Station 5: " + employeeName + " requesting to end shift");
                 station1State = WAITING_END_CONFIRMATION;
                 
                 // Wait for button press (OK to end, Cancel to continue)
@@ -839,19 +840,19 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station1Employee = "";
                     station1State = WAITING_FOR_CARD;
                     lastScannedUID_Station1 = ""; // Reset duplicate prevention
-                    Serial.println("Station 1: Shift ended - " + employeeName);
+                    Serial.println("Line 1-Station 5: Shift ended - " + employeeName);
                 } else {
                     // Cancel pressed or timeout - continue working
                     station1State = ACTIVE_SCANNING;
-                    Serial.println("Station 1: Shift ending denied - " + employeeName);
+                    Serial.println("Line 1-Station 5: Shift ending denied - " + employeeName);
                 }
             }
             break;
             
-        case 2: // Station 2 - Employee 2
+        case 2: // Line 2-Station 5 - Employee 2
             if (station2State == WAITING_FOR_CARD && !station2Active) {
                 // Request confirmation to start shift
-                Serial.println("Station 2: " + employeeName + " requesting to start shift");
+                Serial.println("Line 2-Station 5: " + employeeName + " requesting to start shift");
                 station2State = WAITING_START_CONFIRMATION;
                 displayStation2Message("Press OK to", "Start the Shift");
                 
@@ -862,21 +863,21 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station2Employee = employeeName;
                     station2State = ACTIVE_SCANNING;
                     lastScannedUID_Station2 = ""; // Reset duplicate prevention for new shift
-                    Serial.println("Station 2: Shift starting... - " + employeeName);
+                    Serial.println("Line 2-Station 5: Shift starting... - " + employeeName);
                     displayStation2Message("Shift starting...", employeeName);
                     delay(1500); // Reduced from 2000ms for faster login
-                    displayStation2Message("Station 2", "Ready to scan");
+                    displayStation2Message("Line 2-Station 5", "Ready to scan");
                 } else {
                     // Cancel pressed or timeout - postpone
                     station2State = WAITING_FOR_CARD;
-                    Serial.println("Station 2: Shift postponed - " + employeeName);
+                    Serial.println("Line 2-Station 5: Shift postponed - " + employeeName);
                     displayStation2Message("Postponed Shift!", "Scan again to start");
                     delay(3000);
-                    displayStation2Message("Station 2", "Scan your card");
+                    displayStation2Message("Line 2-Station 5", "Scan your card");
                 }
             } else if (station2State == ACTIVE_SCANNING && station2Employee == employeeName) {
                 // Request confirmation to end shift
-                Serial.println("Station 2: " + employeeName + " requesting to end shift");
+                Serial.println("Line 2-Station 5: " + employeeName + " requesting to end shift");
                 station2State = WAITING_END_CONFIRMATION;
                 displayStation2Message("Press OK to", "End the Shift");
                 
@@ -887,17 +888,17 @@ void handleEmployeeAccess(String scannedUID, uint8_t stationNumber) {
                     station2Employee = "";
                     station2State = WAITING_FOR_CARD;
                     lastScannedUID_Station2 = ""; // Reset duplicate prevention
-                    Serial.println("Station 2: Shift ended - " + employeeName);
+                    Serial.println("Line 2-Station 5: Shift ended - " + employeeName);
                     displayStation2Message("Shift Ending...", employeeName);
                     delay(2000);
-                    displayStation2Message("Station 2", "Scan your card");
+                    displayStation2Message("Line 2-Station 5", "Scan your card");
                 } else {
                     // Cancel pressed or timeout - continue working
                     station2State = ACTIVE_SCANNING;
-                    Serial.println("Station 2: Shift ending denied - " + employeeName);
+                    Serial.println("Line 2-Station 5: Shift ending denied - " + employeeName);
                     displayStation2Message("Denied ending!", "Back to Tag scanning");
                     delay(3000);
-                    displayStation2Message("Station 2", "Ready to scan");
+                    displayStation2Message("Line 2-Station 5", "Ready to scan");
                 }
             }
             break;
@@ -996,11 +997,11 @@ void initWebSocket() {
 void initLCDs() {
     Wire.begin();
     
-    // Initialize Station 2 LCD (1602A)
+    // Initialize Line 2-Station 5 LCD (1602A)
     lcdStation2.init();
     lcdStation2.backlight();
     lcdStation2.setCursor(0, 0);
-    lcdStation2.print("Station 2 LCD");
+    lcdStation2.print("Line 2-Station 5");
     lcdStation2.setCursor(0, 1);
     lcdStation2.print("Ready");
     
@@ -1015,7 +1016,7 @@ void initLCDs() {
     delay(1500); // Reduced from 2000ms for faster startup
     
     // Clear and show initial state
-    displayStation2Message("Station 2", "Scan your card");
+    displayStation2Message("Line 2-Station 5", "Scan your card");
     displayQCMessage("QC Station", "Scan your card", "", "");
 }
 
@@ -1494,7 +1495,7 @@ bool handleQCPartsSelection() {
     return false;
 }
 
-// Update Station 2 LCD with latest RFID UID and scan count
+// Update Line 2-Station 5 LCD with latest RFID UID and scan count
 void updateStation2Display(const char* uid, uint32_t scanCount) {
     char line1[17];
     char line2[17];
@@ -1510,7 +1511,7 @@ void updateStation2Display(const char* uid, uint32_t scanCount) {
         snprintf(line1, sizeof(line1), "S2: %s..", truncatedUid);
     }
     
-    // Format scan count for Station 2
+    // Format scan count for Line 2-Station 5
     snprintf(line2, sizeof(line2), "Count: %lu", scanCount);
     
     // Update display
@@ -1562,10 +1563,11 @@ void updateQCDisplay(const char* uid, uint32_t scanCount) {
 }
 
 // Generate unique scan ID (format: YYMMDDSA# where A# is hex counter)
-String generateScanID() {
+String generateScanID(uint8_t stationNumber) {
     struct tm timeinfo;
     if (!getLocalTime(&timeinfo)) {
-        return "000000S00"; // Fallback if time not available
+        // Fallback with millis for uniqueness when time not available
+        return "000000S" + String(stationNumber) + String(millis() % 10000, HEX);
     }
     
     char dateStr[7];
@@ -1578,7 +1580,8 @@ String generateScanID() {
     }
     
     dailyScanCount++;
-    String scanID = currentDate + "S" + String(dailyScanCount, HEX);
+    // Include station number and millis for better uniqueness
+    String scanID = currentDate + "S" + String(stationNumber) + String(dailyScanCount, HEX) + String(millis() % 100, HEX);
     scanID.toUpperCase();
     return scanID;
 }
@@ -1586,10 +1589,20 @@ String generateScanID() {
 // Generate station ID based on station type
 String generateStationID(uint8_t stationNumber) {
     switch(stationNumber) {
-        case 1: return "1A01";  // Station 1
-        case 2: return "1A02";  // Station 2
-        case 3: return "1AQC";  // QC Station
-        default: return "1A00"; // Unknown
+        case 1: return "A105";  // Line 1-Station 5
+        case 2: return "A205";  // Line 2-Station 5
+        case 3: return "QC01";  // QC Station
+        default: return "0000"; // Unknown
+    }
+}
+
+// Get line number based on station
+uint8_t getLineNumber(uint8_t stationNumber) {
+    switch(stationNumber) {
+        case 1: return 1;  // Line 1-Station 5
+        case 2: return 2;  // Line 2-Station 5
+        case 3: return 3;  // QC Station (Line 3)
+        default: return 0; // Unknown
     }
 }
 
@@ -1622,7 +1635,14 @@ bool sendRFIDDataViaWebSocket(const ScannedData& data) {
     doc["data"]["ID"] = String(data.scanID);
     doc["data"]["Tag_UID"] = uidToString((uint8_t*)data.uid, data.uidSize);
     doc["data"]["Station_ID"] = String(data.stationID);
+    doc["data"]["Line_Number"] = data.lineNumber;
     doc["data"]["Time_Stamp"] = data.timestamp;
+    
+    // Debug: Print individual values
+    Serial.println("DEBUG - Preparing WebSocket data:");
+    Serial.println("  Station Number: " + String(data.stationNumber));
+    Serial.println("  Line Number: " + String(data.lineNumber));
+    Serial.println("  Station ID: " + String(data.stationID));
     
     String jsonString;
     serializeJson(doc, jsonString);
@@ -1648,6 +1668,7 @@ bool sendDefectDataViaWebSocket(String scanID, String tagUID, String stationID, 
     doc["data"]["Subtype"] = subtypeCode;
     doc["data"]["Tag_UID"] = tagUID;
     doc["data"]["Station_ID"] = stationID;
+    // Note: Line_Number omitted for QC defects - QC is not line-specific
     doc["data"]["Time_Stamp"] = timestamp;
     
     String jsonString;
@@ -1842,13 +1863,13 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     switch(stationNumber) {
         case 1:
             stationActive = station1Active;
-            stationName = "Station 1";
+            stationName = "Line 1-Station 5";
             stationCounter = &station1ScanCount;
             currentState = station1State;
             break;
         case 2:
             stationActive = station2Active;
-            stationName = "Station 2";
+            stationName = "Line 2-Station 5";
             stationCounter = &station2ScanCount;
             currentState = station2State;
             break;
@@ -1864,11 +1885,11 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         String message = stationName + " is not active - First scan your card";
         Serial.println(message);
         
-        // Display message on LCD for Station 2
+        // Display message on LCD for Line 2-Station 5
         if (stationNumber == 2) {
             displayStation2Message("First scan", "your card");
             vTaskDelay(pdMS_TO_TICKS(1500)); // Use vTaskDelay instead of delay()
-            displayStation2Message("Station 2", "Scan your card");
+            displayStation2Message("Line 2-Station 5", "Scan your card");
         }
         // Display message on LCD for QC Station
         else if (stationNumber == 3) {
@@ -1879,8 +1900,8 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         return false;
     }
     
-    // Check for consecutive duplicate scans for normal employee stations only (Station 1 & 2)
-    // This check happens AFTER station is confirmed to be active
+    // Check for consecutive duplicate scans for normal employee stations only (Line 1-Station 5 & Line 2-Station 5)
+    // This validation happens BEFORE counting to prevent duplicate increments  
     if (stationNumber == 1 || stationNumber == 2) {
         String* lastScannedUID = (stationNumber == 1) ? &lastScannedUID_Station1 : &lastScannedUID_Station2;
         
@@ -1890,11 +1911,11 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
             
             Serial.println(stationName + " - Consecutive duplicate scan rejected: " + uidString);
             
-            // Display message on Station 2 LCD
+            // Display message on Line 2-Station 5 LCD (but don't increment counter)
             if (stationNumber == 2) {
                 displayStation2Message("Already scanned", "Try different tag");
                 vTaskDelay(pdMS_TO_TICKS(1500)); // Show message for 1.5 seconds
-                // Restore the count display instead of "Ready to scan"
+                // Restore the count display without incrementing
                 updateStation2Display(uidString.c_str(), station2ScanCount);
             }
             
@@ -1905,6 +1926,15 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         *lastScannedUID = uidString;
     }
     // Note: QC station (stationNumber == 3) has no duplicate prevention
+    
+    // NOW increment counters and update LCD displays (after duplicate validation)
+    if (stationNumber == 1) {
+        station1ScanCount++; // Increment counter for Line 1-Station 5 (no LCD update)
+    } else if (stationNumber == 2) {
+        station2ScanCount++; // Increment counter for immediate display
+        updateStation2Display(uidString.c_str(), station2ScanCount);
+    }
+    // Note: QC station has special handling below and manages its own counter
     
     // Special handling for QC Station - show parts selection
     if (stationNumber == 3) {
@@ -1942,7 +1972,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         vTaskDelay(pdMS_TO_TICKS(1500)); // Use vTaskDelay instead of delay()
         
         // Generate scan ID and get timestamp
-        String scanID = generateScanID();
+        String scanID = generateScanID(stationNumber);
         String stationID = generateStationID(stationNumber);
         time_t now = 0;
         if (timeInitialized) {
@@ -1998,6 +2028,7 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
     ScannedData scannedData;
     scannedData.timestamp = now;
     scannedData.stationNumber = stationNumber;
+    scannedData.lineNumber = getLineNumber(stationNumber);
     scannedData.uidSize = rfid.uid.size;
     
     // Copy UID to structure
@@ -2005,81 +2036,39 @@ bool processScannedCard(MFRC522& rfid, uint8_t stationNumber) {
         scannedData.uid[i] = rfid.uid.uidByte[i];
     }
     
-    // Generate scan ID and station ID
-    String scanID = generateScanID();
-    String stationID = generateStationID(stationNumber);
-    
-    scanID.toCharArray(scannedData.scanID, sizeof(scannedData.scanID));
+        // Generate scan ID and station ID
+        String scanID = generateScanID(stationNumber);
+        String stationID = generateStationID(stationNumber);    scanID.toCharArray(scannedData.scanID, sizeof(scannedData.scanID));
     stationID.toCharArray(scannedData.stationID, sizeof(scannedData.stationID));
     
     // Try to add to queue (non-blocking for maximum speed)
     if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
         // Successfully added to queue
-        (*stationCounter)++; // Increment respective station counter
+        // Note: Station counters and LCD updates already handled above for immediate feedback
         
-        // Update LCD display for Station 2 and QC scans
-        if (stationNumber == 2) {
-            updateStation2Display(uidString.c_str(), station2ScanCount);
-        } else if (stationNumber == 3) {
-            updateQCDisplay(uidString.c_str(), qcScanCount);
-        }
-        
-        Serial.print("Core 1 - Card queued - " + stationName);
-        Serial.print(" (");
-        Serial.print(stationID);
-        Serial.print("), ID: ");
-        Serial.print(scanID);
-        Serial.print(", UID: ");
-        for (byte i = 0; i < rfid.uid.size; i++) {
-            Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
-            Serial.print(rfid.uid.uidByte[i], HEX);
-        }
-        
-        // Format and print actual date and time (only if available)
-        if (timeInitialized && now > 0) {
-            struct tm timeinfo;
-            localtime_r(&now, &timeinfo);
-            char timeString[64];
-            strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeinfo);
-            Serial.print(", Date & Time: ");
-            Serial.println(timeString);
-        } else {
-            Serial.println(", Time: Not synchronized");
-        }
-        
-        // Show queue status and station counters
-        int queueCount = uxQueueMessagesWaiting(scannedDataQueue);
-        Serial.printf("Queue: %d/%d | S1: %lu | S2: %lu | QC: %lu\n", 
-                     queueCount, QUEUE_SIZE, station1ScanCount, station2ScanCount, qcScanCount);
+        // Minimal logging for speed (only essential info)
+        Serial.printf("Queued %s: %s\n", stationName.c_str(), uidString.c_str());
         
         return true;
     } else {
         // Queue is full - remove oldest item to make space for new scan
         ScannedData oldestData;
         if (xQueueReceive(scannedDataQueue, &oldestData, 0) == pdTRUE) {
-            Serial.println("Core 1 - Queue full! Removed oldest scan to make space");
             // Now try to add the new scan
             if (xQueueSend(scannedDataQueue, &scannedData, 0) == pdTRUE) {
-                (*stationCounter)++;
-                
-                // Update display for respective stations
-                if (stationNumber == 2) {
-                    updateStation2Display(uidString.c_str(), station2ScanCount);
-                } else if (stationNumber == 3) {
-                    updateQCDisplay(uidString.c_str(), qcScanCount);
-                }
-                Serial.println("Core 1 - New scan added after removing oldest");
+                // Note: Station counters and LCD updates already handled above
+                Serial.println("Queue full - replaced oldest scan");
                 return true;
             }
         }
         
-        // Show error on appropriate display
+        // Queue management failed - show error only on Line 2-Station 5 for immediate feedback
         if (stationNumber == 2) {
             updateStation2Display("Queue Error", station2ScanCount);
         } else if (stationNumber == 3) {
             updateQCDisplay("Queue Error", qcScanCount);
         }
-        Serial.println("Core 1 - Queue management failed, but continuing to scan...");
+        Serial.println("Queue management failed");
         return false;
     }
 }
@@ -2209,10 +2198,10 @@ void rfidScanningTask(void *parameter) {
     
     Serial.println("> Core 1: RFID scanning task ready!");
     Serial.println("> Ready to scan RFID cards on all 3 stations!");
-    Serial.println("> Station 1, Station 2, and QC Station");
+    Serial.println("> Line 1-Station 5, Line 2-Station 5, and QC Station");
     Serial.println("> First scan employee cards to activate stations");
     Serial.println("> Use OK/Cancel buttons to confirm shift start/end");
-    Serial.println("> LCD will show Station 2 and QC scans");
+    Serial.println("> LCD will show Line 2-Station 5 and QC scans");
     
     // Main RFID scanning loop - optimized for maximum speed
     while (true) {
@@ -2249,5 +2238,5 @@ void loop() {
             Serial.println("Power out");
         }
     }
-    delay(1000); // Prevent tight loop
+    delay(50); // Minimal delay for stability while maintaining fast response
 }

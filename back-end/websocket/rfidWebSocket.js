@@ -31,6 +31,7 @@ class RFIDWebSocketServer {
               ID: data.data.ID,
               Tag_UID: data.data.Tag_UID,
               Station_ID: data.data.Station_ID,
+              Line_Number: data.data.Line_Number,
               Time_Stamp: data.data.Time_Stamp
             });
 
