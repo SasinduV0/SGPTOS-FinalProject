@@ -19,7 +19,7 @@ function RemainingTimeBottom() {
     // Define shift timings
     const dayStart = 8;
     const dayEnd = 18;
-    const nightStart = 19;
+  const nightStart = 18;
     const nightEnd = 6;
 
     let startTime = new Date(currentTime);
