@@ -12,8 +12,7 @@ const [defectCount, setDefectCount] = useState(0);
 const [defectRate, setDefectRate] = useState(0);
 const [shiftEnd, setShiftEnd] = useState("14:30");
 const [loading, setLoading] = useState(true);
-// Fetch initial data from backend
-useEffect(() => {
+// Fetch data function (reusable)
 const fetchData = async () => {
 try {
 // Fetch total production (RFID scan count)
@@ -24,12 +23,15 @@ const scanData = await scanResponse.json();
 const defectResponse = await fetch("http://localhost:8001/api/iot/defect-rate");
 const defectData = await defectResponse.json();
 
-setTotalProduction(scanData.count || 0);
-setDefectCount(defectData.defects || 0);
+const production = scanData.count || 0;
+const defects = defectData.defects || 0;
+
+setTotalProduction(production);
+setDefectCount(defects);
 
 // Calculate defect rate percentage
-const rate = scanData.count > 0
-? ((defectData.defects / scanData.count) * 100).toFixed(2)
+const rate = production > 0
+? ((defects / production) * 100).toFixed(2)
 : 0;
 setDefectRate(rate);
 
@@ -39,49 +41,64 @@ console.error("Error fetching data:", err);
 setLoading(false);
 }
 };
+
+// Fetch initial data from backend
+useEffect(() => {
 fetchData();
 }, []);
-// Listen for live RFID scan updates
+
+// Polling: Fetch data every 5 seconds for real-time updates
 useEffect(() => {
-socket.on("rfidUpdate", async () => {
-console.log("📊 ProductivityIncrease received RFID update");
-try {
-const scanResponse = await fetch("http://localhost:8001/api/iot/scan-count");
-const scanData = await scanResponse.json();
-setTotalProduction(scanData.count || 0);
+const interval = setInterval(() => {
+fetchData();
+}, 5000);
 
-// Recalculate defect rate
-const rate = scanData.count > 0
-? ((defectCount / scanData.count) * 100).toFixed(2)
-: 0;
-setDefectRate(rate);
-} catch (err) {
-console.error("Error updating production:", err);
-}
-});
-return () => socket.off("rfidUpdate");
-}, [defectCount]);
-// Listen for live defect updates
+return () => clearInterval(interval);
+}, []);
+
+// Socket event listeners for instant updates
 useEffect(() => {
-socket.on("defectUpdate", async (data) => {
-console.log("📊 ProductivityIncrease received defect update");
-try {
-const defectResponse = await fetch("http://localhost:8001/api/iot/defect-rate");
-const defectData = await defectResponse.json();
-
-setDefectCount(defectData.defects || 0);
-
-// Recalculate defect rate
-const rate = totalProduction > 0
-? ((defectData.defects / totalProduction) * 100).toFixed(2)
-: 0;
-setDefectRate(rate);
-} catch (err) {
-console.error("Error updating defects:", err);
-}
+// RFID scan updates
+socket.on("rfidUpdate", () => {
+console.log("📊 ProductivityIncrease: RFID update received");
+fetchData();
 });
-return () => socket.off("defectUpdate");
-}, [totalProduction]);
+
+    socket.on("rfidScanUpdate", () => {
+      console.log("📊 ProductivityIncrease: RFID scan update received");
+      fetchData();
+    });
+
+    socket.on("scanUpdate", () => {
+      console.log("📊 ProductivityIncrease: Scan update received");
+      fetchData();
+    });
+
+    // Defect updates
+    socket.on("defectUpdate", () => {
+      console.log("📊 ProductivityIncrease: Defect update received");
+      fetchData();
+    });
+
+    // Connection monitoring
+    socket.on("connect", () => {
+      console.log("✅ ProductivityIncrease: Socket connected");
+      fetchData();
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ ProductivityIncrease: Socket disconnected");
+    });
+
+    return () => {
+      socket.off("rfidUpdate");
+      socket.off("rfidScanUpdate");
+      socket.off("scanUpdate");
+      socket.off("defectUpdate");
+      socket.off("connect");
+      socket.off("disconnect");
+    };
+}, []);
 if (loading) {
 return (
 <div className="flex justify-center items-center h-64">
@@ -124,9 +141,15 @@ return `${label}: ${value}% (${count} pcs)`;
 };
 return (
 <div className="bg-white rounded-lg p-6 flex flex-col items-center">
-<h3 className="text-2xl font-bold text-gray-800 mb-6">
+<div className="flex justify-between items-center w-full mb-6">
+<h3 className="text-2xl font-bold text-gray-800">
 Production Quality
 </h3>
+<div className="flex items-center gap-2">
+<div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+<span className="text-sm text-gray-600">Live</span>
+</div>
+</div>
 <div className="relative flex items-center justify-center w-48 h-48">
 <Doughnut data={data} options={options} />
 <div className="absolute text-center">
