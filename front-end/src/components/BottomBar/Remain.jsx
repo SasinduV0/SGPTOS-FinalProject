@@ -1,81 +1,69 @@
 import React, { useEffect, useState } from "react";
-import io from "socket.io-client";
-
-// Socket connection
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
+import axios from "axios";
 
 const Remain = () => {
-  const [lineData, setLineData] = useState([]);
+  const [totalCompleted, setTotalCompleted] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Define line targets
+  // Define the production targets for each line (used for totalTarget calculation).
   const lineTargets = {
-    1: 1000,
-    2: 800,
-    3: 900,
-    4: 1100,
-    5: 950,
-    6: 1050,
-    7: 700,
-    8: 850,
+    1: 10,
+    2: 80,
+    3: 90,
+    4: 110,
+    5: 95,
+    6: 105,
+    7: 70,
+    8: 85,
   };
 
-  // Fetch initial data from backend
+  // This effect fetches the total completed pieces from the new backend endpoint via polling.
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchCompletedCount = async () => {
       try {
-        const response = await fetch("http://localhost:8001/api/employees");
-        const data = await response.json();
-        updateChartData(data);
-        setLoading(false);
+        // Fetch total production count from the dedicated API endpoint
+        const response = await axios.get("http://localhost:8001/api/scan-count");
+        if (response.data && typeof response.data.count === 'number') {
+          setTotalCompleted(response.data.count);
+        }
       } catch (err) {
-        console.error("Error fetching employees:", err);
+        console.error("Error fetching completed count for Remain component:", err);
+      } finally {
         setLoading(false);
       }
     };
-    fetchEmployees();
+
+    // Initial data fetch.
+    fetchCompletedCount();
+
+    // Set up a polling interval to get live updates every 5 seconds.
+    const intervalId = setInterval(fetchCompletedCount, 5000);
+
+    // Clean up the interval when the component is unmounted.
+    return () => clearInterval(intervalId);
   }, []);
 
-  // Listen for real-time updates
-  useEffect(() => {
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      updateChartData(updatedEmployees);
-    });
-    return () => socket.off("leadingLineUpdate");
-  }, []);
+  // Calculate total and remaining targets.
+  const totalTarget = Object.values(lineTargets).reduce((sum, val) => sum + val, 0);
+  const remainingTarget = totalTarget - totalCompleted;
 
-  // Aggregate data per line
-  const updateChartData = (employees) => {
-    const lineTotals = employees.reduce((acc, emp) => {
-      acc[emp.line] = (acc[emp.line] || 0) + Number(emp.pcs || 0);
-      return acc;
-    }, {});
-
-    const aggregated = Object.keys(lineTargets).map((line) => {
-      const total = lineTotals[line] || 0;
-      return { name: line, totalPcs: total };
-    });
-
-    setLineData(aggregated);
-  };
-
+  // Render a loading state if data is still fetching.
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <span className="text-gray-500 text-lg font-medium">Loading...</span>
+      <div className="flex mt-5 ml-4 gap-1">
+        <h2 className="text-gray-300 font-semibold text-xs"> Remaining Target </h2>
+        <p className="text-xs font-bold text-white">Loading...</p>
+        <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
       </div>
     );
   }
 
-  // Compute totals
-  const totalCompleted = lineData.reduce((sum, line) => sum + line.totalPcs, 0);
-  const totalTarget = Object.values(lineTargets).reduce((sum, val) => sum + val, 0);
-  const remainingTarget = totalTarget - totalCompleted;
-
+  // Render the component with the original styling.
   return (
     <div className="flex mt-5 ml-4 gap-1">
       <h2 className=" text-gray-300 font-semibold text-xs"> Remaining Target </h2>
-      <p className="text-xs font-bold text-white">{remainingTarget} Pcs</p>
+      {/* Use toLocaleString for better number formatting */}
+      <p className="text-xs font-bold text-white">{remainingTarget.toLocaleString()} Pcs</p>
       <p className="text-xs font-bold text-gray-300 -mt-[2px] ml-3">|</p>
     </div>
   );

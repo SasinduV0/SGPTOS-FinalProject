@@ -6,7 +6,7 @@ import axios from "axios";
 // Register the necessary components for Chart.js
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-function DefectRateChart() {
+function DefectRateQC() {
   const [defectData, setDefectData] = useState({
     defects: 0,
     total: 0,
@@ -130,7 +130,7 @@ function DefectRateChart() {
   }
 
   return (
-    <div className="flex items-center bg-white rounded-2xl p-4  w-[440px]">
+    <div className="flex flex-col items-center bg-white rounded-2xl p-4  w-[360px]">
       <div className="relative w-[170px] h-[170px]">
         <Doughnut data={data} options={options} />
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -138,7 +138,7 @@ function DefectRateChart() {
           <p className="text-xs text-gray-500">Defect Rate</p>
         </div>
       </div>
-      <div className="flex-1 pl-4">
+      <div className="flex-1 pl-4 mt-8">
         <p className={`text-sm font-semibold ${color} mb-3 text-center`}>
           {text}
         </p>
@@ -158,4 +158,4 @@ function DefectRateChart() {
   );
 }
 
-export default DefectRateChart;
+export default DefectRateQC;

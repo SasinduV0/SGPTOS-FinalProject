@@ -7,6 +7,14 @@ import OverallTargetChart from '../../components/Charts/Live-Dashboard/OverallTa
 import RemainingTime from '../../components/live-dashboard/RemainingTime';
 import DashboardSummary from '../../components/Manager/DashboardSummary';
 import ProductivityIncrease from '../../components/Manager/ProductivityIncrease';
+import LineTargetChart from '../../components/live-dashboard/LineTargetChart';
+import LineProductivityChart from '../../components/Manager/LineProductivityChart';
+import DailyTotalBarChart from '../../components/Manager/DailyTotalBarChart';
+import ProductionLineStatus from '../../components/Supervisor/ProductionLineStatus';
+import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
+import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
+import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
 
 const ManagerHome = ({ lineData }) => {
 
@@ -138,7 +146,9 @@ const ManagerHome = ({ lineData }) => {
        {/* Overall Target */}
       <div className="bg-white rounded-lg shadow p-6 mt-2">
         <div className="flex items-center justify-center">
-          <OverallTargetChart lineTargets={lineTargets} />
+          {/* <OverallTargetChart lineTargets={lineTargets} /> */}
+
+          <OverallTargetChartsRFID/>
         </div>
         <div className="text-center mt-2">
          <RemainingTime/>

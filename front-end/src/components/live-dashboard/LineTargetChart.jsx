@@ -139,22 +139,7 @@ const LineTargetChart = () => {
             />
           </XAxis>
 
-          {/* Y Axis with border and label */}
-          {/* <YAxis
-            domain={[0, Math.max(...lineData.map((d) => d.percentage)) + 20]}
-            tickFormatter={(value) => `${value}%`}
-            tick={{ fill: "#0a0a0a", fontSize: 12 }}
-            axisLine={{ stroke: "#4b5563", strokeWidth: 2 }}
-            tickLine={{ stroke: "#4b5563", strokeWidth: 1 }}
-          >
-            <Label
-              value="Target Completion (%)"
-              angle={-90}
-              position="insideLeft"
-              offset={10}
-              style={{ textAnchor: "middle", fill: "#000", fontWeight: "bold" }}
-            />
-          </YAxis> */}
+          
 
           <Tooltip
             cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}

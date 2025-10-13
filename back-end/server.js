@@ -43,6 +43,7 @@ app.set("io", io);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userProfileRoutes);
 app.use("/api", employeeRoutes);
+app.use("/api", iotRoutes);
 app.use("/api/line-management", lineManagement);
 app.use("/api/line-reallocation", lineReallocation);
 app.use("/api/production", productionRoutes);

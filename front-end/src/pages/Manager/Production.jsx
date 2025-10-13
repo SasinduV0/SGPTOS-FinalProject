@@ -11,6 +11,7 @@ import RemainingTarget from '../../components/Manager/RemainingTarget';
 import LineProductivityChart from '../../components/Manager/LineProductivityChart';
 import DailyTotalBarChart from '../../components/Manager/DailyTotalBarChart';
 import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
+import RemainingTargetRFID from '../../components/Manager/RemainingTargetRFID';
 
 const API_URL = "http://localhost:8001/api/production"; // Your backend endpoint
 
@@ -143,7 +144,7 @@ const Production = () => {
     <div className='flex gap-5'>
         <TotalProduction/>
         <EfficiencyRate/>
-        <RemainingTarget/>
+        <RemainingTargetRFID/>
         <ActiveWorkers/>
     </div>    
       
