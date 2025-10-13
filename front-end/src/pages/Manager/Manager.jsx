@@ -169,7 +169,7 @@ const ManagerHome = ({ lineData }) => {
 
 
       {/* Production Table */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="mr-5">
         <ProductionTargets/>
       </div>
 
