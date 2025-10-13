@@ -64,15 +64,15 @@ const ReallocatedEmployees = () => {
 
   return (
     <div className="">
-      <div className="text-black rounded-2xl p-2 bg-white">
+      <div className="text-black rounded-2xl px-4 bg-white">
         <h2 className="text-lg font-bold text-center">Reallocated Employees</h2>
 
-        <div className="mt-3 space-y-1/2 ">
+        <div className="mt-4 space-y-0.5 ">
           {employees.length > 0 ? (
             employees.map((emp, index) => (
               <div
                 key={emp.EmployeeID}
-                className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-blue-100 transition"
+                className="flex justify-between items-center px-3 py-1 rounded-lg hover:bg-blue-100 transition"
               >
                 <div className="flex items-center gap-4 w-full">
                   <FaUser className="text-gray-700" />

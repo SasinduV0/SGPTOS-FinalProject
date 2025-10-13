@@ -76,6 +76,7 @@ const DailyEmployeesList = () => {
         name: emp.name,
         station: emp.station || `Station ${(index % 10) + 1}`, // Generate station if not available
         line: emp.line,
+        pcs: emp.pcs || 0, // Added pcs data
         efficiency: (((emp.pcs || 0) / DAILY_TARGET) * 100).toFixed(0),
       }));
     
@@ -169,6 +170,7 @@ const DailyEmployeesList = () => {
                   </div>
                 </div>
               </th>
+              <th className="p-2 border-b">Pieces</th>
               <th className="p-2 border-b">Efficiency</th>
             </tr>
           </thead>
@@ -183,6 +185,7 @@ const DailyEmployeesList = () => {
                   <td className="p-2 border-b">{emp.name}</td>
                   <td className="p-2 border-b text-gray-600">{emp.station}</td>
                   <td className="p-2 border-b font-medium">Line {emp.line}</td>
+                  <td className="p-2 border-b font-medium text-gray-800">{emp.pcs}</td>
                   <td
                     className={`p-2 border-b font-semibold ${
                       emp.efficiency >= 85

@@ -146,7 +146,7 @@ const ProductivityPage = ({ dashboardData: propDashboardData }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           
           {/* Line Performance Chart */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
+          <div className="">
             {/* <h3 className="text-xl font-bold text-gray-800 mb-4">Line Performance Comparison</h3> */}
             <div className="">
               <LineWiseProductivity/>
@@ -154,7 +154,7 @@ const ProductivityPage = ({ dashboardData: propDashboardData }) => {
           </div>
 
           {/* Daily Production Trends */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
+          <div className="">
             <div className="">
               <DailyTotalBarChart/>
             </div>
@@ -164,14 +164,14 @@ const ProductivityPage = ({ dashboardData: propDashboardData }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Worker Performance Table */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 h-fit">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Individual Worker Performance</h3>
+          <div className="">
+            {/* <h3 className="text-xl font-bold text-gray-800 mb-4">Individual Worker Performance</h3> */}
               <DailyEmployeesList/>
           </div>
 
           {/* Production Targets */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 h-fit">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Production Targets vs Actual</h3>
+          <div className="">
+            {/* <h3 className="text-xl font-bold text-gray-800 mb-4">Production Targets vs Actual</h3> */}
             <div className="space-y-4">
               <ProductionTargets/>
               

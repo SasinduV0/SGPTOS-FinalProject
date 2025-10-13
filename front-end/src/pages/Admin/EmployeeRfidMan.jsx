@@ -1,194 +1,138 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
+import axios from 'axios';
 import Header from '../../components/AdminPanal/Header';
 import SearchBar from '../../components/AdminPanal/SearchBar';
 import DataTable from '../../components/AdminPanal/DataTable';
 import StatusBadge from '../../components/AdminPanal/StatusBadge';
 import ActionButton from '../../components/AdminPanal/ActionButton';
-import RfidModal from '../../components/AdminPanal/RfidModal';
-import Modal from '../../components/AdminPanal/Modal';
+import EmpRfidModal from '../../components/AdminPanal/EmpRfidModal';
 import AddButton from '../../components/AdminPanal/AddButton';
+import ConfirmDeleteModal from '../../components/AdminPanal/ConfirmDeleteModal';
+
+const API_BASE_URL = 'http://localhost:8001/api/rfid-employees';
 
 const EmployeeRfidMan = () => {
-  const [rfidEntries, setRfidEntries] = useState([
-    {
-      id: '1',
-      rfidNumber: 'RFID01-234',
-      empName: 'H.D.L Fernando',
-      empId: 'EMP-002',
-      status: 'ACTIVE'
-    },
-    {
-      id: '2',
-      rfidNumber: 'RFID01-235',
-      empName: 'P.K Perera',
-      empId: 'emp-903',
-      status: 'ACTIVE'
-    },
-    {
-      id: '3',
-      rfidNumber: 'RFID01-236',
-      empName: 'S. silva',
-      empId: 'EMP-086',
-      status: 'INACTIVE'
-    },
-    {
-      id: '4',
-      rfidNumber: 'RFID01-789',
-      empName: 'R. Kumara',
-      empId: 'EMP-080',
-      status: 'ACTIVE'
-    }
-  ]);
-
+  const [rfidEntries, setRfidEntries] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
- 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  //For delete confirmation modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const handleAddEntry = () => {
-    setEditingEntry(null);
-    setIsModalOpen(true);
+  const fetchRfidEmployees = async () => {
+    try {
+      setLoading(true); setError('');
+      const params = searchTerm ? { search: searchTerm } : {};
+      const res = await axios.get(API_BASE_URL, { params });
+      setRfidEntries(res.data.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Error fetching employees');
+    } finally { setLoading(false); }
   };
 
-  const handleEditEntry = (entry) => {
-    setEditingEntry(entry);
-    setIsModalOpen(true);
+  useEffect(() => { fetchRfidEmployees(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(fetchRfidEmployees, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleAddEntry = () => { setEditingEntry(null); setIsModalOpen(true); };
+  const handleEditEntry = (entry) => { setEditingEntry(entry); setIsModalOpen(true); };
+
+  //Insted of deleting directly, open modal
+  const handleDeleteClick = (entry) => {
+    setDeleteTarget(entry);
+    setDeleteModalOpen(true);
   };
 
-  const handleDeleteEntry = (id) => {
-    if (window.confirm('Are you sure you want to delete this RFID entry?')) {
-      setRfidEntries(prev => prev.filter(entry => entry.id !== id));
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/${deleteTarget._id}`);
+      fetchRfidEmployees();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message);
+    } finally {
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
     }
   };
 
-  const handleSaveEntry = (entryData) => {
-    if (editingEntry) {
-      // Edit existing entry
-      setRfidEntries(prev =>
-        prev.map(entry =>
-          entry.id === editingEntry.id
-            ? { ...entryData, id: editingEntry.id }
-            : entry
-        )
-      );
-    } else {
-      // Add new entry
-      const newEntry = {
-        ...entryData,
-        id: Date.now().toString()
-      };
-      setRfidEntries(prev => [...prev, newEntry]);
-    }
-    setIsModalOpen(false);
-    setEditingEntry(null);
+
+  const handleSaveEntry = async (entryData) => {
+    try {
+      if (editingEntry) {
+        await axios.put(`${API_BASE_URL}/${editingEntry._id}`, entryData);
+        alert('Updated successfully!');
+      } else {
+        await axios.post(API_BASE_URL, entryData);
+        alert('Created successfully!');
+      }
+      setIsModalOpen(false); setEditingEntry(null); await fetchRfidEmployees();
+    } catch (err) { alert(err.response?.data?.message || err.message); }
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    setRfidEntries(prev =>
-      prev.map(entry =>
-        entry.id === id ? { ...entry, status: newStatus } : entry
-      )
-    );
+  // Your current handleStatusChange function 
+  const handleStatusChange = async (id, newStatus) => {
+    try 
+    { 
+      await axios.patch(`${API_BASE_URL}/${id}/status`, { status:newStatus }); 
+      fetchRfidEmployees(); 
+      alert('Ststus updated');
+    }catch (err){ 
+      alert(err.response?.data?.message || err.message); } //Error popup
   };
-
-  const filteredEntries = rfidEntries.filter(entry => {
-    const matchesSearch = entry.rfidNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.empName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.empId.toLowerCase().includes(searchTerm.toLowerCase());
-
-    
-    return matchesSearch ;
-  });
 
   const tableColumns = [
-    {
-      header: 'RFID NUMBER',
-      key: 'rfidNumber',
-      className: 'font-mono text-sm text-gray-800'
-    },
-    {
-      header: 'NAME',
-      key: 'empName',
-      className: 'text-gray-800'
-    },
-    {
-      header: 'EMPLOYEE ID',
-      key: 'empId',
-      className: 'text-gray-800'
-    },
-    {
-      header: 'STATUS',
-      key: 'status',
-      render: (entry) => (
-        <StatusBadge
-          status={entry.status}
-          onChange={(newStatus) => handleStatusChange(entry.id, newStatus)}
-        />
-      )
-    },
-    {
-      header: 'ACTION',
-      key: 'actions',
-      render: (entry) => (
-        <ActionButton
-          onEdit={() => handleEditEntry(entry)}
-          onDelete={() => handleDeleteEntry(entry.id)}
-          editTooltip="Edit RFID Entry"
-          deleteTooltip="Delete RFID Entry"
-        />
-      )
-    }
+    { header:'RFID NUMBER', key:'rfidNumber' },
+    { header:'NAME', key:'empName' },
+    { header:'EMPLOYEE ID', key:'empId' },
+    { header:'DEPARTMENT', key:'department' },
+    { header:'STATUS', key:'status', render:(entry)=><StatusBadge status={entry.status} onChange={(s)=>handleStatusChange(entry._id,s)} /> },
+    { header:'ACTION', key:'actions', render:(entry)=><ActionButton onEdit={()=>handleEditEntry(entry)} onDelete={()=>handleDeleteClick(entry)} /> }
   ];
 
-
   return (
-    <div className="flex min-h-screen bg-gray-50">
-
-      {/* Main Content */}
+    <div className="flex min-h-screen bg-gray-50 font-sans text-base text-gray-800">
       <div className="flex-1 flex flex-col">
+        <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center justify-between p-6 border-b">
 
-        {/* Page Content */}
-        <div className="flex-1 p-6">
-          <div className="bg-white rounded-lg shadow-sm">
-            
-            <div className="flex items-center justify-between p-6 border-b">
-              <Header title="Employee RFID Managment" icon={<User />} />
-              <AddButton handleAddEntry={handleAddEntry} text="Add User" />
-            </div>
+            <Header title="Employee RFID Management" icon={<User />} />
+            <AddButton handleAddEntry={handleAddEntry} text="Add Employee" />
 
-            <SearchBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              searchPlaceholder="Search RFID, Name or Employee ID"
-            />
+          </div>
 
-            {/* RFID Entries */}
-            <div className="p-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-medium text-gray-800">
-                  RFID Entries ({filteredEntries.length})
-                </h2>
-              </div>
+          <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID Number" />
+          
+          {error && <div className="p-4 text-red-600">{error}</div>}
+          {loading && <div className="p-6 text-center">Loading...</div>}
 
-              <DataTable
-                columns={tableColumns}
-                data={filteredEntries}
-                emptyMessage="Try adjusting your search or filter criteria"
-              />
-            </div>
+          <div className="p-6">
+            <h2 className="text-2xl font-semibold text-gray-900">RFID Entries ({rfidEntries.length})</h2>
+            <DataTable columns={tableColumns} data={rfidEntries} emptyMessage="Try adjusting search or filters" />
           </div>
         </div>
       </div>
 
-      {/* RFID Modal */}
-      <RfidModal
+      {/*Delete confirmation modal*/}
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          isOpen={deleteModalOpen}
+          onClose={()=> setDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          rfidNumber={deleteTarget.rfidNumber}
+          entityType='employee'/>
+      )}
+
+      <EmpRfidModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingEntry(null);
-        }}
+        onClose={()=>{ setIsModalOpen(false); setEditingEntry(null); }}
         onSave={handleSaveEntry}
         initialData={editingEntry}
       />

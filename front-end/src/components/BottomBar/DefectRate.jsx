@@ -58,9 +58,9 @@ function DefectRate() {
 
   return (
 
-    <div className="flex mt-5 ml-4 gap-2">
-        <h3 className="text-gray-300 font-semibold text-sm">Defect Rate</h3>
-        <p className="text-sm font-bold text-white">{defectRate}%</p>
+    <div className="flex mt-5 ml-4 gap-1">
+        <h3 className="text-gray-300 font-semibold text-xs">Defect Rate</h3>
+        <p className="text-xs font-bold text-white">{defectRate}%</p>
         <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
     </div>
   );

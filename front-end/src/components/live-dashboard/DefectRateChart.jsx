@@ -6,8 +6,6 @@ import io from "socket.io-client";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// WebSocket connection
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 function DefectRateChart() {
   const [defectData, setDefectData] = useState({
@@ -34,31 +32,59 @@ function DefectRateChart() {
     fetchDefectRate();
   }, []);
 
-  // Listen for real-time updates via Socket.IO
+  // Setup Socket.IO inside the component and provide a polling fallback
   useEffect(() => {
-    // Listen for defect updates (when new defects are added)
-    socket.on("defectUpdate", () => {
-      console.log("📊 DefectRateChart received defect update");
-      fetchDefectRate();
-    });
+    let socket;
+    let pollId = null;
 
-    // Listen for employee updates (affects total production)
-    socket.on("leadingLineUpdate", () => {
-      console.log("📊 DefectRateChart received employee update");
-      fetchDefectRate();
-    });
+    const setupPolling = () => {
+      if (pollId) return;
+      pollId = setInterval(() => {
+        fetchDefectRate();
+      }, 10000); // poll every 10s when socket not available
+      console.warn("⚠️ DefectRateChart polling enabled (10s)");
+    };
 
-    // Listen for supervisor updates (might affect data)
-    socket.on("supervisorUpdate", () => {
-      console.log("📊 DefectRateChart received supervisor update");
-      fetchDefectRate();
-    });
+    try {
+      socket = io("http://localhost:8001", { transports: ["websocket"] });
 
-    // Cleanup
+      socket.on("connect", () => {
+        console.log("� DefectRateChart socket connected", socket.id);
+        // Immediately refresh when socket connects
+        fetchDefectRate();
+        // clear polling if it was running
+        if (pollId) {
+          clearInterval(pollId);
+          pollId = null;
+        }
+      });
+
+      // handle relevant server events
+      const events = ["defectUpdate", "leadingLineUpdate", "supervisorUpdate"];
+      events.forEach((ev) => socket.on(ev, () => {
+        console.log(`📊 DefectRateChart received ${ev}`);
+        fetchDefectRate();
+      }));
+
+      // If socket fails to connect within a short time, enable polling
+      setTimeout(() => {
+        if (!socket.connected) setupPolling();
+      }, 3000);
+    } catch (err) {
+      console.error("DefectRateChart socket error:", err);
+      setupPolling();
+    }
+
     return () => {
-      socket.off("defectUpdate");
-      socket.off("leadingLineUpdate");
-      socket.off("supervisorUpdate");
+      try {
+        if (socket) {
+          socket.removeAllListeners();
+          socket.disconnect();
+        }
+      } catch (e) {
+        // ignore cleanup errors
+      }
+      if (pollId) clearInterval(pollId);
     };
   }, []);
 
@@ -126,7 +152,7 @@ function DefectRateChart() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center bg-white px-8 rounded-2xl w-[500px] h-[200px]">
+      <div className="flex items-center justify-center bg-white px-8 rounded-2xl w-[400px] h-[200px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-500">Loading defect data...</p>
@@ -136,8 +162,8 @@ function DefectRateChart() {
   }
 
   return (
-    <div className="flex items-center bg-white px-8 rounded-2xl gap-4 w-[500px]">
-      <div className="relative w-[200px] h-[200px] flex">
+    <div className="flex items-center bg-white  rounded-2xl gap-2 w-[440px]">
+      <div className="relative w-[200px] h-[170px] flex mt-2">
         <Doughnut data={data} options={options} />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
           <p className="text-lg font-bold text-gray-800">{defectData.defectRate}</p>
@@ -145,7 +171,7 @@ function DefectRateChart() {
         </div>
       </div>
       <div className="flex flex-col">
-        <p className={`text-center text-lg font-semibold ${color} mb-2`}>
+        <p className={`text-center text-md font-semibold ${color} mb-2`}>
           {text}
         </p>
         <div className="space-y-2 text-center">

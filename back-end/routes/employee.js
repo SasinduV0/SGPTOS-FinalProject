@@ -16,11 +16,11 @@ const emitEmployeeUpdate = async (io) => {
 // 1️⃣ Create new employee
 router.post("/employees", async (req, res) => {
   try {
-    const { name, line, pcs } = req.body;
-    const employee = new Employee({ name, line, pcs });
+    const { employeeId, name, line, pcs } = req.body;
+    const employee = new Employee({ employeeId, name, line, pcs });
     await employee.save();
 
-    console.log("✅ Employee created:", employee.name);
+    console.log("✅ Employee created:", employee.name, "ID:", employee.employeeId);
 
     // Emit real-time update
     const io = req.app.get("io");
@@ -46,14 +46,14 @@ router.get("/employees", async (req, res) => {
   }
 });
 
-// 3️⃣ Update employee
-router.put("/employees/:id", async (req, res) => {
+// 3️⃣ Update employee by custom employeeId
+router.put("/employees/:employeeId", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { employeeId } = req.params;
     const { name, line, pcs } = req.body;
     
-    const employee = await Employee.findByIdAndUpdate(
-      id, 
+    const employee = await Employee.findOneAndUpdate(
+      { employeeId: employeeId },  // Find by custom employeeId
       { name, line, pcs }, 
       { new: true }
     );
@@ -62,7 +62,7 @@ router.put("/employees/:id", async (req, res) => {
       return res.status(404).json({ error: "Employee not found" });
     }
 
-    console.log("✅ Employee updated:", employee.name);
+    console.log("✅ Employee updated:", employee.name, "ID:", employee.employeeId);
 
     // Emit real-time update
     const io = req.app.get("io");
@@ -77,14 +77,14 @@ router.put("/employees/:id", async (req, res) => {
   }
 });
 
-// 4️⃣ Update employee pieces only (for production updates)
-router.patch("/employees/:id/pcs", async (req, res) => {
+// 4️⃣ Update employee pieces only by custom employeeId
+router.patch("/employees/:employeeId/pcs", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { employeeId } = req.params;
     const { pcs } = req.body;
     
-    const employee = await Employee.findByIdAndUpdate(
-      id, 
+    const employee = await Employee.findOneAndUpdate(
+      { employeeId: employeeId },  // Find by custom employeeId
       { pcs }, 
       { new: true }
     );
@@ -93,7 +93,7 @@ router.patch("/employees/:id/pcs", async (req, res) => {
       return res.status(404).json({ error: "Employee not found" });
     }
 
-    console.log("✅ Employee PCS updated:", employee.name, "->", pcs);
+    console.log("✅ Employee PCS updated:", employee.name, "->", pcs, "ID:", employee.employeeId);
 
     // Emit real-time update
     const io = req.app.get("io");
@@ -108,17 +108,17 @@ router.patch("/employees/:id/pcs", async (req, res) => {
   }
 });
 
-// 5️⃣ Delete employee
-router.delete("/employees/:id", async (req, res) => {
+// 5️⃣ Delete employee by custom employeeId
+router.delete("/employees/:employeeId", async (req, res) => {
   try {
-    const { id } = req.params;
-    const employee = await Employee.findByIdAndDelete(id);
+    const { employeeId } = req.params;
+    const employee = await Employee.findOneAndDelete({ employeeId: employeeId });
 
     if (!employee) {
       return res.status(404).json({ error: "Employee not found" });
     }
 
-    console.log("✅ Employee deleted:", employee.name);
+    console.log("✅ Employee deleted:", employee.name, "ID:", employee.employeeId);
 
     // Emit real-time update
     const io = req.app.get("io");
@@ -158,7 +158,7 @@ router.post("/test-update", async (req, res) => {
   }
 });
 
-// // 👉 Summary endpoint
+// 7️⃣ Summary endpoint
 router.get("/summary", async (req, res) => {
   try {
     const employees = await Employee.find();
@@ -188,25 +188,22 @@ router.get("/summary", async (req, res) => {
   }
 });
 
-
-
-// 👉 Line performance endpoint
+// 8️⃣ Line performance endpoint
 router.get("/line-performance", async (req, res) => {
   try {
     const employees = await Employee.find();
 
     // Fixed targets
     const lineTargets = {
-  1: 1000,
-  2: 800,
-  3: 900,
-  4: 1100,
-  5: 950,
-  6: 1050,
-  7: 700,
-  8: 850,
-};
-
+      1: 1000,
+      2: 800,
+      3: 900,
+      4: 1100,
+      5: 950,
+      6: 1050,
+      7: 700,
+      8: 850,
+    };
 
     // Group actuals by line
     const lineTotals = employees.reduce((acc, emp) => {
@@ -233,6 +230,5 @@ router.get("/line-performance", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 module.exports = router;
