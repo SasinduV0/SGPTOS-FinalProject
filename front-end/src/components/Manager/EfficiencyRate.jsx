@@ -3,39 +3,50 @@ import axios from "axios";
 import io from "socket.io-client";
 import { TrendingUp } from "lucide-react"; // 📈 Efficiency icon
 
+// Connect to the socket server (ensure the URL is correct for your setup)
 const socket = io("http://localhost:8001", { transports: ["websocket"] });
-
-const lineTargets = {
-  1: 1000,
-  2: 800,
-  3: 900,
-  4: 1100,
-  5: 950,
-  6: 1050,
-  7: 700,
-  8: 850,
-};
 
 const EfficiencyRate = () => {
   const [efficiency, setEfficiency] = useState(0);
 
-  const calculateEfficiency = (employees) => {
-    const totalProduction = employees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
-    const totalTarget = Object.values(lineTargets).reduce((sum, t) => sum + t, 0);
-    const rate = totalTarget > 0 ? ((totalProduction / totalTarget) * 100).toFixed(2) : 0;
-    setEfficiency(rate);
+  // This function fetches the defect rate from the new backend endpoint 
+  // and calculates the overall efficiency.
+  const fetchEfficiencyRate = async () => {
+    try {
+      // The endpoint is updated to call the new /defect-rate route.
+      // Make sure the URL matches your server's host and the prefix for your iot routes.
+      const { data } = await axios.get("http://localhost:8001/api/iot/defect-rate");
+
+      if (data && data.defectRate) {
+        // The API returns the defectRate as a string (e.g., "5.25%").
+        // We parse the floating-point number from this string.
+        const defectPercentage = parseFloat(data.defectRate);
+        
+        // Efficiency is calculated as 100% minus the defect rate.
+        const efficiencyPercentage = 100 - defectPercentage;
+        
+        // We ensure the efficiency is not negative and format it to 2 decimal places.
+        setEfficiency(Math.max(0, efficiencyPercentage).toFixed(2));
+      }
+    } catch (error) {
+      console.error("Error fetching efficiency rate:", error);
+    }
   };
 
   useEffect(() => {
-    const fetchEmployees = async () => {
-      const { data } = await axios.get("http://localhost:8001/api/employees");
-      calculateEfficiency(data);
-    };
-    fetchEmployees();
+    // Fetch the initial efficiency rate when the component mounts.
+    fetchEfficiencyRate();
 
-    socket.on("leadingLineUpdate", calculateEfficiency);
-    return () => socket.off("leadingLineUpdate", calculateEfficiency);
-  }, []);
+    // Listen for the 'defectUpdate' event from the server.
+    // When a defect is added or updated, we'll refetch the rate
+    // to keep the display updated in real-time.
+    socket.on("defectUpdate", fetchEfficiencyRate);
+
+    // Clean up the socket listener when the component unmounts.
+    return () => {
+      socket.off("defectUpdate", fetchEfficiencyRate);
+    };
+  }, []); // The empty dependency array ensures this effect runs only once on mount.
 
   return (
     <div className="bg-white p-4 rounded-2xl shadow w-full">

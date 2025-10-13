@@ -1,53 +1,59 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import io from "socket.io-client";
 
 const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 function ProductionTargets() {
-  const [dailyTarget, setDailyTarget] = useState(2500); // from backend or fixed
+  const [dailyTarget, setDailyTarget] = useState(2500);
   const [dailyCompleted, setDailyCompleted] = useState(0);
-  const [weeklyTarget, setWeeklyTarget] = useState(12500); // from backend or fixed
+  const [weeklyTarget, setWeeklyTarget] = useState(12500);
   const [weeklyCompleted, setWeeklyCompleted] = useState(0);
   const [qualityRate, setQualityRate] = useState(100);
   const [defectRate, setDefectRate] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Fetch production data
+  // Fetch production data using backend scan-count endpoint
   const fetchProduction = async () => {
     try {
-      const response = await axios.get("http://localhost:8001/api/employees"); 
-      const employees = response.data;
+      // Get today's date boundaries (start and end of day in Unix timestamp)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStart = today.getTime();
+      const todayEnd = todayStart + 86400000; // 24 hours in milliseconds
 
-      // Calculate daily production (sum of all employee pcs for today)
-      const today = new Date().toLocaleDateString();
-      const todaysEmployees = employees.filter(emp => 
-        new Date(emp.createdAt).toLocaleDateString() === today
+      // Fetch today's production count using backend endpoint
+      const dailyResponse = await fetch(
+        `http://localhost:8001/api/iot/scan-count?startTime=${todayStart}&endTime=${todayEnd}`
       );
-      
-      const dailyProduced = todaysEmployees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
-      const dailyTargetCalc = todaysEmployees.length * 120; // 120 pcs per employee per day
+      const dailyData = await dailyResponse.json();
+      const dailyProduced = dailyData.count || 0;
       
       // Calculate weekly production (last 7 days)
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      
-      const weeklyEmployees = employees.filter(emp => 
-        new Date(emp.createdAt) >= weekAgo
-      );
-      
-      const weeklyProduced = weeklyEmployees.reduce((sum, emp) => sum + (emp.pcs || 0), 0);
-      const weeklyTargetCalc = dailyTargetCalc * 5; // 5 working days
+      weekAgo.setHours(0, 0, 0, 0);
+      const weekAgoTimestamp = weekAgo.getTime();
+      const nowTimestamp = Date.now();
 
-      setDailyTarget(dailyTargetCalc || 2500);
+      // Fetch weekly production count using backend endpoint
+      const weeklyResponse = await fetch(
+        `http://localhost:8001/api/iot/scan-count?startTime=${weekAgoTimestamp}&endTime=${nowTimestamp}`
+      );
+      const weeklyData = await weeklyResponse.json();
+      const weeklyProduced = weeklyData.count || 0;
+
+      // Set targets (you can adjust these or fetch from a settings API)
+      const dailyTargetValue = 2500;
+      const weeklyTargetValue = dailyTargetValue * 5; // 5 working days
+
+      setDailyTarget(dailyTargetValue);
       setDailyCompleted(dailyProduced);
-      setWeeklyTarget(weeklyTargetCalc || 12500);
+      setWeeklyTarget(weeklyTargetValue);
       setWeeklyCompleted(weeklyProduced);
 
       setLoading(false);
     } catch (error) {
       console.error("Error fetching production data:", error);
-      // Set fallback values
       setDailyTarget(2500);
       setDailyCompleted(0);
       setWeeklyTarget(12500);
@@ -56,16 +62,31 @@ function ProductionTargets() {
     }
   };
 
-  // Fetch defect rate to calculate quality rate
+  // Fetch defect rate using backend endpoint
   const fetchDefectRate = async () => {
     try {
-      const response = await axios.get("http://localhost:8001/api/iot/defect-rate");
-      const defectRateValue = parseFloat(response.data.defectRate) || 0;
-      const quality = (100 - defectRateValue).toFixed(1);
+      const response = await fetch("http://localhost:8001/api/iot/defect-rate");
+      const data = await response.json();
+      
+      // Extract defect rate from response
+      let defectRateValue = 0;
+      if (data.defectRate) {
+        // Handle string format like "2.50%"
+        defectRateValue = parseFloat(data.defectRate.replace('%', ''));
+      } else if (data.defects !== undefined && data.total !== undefined) {
+        // Calculate from raw numbers
+        defectRateValue = data.total > 0 
+          ? (data.defects / data.total) * 100 
+          : 0;
+      }
+      
+      const quality = Math.max(0, 100 - defectRateValue).toFixed(1);
       setDefectRate(defectRateValue.toFixed(1));
       setQualityRate(quality);
     } catch (error) {
       console.error("Error fetching defect rate:", error);
+      setDefectRate(0);
+      setQualityRate(100);
     }
   };
 
@@ -75,21 +96,21 @@ function ProductionTargets() {
   }, []);
 
   useEffect(() => {
-    // Listen for real-time updates
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      console.log("📊 ProductionTargets received update:", updatedEmployees.length, "employees");
-      // Recalculate production targets with new data
+    // Listen for RFID scan updates
+    socket.on("rfidUpdate", (data) => {
+      console.log("📊 ProductionTargets received RFID scan update");
       fetchProduction();
     });
 
-    // Also listen for defect rate updates
-    socket.on("defectRateUpdate", () => {
+    // Listen for defect updates
+    socket.on("defectUpdate", (data) => {
+      console.log("📊 ProductionTargets received defect update");
       fetchDefectRate();
     });
 
     return () => {
-      socket.off("leadingLineUpdate");
-      socket.off("defectRateUpdate");
+      socket.off("rfidUpdate");
+      socket.off("defectUpdate");
     };
   }, []);
 
