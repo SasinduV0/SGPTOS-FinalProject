@@ -94,7 +94,7 @@ const DailyTotalBarChart = () => {
     // Enhanced container with shadow, border, and more padding
     <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl p-6 border border-gray-200/80">
       <h2 className="text-xl font-semibold text-gray-700 mb-4">
-        Total Productivity Per Day
+        Daily Productivity
       </h2>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={chartData} margin={{ top: 30, right: 10, left: 0, bottom: 20 }}>

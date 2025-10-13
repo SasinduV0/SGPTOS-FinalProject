@@ -1,15 +1,128 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import io from 'socket.io-client';
 import SideBar from '../../components/SideBar';
 import { SupervisorLinks } from '../Data/SidebarNavlinks';
 import { dashboardData } from '../Data/dashboardData';
+
+// WebSocket connection
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 
 const AssignmentPage = () => {
   const [selectedLine, setSelectedLine] = useState(1);
   const [selectedWorkers, setSelectedWorkers] = useState([]);
-  const [stations, setStations] = useState([...dashboardData.stations]);
-  const [availableWorkers, setAvailableWorkers] = useState([...dashboardData.availableWorkers]);
+  const [lineAssignments, setLineAssignments] = useState({
+    1: { stations: [...dashboardData.stations], assignedWorkerIds: [] },
+    2: { stations: [...dashboardData.stations], assignedWorkerIds: [] },
+    3: { stations: [...dashboardData.stations], assignedWorkerIds: [] },
+    4: { stations: [...dashboardData.stations], assignedWorkerIds: [] }
+  });
   const [showOptimizeTable, setShowOptimizeTable] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [lineManagement, setLineManagement] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch employees from backend
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        setLoading(true);
+        const { data } = await axios.get("http://localhost:8001/api/employees");
+        setEmployees(data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+        setError("Failed to fetch employees data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  // Fetch line management data
+  useEffect(() => {
+    const fetchLineManagement = async () => {
+      try {
+        const { data } = await axios.get("http://localhost:8001/api/line-management");
+        setLineManagement(data);
+      } catch (err) {
+        console.error("Error fetching line management:", err);
+      }
+    };
+    fetchLineManagement();
+  }, []);
+
+  // WebSocket listeners for real-time updates
+  useEffect(() => {
+    socket.on("leadingLineUpdate", (updatedEmployees) => {
+      setEmployees(updatedEmployees);
+    });
+
+    socket.on("supervisorUpdate", (updatedSupervisors) => {
+      setLineManagement(updatedSupervisors);
+    });
+
+    socket.on("reallocationUpdate", (reallocationData) => {
+      // Handle real-time reallocation updates
+      console.log("Reallocation update received:", reallocationData);
+    });
+
+    return () => {
+      socket.off("leadingLineUpdate");
+      socket.off("supervisorUpdate");
+      socket.off("reallocationUpdate");
+    };
+  }, []);
+
+  // Clear selected workers when switching lines
+  useEffect(() => {
+    setSelectedWorkers([]);
+  }, [selectedLine]);
+
+  // Get current line's data
+  const currentLineData = lineAssignments[selectedLine];
+  const stations = currentLineData.stations;
+  
+  // Filter available workers by line and exclude already assigned workers
+  const getAvailableWorkers = () => {
+    if (loading || employees.length === 0) {
+      // Fallback to static data when backend data is not available
+      const lineInfo = dashboardData.lines.find(line => line.id === selectedLine);
+      const lineWorkerIds = lineInfo ? lineInfo.workerDetails.map(w => w.id) : [];
+      
+      return dashboardData.availableWorkers.filter(worker => 
+        lineWorkerIds.includes(worker.id) && 
+        !currentLineData.assignedWorkerIds.includes(worker.id)
+      );
+    }
+
+    // Use backend data - filter employees by line
+    const lineEmployees = employees.filter(emp => emp.line === selectedLine);
+    
+    // Convert backend employee data to expected format and filter out assigned workers
+    return lineEmployees
+      .filter(emp => !currentLineData.assignedWorkerIds.includes(emp._id))
+      .map(emp => {
+        // Find matching worker from static data for skills and experience
+        const staticWorker = dashboardData.availableWorkers.find(w => 
+          w.name.toLowerCase() === emp.name.toLowerCase()
+        );
+        
+        return {
+          id: emp._id,
+          name: emp.name,
+          skills: staticWorker ? staticWorker.skills : ['General Work'],
+          experience: staticWorker ? staticWorker.experience : 1,
+          pcs: emp.pcs || 0,
+          line: emp.line
+        };
+      });
+  };
+  
+  const availableWorkers = getAvailableWorkers();
 
   //select one time
   const handleWorkerSelect = (workerId) => {
@@ -21,61 +134,97 @@ const AssignmentPage = () => {
   };
 
   //worker assignment to station
-  const assignWorkerToStation = (stationId) => {
+  const assignWorkerToStation = async (stationId) => {
     if (selectedWorkers.length === 0) return;
     const workerId = selectedWorkers[0];
     const worker = availableWorkers.find(w => w.id === workerId);
     if (!worker) return;
-    setStations(prevStations => prevStations.map(station => {
-      if (station.id === stationId && !station.occupied) {
-        return {
-          ...station,
-          worker: worker.name,
-          task: worker.skills[0] || 'Assigned',
-          efficiency: 90, 
-          occupied: true
-        };
-      }
-      return station;
-    }));
-    setAvailableWorkers(prev => prev.filter(w => w.id !== workerId));
-    setSelectedWorkers([]);
+    
+    try {
+      // Save assignment to backend via line reallocation API
+      const reallocationData = {
+        EmployeeID: workerId,
+        name: worker.name,
+        unit: "Unit A", // Default unit, you can modify this
+        lineNo: [`Line 0${selectedLine}`], // Current line
+        newLineNo: [`Line 0${selectedLine}`], // Assigned to same line
+        position: worker.skills[0] || 'General Worker',
+        status: "Active",
+        startedDate: new Date().toISOString(),
+        stationId: stationId
+      };
+
+      await axios.post("http://localhost:8001/api/line-reallocation", reallocationData);
+      
+      // Update local state
+      setLineAssignments(prev => ({
+        ...prev,
+        [selectedLine]: {
+          ...prev[selectedLine],
+          stations: prev[selectedLine].stations.map(station => {
+            if (station.id === stationId && !station.occupied) {
+              return {
+                ...station,
+                worker: worker.name,
+                task: worker.skills[0] || 'Assigned',
+                efficiency: 90, 
+                occupied: true,
+                workerId: workerId
+              };
+            }
+            return station;
+          }),
+          assignedWorkerIds: [...prev[selectedLine].assignedWorkerIds, workerId]
+        }
+      }));
+      
+      setSelectedWorkers([]);
+      console.log("✅ Worker assigned successfully");
+      
+    } catch (error) {
+      console.error("❌ Error assigning worker:", error);
+      setError("Failed to assign worker. Please try again.");
+    }
   };
 
   const handleReassignWorkers = () => {
-
-    setAvailableWorkers(prev => {
-      const assignedWorkers = stations
-        .filter(station => station.occupied && station.worker)
-        .map(station => {
-          const original = dashboardData.availableWorkers.find(w => w.name === station.worker);
-          return original || { id: station.worker, name: station.worker, skills: ['Assigned'], experience: 0 };
-        });
-
-      const allWorkers = [...prev, ...assignedWorkers];
-      const uniqueWorkers = allWorkers.filter((w, idx, arr) => arr.findIndex(x => x.id === w.id) === idx);
-      return uniqueWorkers;
-    });
-    setStations(prevStations => prevStations.map(station => ({
-      ...station,
-      worker: null,
-      task: 'Available',
-      efficiency: 0,
-      occupied: false
-    })));
+    setLineAssignments(prev => ({
+      ...prev,
+      [selectedLine]: {
+        stations: [...dashboardData.stations], // Reset to original state
+        assignedWorkerIds: [] // Clear assigned workers for this line
+      }
+    }));
     setSelectedWorkers([]);
   };
 
-  // Get all workers for the selected line
-  const lineInfo = dashboardData.lines.find(line => line.id === selectedLine);
+  // Get all workers for the selected line with backend data
+  const getLineInfo = () => {
+    if (employees.length > 0) {
+      // Use backend data
+      const lineEmployees = employees.filter(emp => emp.line === selectedLine);
+      return {
+        id: selectedLine,
+        name: `Line ${selectedLine}`,
+        workers: lineEmployees.length,
+        workerDetails: lineEmployees.map(emp => ({
+          id: emp._id,
+          name: emp.name,
+          pcs: emp.pcs || 0
+        }))
+      };
+    } else {
+      // Fallback to static data
+      return dashboardData.lines.find(line => line.id === selectedLine);
+    }
+  };
+
+  const lineInfo = getLineInfo();
   const lineWorkers = lineInfo ? lineInfo.workers : [];
-
   
-  const usedIds = new Set();
-
-  // Only show assigned workers who are in availableWorkers
+  // Only show assigned workers who are in availableWorkers for current line
   const assignedWorkers = stations
-    .filter(s => s.occupied && s.worker && dashboardData.availableWorkers.some(w => w.name === s.worker))
+    .filter(s => s.occupied && s.worker)
     .map((station) => {
       const original = dashboardData.availableWorkers.find(w => w.name === station.worker);
       return {
@@ -85,12 +234,14 @@ const AssignmentPage = () => {
         station: station.name
       };
     });
+  
   const unassignedWorkers = availableWorkers.map(w => ({
     id: w.id,
     name: w.name,
     occupation: w.skills[0] || 'Unassigned',
     station: 'Unassigned'
   }));
+  
   const allWorkersForTable = [...assignedWorkers, ...unassignedWorkers];
 
   const handleOptimizeClick = () => {
@@ -105,6 +256,32 @@ const AssignmentPage = () => {
     <div className="flex">
       <SideBar title="Supervisor Panel" links={SupervisorLinks} />
     <div className="space-y-6 ml-64 w-full mt-16">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+          <div className="flex items-center">
+            <span className="font-medium">Error: </span>
+            <span className="ml-2">{error}</span>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-auto text-red-700 hover:text-red-900"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-lg mb-4">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+            <span>Loading worker data...</span>
+          </div>
+        </div>
+      )}
+      
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Worker Assignment Management</h2>
         
@@ -268,6 +445,9 @@ const AssignmentPage = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div><strong>Experience:</strong> {worker.experience} years</div>
+                    {worker.pcs && (
+                      <div><strong>Production:</strong> {worker.pcs} pcs</div>
+                    )}
                   </div>
                 </div>
               ))}
