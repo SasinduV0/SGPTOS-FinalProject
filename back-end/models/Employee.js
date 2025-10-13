@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const EmployeeSchema = new mongoose.Schema({
+    employeeId: {
+        type: String,
+        required: true,
+        unique: true,  // Ensures no duplicate employee IDs
+        trim: true
+    },
     name: String,
     line: Number,
     pcs: Number,   // pieces produced

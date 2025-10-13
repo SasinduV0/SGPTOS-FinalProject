@@ -40,10 +40,10 @@ const TopEmployees = () => {
 
   return (
     <div className="">
-      <div className="text-black rounded-2xl p-3">
+      <div className="text-black rounded-2xl px-3 py-1">
         <h2 className="text-lg font-bold text-center">Top 4 Employees (All Lines)</h2>
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-1">
           {topEmployees.map((emp, index) => (
             <div
               key={emp._id}

@@ -5,7 +5,16 @@ import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 import LineWiseProductivity from '../../components/Manager/LineWiseProductivity';
 import OverallTargetChart from '../../components/Charts/Live-Dashboard/OverallTargetChart';
 import RemainingTime from '../../components/live-dashboard/RemainingTime';
-import UpdatedLineManagement from '../../components/Manager/UpdatedLineManagement';
+import DashboardSummary from '../../components/Manager/DashboardSummary';
+import ProductivityIncrease from '../../components/Manager/ProductivityIncrease';
+import LineTargetChart from '../../components/live-dashboard/LineTargetChart';
+import LineProductivityChart from '../../components/Manager/LineProductivityChart';
+import DailyTotalBarChart from '../../components/Manager/DailyTotalBarChart';
+import ProductionLineStatus from '../../components/Supervisor/ProductionLineStatus';
+import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
+import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
+import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
 
 const ManagerHome = ({ lineData }) => {
 
@@ -44,12 +53,12 @@ const ManagerHome = ({ lineData }) => {
   // ];
 
   const productionData = [
-    { brand: 'Brand 5', Tot: 100, finished: 25, remaining: 46, dueDate: '5/02/2025', remainingDays: 5 },
-    { brand: 'Brand 2', Tot: 100, finished: 30, remaining: 56, dueDate: '5/02/2025', remainingDays: 7 },
-    { brand: 'Brand 1', Tot: 100, finished: 25, remaining: 33, dueDate: '5/02/2025', remainingDays: 12 },
-    { brand: 'Brand 6', Tot: 100, finished: 16, remaining: 55, dueDate: '5/02/2025', remainingDays: 16 },
-    { brand: 'Brand 3', Tot: 100, finished: 11, remaining: 61, dueDate: '5/02/2025', remainingDays: 25 },
-    { brand: 'Brand 4', Tot: 100, finished: 10, remaining: 60, dueDate: '5/02/2025', remainingDays: 30 }
+    { brand: 'Brand 5', finished: 25, remaining: 46, dueDate: '5/02/2025', remainingDays: 5 },
+    { brand: 'Brand 2', finished: 30, remaining: 56, dueDate: '5/02/2025', remainingDays: 7 },
+    { brand: 'Brand 1', finished: 25, remaining: 33, dueDate: '5/02/2025', remainingDays: 12 },
+    { brand: 'Brand 6', finished: 16, remaining: 55, dueDate: '5/02/2025', remainingDays: 16 },
+    { brand: 'Brand 3', finished: 11, remaining: 61, dueDate: '5/02/2025', remainingDays: 25 },
+    { brand: 'Brand 4', finished: 10, remaining: 60, dueDate: '5/02/2025', remainingDays: 30 }
   ];
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -65,17 +74,24 @@ const ManagerHome = ({ lineData }) => {
 
   return (
     <>
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ml-70 mt-22">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ml-70 mt-22 mr-5">
       <SideBar title ="Manager Panel" links={ManagerLinks}/>
       
       {/* Total Status Card */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Total status</h3>
+      <div className="bg-white rounded-lg shadow px-6">
+        {/* <h3 className="text-lg font-semibold text-gray-800 mb-4">Total status</h3> */}
         <div className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded">
+
+        <DashboardSummary />
+
+
+          {/* <div className="bg-gray-50 p-3 rounded">
             <div className="text-sm text-gray-600">Defect Rate</div>
             <div className="text-xl font-bold text-red-500">21.37%</div>
           </div>
+
+
+          
           <div className="bg-gray-50 p-3 rounded">
             <div className="text-sm text-gray-600">Traget units</div>
             <div className="text-xl font-bold">200</div>
@@ -87,15 +103,18 @@ const ManagerHome = ({ lineData }) => {
           <div className="bg-gray-50 p-3 rounded">
             <div className="text-sm text-gray-600">Units Remaining</div>
             <div className="text-xl font-bold">70</div>
-          </div>
+          </div> */}
         </div>
       </div>
+       
 
       {/* Productivity Chart */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Productivity increase</h3>
+        {/* <h3 className="text-lg font-semibold text-gray-800 mb-4">Productivity increase</h3> */}
         <div className="flex items-center justify-center">
-          <ResponsiveContainer width="100%" height={300}>
+
+          <ProductivityIncrease/>
+          {/* <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
                 data={productivityData}
@@ -113,21 +132,23 @@ const ManagerHome = ({ lineData }) => {
               </Pie>
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer> */}
         </div>
-        <div className="text-center mt-2">
+        {/* <div className="text-center mt-2">
           <div className="text-lg font-bold">12.5%</div>
           <div className="text-sm text-red-500">15 Workers absent</div>
           <div className="text-sm text-gray-600">Shift ends at 14:30</div>
-        </div>
+        </div> */}
       </div>
 
       
       
        {/* Overall Target */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6 mt-2">
         <div className="flex items-center justify-center">
-          <OverallTargetChart lineTargets={lineTargets} />
+          {/* <OverallTargetChart lineTargets={lineTargets} /> */}
+
+          <OverallTargetChartsRFID/>
         </div>
         <div className="text-center mt-2">
          <RemainingTime/>
@@ -178,20 +199,6 @@ const ManagerHome = ({ lineData }) => {
       <LineWiseProductivity/>
 
 
-      {/* <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Line wise Target</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={lineWiseData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="line" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="target" fill="#93c5fd" name="Target" />
-            <Bar dataKey="actual" fill="#3b82f6" name="Actual" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div> */}
-
       {/* Production Table */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="overflow-x-auto">
@@ -199,7 +206,6 @@ const ManagerHome = ({ lineData }) => {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-2">Product</th>
-                <th className="text-left p-2">Total units</th>
                 <th className="text-left p-2">Finished units</th>
                 <th className="text-left p-2">Remaining units</th>
                 <th className="text-left p-2">Due Date</th>
@@ -213,7 +219,6 @@ const ManagerHome = ({ lineData }) => {
                     <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
                     {item.brand}
                   </td>
-                  <td className="p-2">{item.Tot}</td>
                   <td className="p-2">{item.finished}</td>
                   <td className="p-2">{item.remaining}</td>
                   <td className="p-2">{item.dueDate}</td>
@@ -225,7 +230,11 @@ const ManagerHome = ({ lineData }) => {
         </div>
       </div>
 
-      <UpdatedLineManagement />
+    
+     
+              
+      
+
     </div>
     </>
   );

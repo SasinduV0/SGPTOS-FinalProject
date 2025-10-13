@@ -8,8 +8,12 @@ import EfficiencyRate from '../../components/Manager/EfficiencyRate';
 import ActiveWorkers from '../../components/Manager/ActiveWorkers';
 import LinePerformanceTable from '../../components/Manager/LinePerformanceTable';
 import RemainingTarget from '../../components/Manager/RemainingTarget';
+import LineProductivityChart from '../../components/Manager/LineProductivityChart';
+import DailyTotalBarChart from '../../components/Manager/DailyTotalBarChart';
+import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
+import RemainingTargetRFID from '../../components/Manager/RemainingTargetRFID';
 
-const API_URL = "http://localhost:8000/api/production"; // Your backend endpoint
+const API_URL = "http://localhost:8001/api/production"; // Your backend endpoint
 
 const Production = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('Today');
@@ -135,23 +139,12 @@ const Production = () => {
     <div className="space-y-6 ml-70 mt-25 mr-5">
       <SideBar title ="Manager Panel" links={ManagerLinks}/>
       {/* Header with Time Range Selector */}
-      {/* <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Production Overview</h2>
-        <select
-          value={selectedTimeRange}
-          onChange={(e) => setSelectedTimeRange(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="Today">Today</option>
-          <option value="This Week">This Week</option>
-          <option value="This Month">This Month</option>
-        </select>
-      </div> */}
+      
 
     <div className='flex gap-5'>
         <TotalProduction/>
         <EfficiencyRate/>
-        <RemainingTarget/>
+        <RemainingTargetRFID/>
         <ActiveWorkers/>
     </div>    
       
@@ -169,7 +162,7 @@ const Production = () => {
           </button>
         </div>
 
-        {/* Add Form */}
+        {/* Add New Plan Form */}
         {showAddForm && (
           <div className="p-6 border-b bg-gray-50">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -229,7 +222,6 @@ const Production = () => {
           </div>
         )}
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -247,7 +239,7 @@ const Production = () => {
             </thead>
             <tbody>
               {productionPlans.map((plan) => (
-                <tr key={plan._id} className="border-b hover:bg-gray-50">
+                <tr key={plan.id} className="border-b hover:bg-gray-50">
                   <td className="p-4 font-medium flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     {plan.product}
@@ -265,7 +257,7 @@ const Production = () => {
                   <td className="p-4 font-semibold text-green-600">{plan.weeklyTarget}</td>
                   <td className="p-4">
                     <button
-                      onClick={() => deletePlan(plan._id)}
+                      onClick={() => deletePlan(plan.id)}
                       className="text-red-600 hover:text-red-800 p-1"
                       title="Delete Plan"
                     >
@@ -279,121 +271,16 @@ const Production = () => {
         </div>
       </div>
 
-
-
-
-
-
-
-
-
-
-
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Hourly Production Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Hourly Production</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={hourlyProductionData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="target" fill="#93c5fd" name="Target" />
-              <Bar dataKey="actual" fill="#3b82f6" name="Actual" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Production Trend */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Production Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={hourlyProductionData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="target" stroke="#93c5fd" strokeWidth={2} name="Target" />
-              <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} name="Actual" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10 mb-10">
+        <LineProductivityChart/>
+        <DailyTotalBarChart/>
       </div>
 
       {/* Line Performance Table */}
       <LinePerformanceTable/>
 
-      {/* <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-800">Line Performance</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left p-4 font-medium text-gray-700">Production Line</th>
-                <th className="text-left p-4 font-medium text-gray-700">Target</th>
-                <th className="text-left p-4 font-medium text-gray-700">Actual</th>
-                <th className="text-left p-4 font-medium text-gray-700">Efficiency</th>
-                <th className="text-left p-4 font-medium text-gray-700">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lineProductionData.map((line, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                  <td className="p-4 font-medium">{line.line}</td>
-                  <td className="p-4">{line.target} pcs</td>
-                  <td className="p-4">{line.actual} pcs</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getColorByEfficiency(line.efficiency)}`}>
-                      {line.efficiency}%
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      line.efficiency >= 95 ? 'bg-green-100 text-green-800' :
-                      line.efficiency >= 85 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {line.efficiency >= 95 ? 'Excellent' :
-                       line.efficiency >= 85 ? 'Good' : 'Needs Attention'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div> */}
-
-      {/* Quality Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Quality Rate</h3>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">96.2%</div>
-            <div className="text-sm text-gray-600 mt-1">+2.1% from yesterday</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Defect Rate</h3>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-600">3.8%</div>
-            <div className="text-sm text-gray-600 mt-1">-0.5% from yesterday</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Rework Rate</h3>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-600">2.1%</div>
-            <div className="text-sm text-gray-600 mt-1">-0.3% from yesterday</div>
-          </div>
-        </div>
-      </div>
+    
     </div>
   );
 };

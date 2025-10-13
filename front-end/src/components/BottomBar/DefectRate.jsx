@@ -1,57 +1,72 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import io from "socket.io-client";
-
-// WebSocket connection
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
 function DefectRate() {
-  const [defectRate, setDefectRate] = useState("0.00%");
+  const [defectRate, setDefectRate] = useState("0.00");
   const [loading, setLoading] = useState(true);
 
-  // Fetch defect rate data from backend
+  // Function to fetch total production and defect counts and calculate rate
   const fetchDefectRate = async () => {
+    let totalProduction = 0;
+    let totalDefects = 0;
+
     try {
-      const response = await axios.get("http://localhost:8001/api/iot/defect-rate");
-      setDefectRate(response.data.defectRate);
-      setLoading(false);
+      // 1. Fetch total production count
+      const productionResponse = await axios.get("http://localhost:8001/api/scan-count");
+      totalProduction = productionResponse.data?.count || 0;
     } catch (error) {
-      console.error("Error fetching defect rate:", error);
-      setLoading(false);
+      console.error("Error fetching total production:", error);
     }
+
+    try {
+      // 2. Fetch total defect count
+      const defectResponse = await axios.get("http://localhost:8001/api/defect-stats");
+      
+      // FIX: Changed from 'totalDefects' to 'totalGarmentsWithDefects' 
+      // based on successful implementations in other components.
+      totalDefects = defectResponse.data?.totalGarmentsWithDefects || 0; 
+      
+    } catch (error) {
+      console.error("Error fetching total defects:", error);
+    }
+
+    // 3. Calculate the defect rate
+    let calculatedRate = "0.00";
+    if (totalProduction > 0) {
+      calculatedRate = ((totalDefects / totalProduction) * 100).toFixed(2);
+    }
+
+    setDefectRate(calculatedRate);
+    setLoading(false);
   };
 
   useEffect(() => {
+    // Initial data fetch
     fetchDefectRate();
-  }, []);
 
-  useEffect(() => {
-    socket.on("leadingLineUpdate", fetchDefectRate);
-    socket.on("supervisorUpdate", fetchDefectRate);
+    // Set up polling for continuous updates every 5 seconds
+    const intervalId = setInterval(fetchDefectRate, 5000);
 
-    return () => {
-      socket.off("leadingLineUpdate");
-      socket.off("supervisorUpdate");
-    };
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   if (loading) {
     return (
-      <p className="text-gray-500 text-center">Loading defect rate...</p>
+      <div className="flex mt-5 ml-4 gap-1">
+        <h3 className="text-gray-300 font-semibold text-xs">Defect Rate</h3>
+        <p className="text-xs font-bold text-white">Loading...</p>
+        <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+      </div>
     );
   }
 
   return (
-
-    <div className="flex mt-5 ml-4 gap-2">
-        <h3 className="text-gray-300 font-semibold text-sm">Defect Rate</h3>
-        <p className="text-sm font-bold text-white">{defectRate}%</p>
-        <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
+    <div className="flex mt-5 ml-4 gap-1">
+      <h3 className="text-gray-300 font-semibold text-xs">Defect Rate</h3>
+      <p className="text-xs font-bold text-white">{defectRate}%</p>
+      <p className="text-sm font-bold text-gray-300 -mt-[2px] ml-3">|</p>
     </div>
-
-    // <p className="text-sm font-bold text-gray-800">
-    //   Defect Rate: {defectRate}
-    // </p>
   );
 }
 

@@ -79,11 +79,11 @@ const FollowingLine = () => {
           </p>
         )}
 
-        <div className="mt-3 space-y-2/3">
+        <div className="mt-3">
           {lowestEmployees.map((emp) => (
             <div
               key={emp._id}
-              className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-red-400 transition"
+              className="flex justify-between items-center px-3 py-[6px] rounded-lg hover:bg-red-400 transition"
             >
               <div className="flex items-center gap-4">
                 <FaUser className="text-red-400" />

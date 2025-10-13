@@ -19,6 +19,7 @@ export const ManagerLinks = [
 export const SupervisorLinks = [
   { label: 'Home', href: '/supervisor', icon: <IoHomeOutline /> },
   { label: 'Worker Assignment', href: '/supervisor/worker-assignment', icon: <FiUsers /> },
+  { label: 'Worker Reallocation', href: '/supervisor/worker-reallocation', icon: <FaUser /> },
   { label: 'Productivity', href: '/supervisor/lineProd', icon: <BsBarChartLine /> },
   { label: 'Live Dashboard', href: '/live-dashboard', icon: <MdOutlineSpaceDashboard /> },
 ];
@@ -38,6 +39,5 @@ export const QCManagerLinks = [
 export const ProfileLinks = [
   
 ];
-
 
 

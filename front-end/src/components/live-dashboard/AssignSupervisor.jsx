@@ -108,10 +108,10 @@ const AssignSupervisor = () => {
 
   return (
     <div className="p-0">
-      <div className="text-black rounded-2xl px-3 py-2 bg-white">
+      <div className="text-black rounded-2xl px-3 py-1 bg-white">
         <h2 className="text-lg font-bold text-center">Line Supervisors</h2>
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-1/2">
           {latest4Supervisors.length === 0 ? (
             <p className="text-center text-gray-500">No supervisors found</p>
           ) : (

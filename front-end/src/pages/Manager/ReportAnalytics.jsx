@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, BarChart3 } from 'lucide-react';
+import { X, Download, BarChart3, FileText, Filter, RefreshCw, AlertCircle } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
 
@@ -50,31 +50,365 @@ const ReportAnalytics = () => {
   const reportOptions = [
     { 
       name: 'Employee Efficiency', 
-      description: 'Track individual and team performance metrics',
-      icon: '👥'
+      description: 'Track individual worker performance and output',
+      icon: '👥',
+      endpoint: 'employees'
     },
     { 
       name: 'Line Efficiency', 
-      description: 'Monitor production line performance and output',
-      icon: '🏭'
+      description: 'Monitor production line performance metrics',
+      icon: '🏭',
+      endpoint: 'line-performance'
     },
     { 
       name: 'Target Achievement', 
-      description: 'Compare actual vs target production goals',
-      icon: '🎯'
+      description: 'Compare actual vs planned production goals',
+      icon: '🎯',
+      endpoint: 'product'
     },
     { 
       name: 'Defect Rate', 
-      description: 'Quality control and defect tracking analysis',
-      icon: '⚠️'
+      description: 'Quality control and defect analysis',
+      icon: '⚠️',
+      endpoint: 'iot/defect-rate'
     },
     { 
-      name: 'Productivity', 
-      description: 'Overall productivity and efficiency trends',
-      icon: '📈'
+      name: 'Supervisor Management', 
+      description: 'Line supervisor assignments and coverage',
+      icon: '👨‍💼',
+      endpoint: 'line-management'
     }
   ];
 
+  // Fetch data based on report type and period
+  const fetchReportData = async () => {
+    if (!selectedReport) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const reportConfig = reportOptions.find(r => r.name === selectedReport);
+      let response;
+
+      switch(selectedReport) {
+        case 'Employee Efficiency':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const employeesResponse = await response.json();
+          const employees = Array.isArray(employeesResponse) ? employeesResponse : (employeesResponse.data || employeesResponse.employees || []);
+          setReportData(transformEmployeeData(employees, selectedPeriod));
+          break;
+
+        case 'Line Efficiency':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const lineDataResponse = await response.json();
+          const lineData = Array.isArray(lineDataResponse) ? lineDataResponse : (lineDataResponse.data || lineDataResponse.lines || []);
+          setReportData(transformLineData(lineData, selectedPeriod));
+          break;
+
+        case 'Target Achievement':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const plansResponse = await response.json();
+          // Handle both array and object with data property
+          const plans = Array.isArray(plansResponse) ? plansResponse : (plansResponse.data || plansResponse.plans || []);
+          setReportData(transformTargetData(plans, selectedPeriod));
+          break;
+
+        case 'Defect Rate':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const defectData = await response.json();
+          const defectsResponse = await fetch(`${API_BASE_URL}/iot/defects`);
+          const allDefectsResponse = await defectsResponse.json();
+          const allDefects = Array.isArray(allDefectsResponse) ? allDefectsResponse : (allDefectsResponse.data || allDefectsResponse.defects || []);
+          setReportData(transformDefectData(defectData, allDefects, selectedPeriod));
+          break;
+
+        case 'Supervisor Management':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const supervisorsResponse = await response.json();
+          const supervisors = Array.isArray(supervisorsResponse) ? supervisorsResponse : (supervisorsResponse.data || supervisorsResponse.supervisors || []);
+          setReportData(transformSupervisorData(supervisors, selectedPeriod));
+          break;
+
+        default:
+          throw new Error('Invalid report type');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch data');
+      console.error('Error fetching report data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Re-fetch data when period changes
+  useEffect(() => {
+    if (showDashboard && selectedReport) {
+      fetchReportData();
+    }
+  }, [selectedPeriod]);
+
+  // Helper to filter data by period
+  const filterDataByPeriod = (data, period) => {
+    const now = new Date();
+    const filtered = data.filter(item => {
+      const itemDate = new Date(item.date || item.updatedAt || item.createdAt);
+      
+      switch(period) {
+        case 'today':
+          return itemDate.toDateString() === now.toDateString();
+        case 'weekly':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return itemDate >= weekAgo;
+        case 'monthly':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return itemDate >= monthAgo;
+        case 'annually':
+          const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          return itemDate >= yearAgo;
+        default:
+          return true;
+      }
+    });
+    return filtered;
+  };
+
+  // Aggregate data based on period
+  const aggregateByPeriod = (data, period, groupKey) => {
+    if (period === 'today') return data;
+
+    const grouped = {};
+    data.forEach(item => {
+      const key = item[groupKey];
+      if (!grouped[key]) {
+        grouped[key] = { ...item, pieces: 0, actual: 0, defects: 0, count: 0 };
+      }
+      grouped[key].pieces += item.pieces || 0;
+      grouped[key].actual += item.actual || 0;
+      grouped[key].defects += item.defects || 0;
+      grouped[key].count += 1;
+    });
+
+    return Object.values(grouped).map(item => {
+      const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : 365;
+      const target = getLineTarget(parseInt(item.line?.replace('Line ', '') || 1)) * multiplier;
+      const achievement = target > 0 ? ((item.pieces / target) * 100).toFixed(1) : 0;
+      
+      return {
+        ...item,
+        efficiency: parseFloat(achievement),
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: item.pieces - target
+      };
+    });
+  };
+
+  // Data transformation functions
+  const transformEmployeeData = (employees, period) => {
+    // Ensure employees is an array
+    if (!Array.isArray(employees)) {
+      console.error('transformEmployeeData: Expected array but got:', typeof employees);
+      return [];
+    }
+
+    const transformed = employees.map(emp => {
+      const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
+      const target = getLineTarget(emp.line) * multiplier;
+      const actualPieces = (emp.pcs || 0) * (period === 'today' ? 1 : multiplier);
+      const achievement = target > 0 ? ((actualPieces / target) * 100).toFixed(1) : 0;
+      const variance = actualPieces - target;
+      
+      return {
+        date: new Date(emp.updatedAt).toISOString().split('T')[0],
+        workerId: emp.employeeId,
+        workerName: emp.name,
+        line: `Line ${emp.line}`,
+        pieces: actualPieces,
+        efficiency: parseFloat(achievement),
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: variance,
+        updatedAt: emp.updatedAt
+      };
+    });
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  const transformLineData = (lineData, period) => {
+    // Ensure lineData is an array
+    if (!Array.isArray(lineData)) {
+      console.error('transformLineData: Expected array but got:', typeof lineData);
+      return [];
+    }
+
+    const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
+    
+    return lineData.map(line => ({
+      date: new Date().toISOString().split('T')[0],
+      line: line.line,
+      pieces: line.actual * multiplier,
+      efficiency: line.efficiency,
+      achievement: line.efficiency,
+      status: getStatus(line.efficiency),
+      variance: (line.actual - line.target) * multiplier
+    }));
+  };
+
+  const transformTargetData = (plans, period) => {
+    // Ensure plans is an array
+    if (!Array.isArray(plans)) {
+      console.error('transformTargetData: Expected array but got:', typeof plans);
+      return [];
+    }
+
+    const transformed = plans.map(plan => {
+      // Calculate achievement percentage
+      const achievement = plan.totalStock > 0 
+        ? ((plan.finishedUnits / plan.totalStock) * 100).toFixed(1) 
+        : 0;
+      
+      // Calculate remaining units
+      const remainingUnits = plan.remainingUnits || (plan.totalStock - plan.finishedUnits);
+      
+      // Format dates
+      const startDate = plan.startDate ? new Date(plan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      const endDate = plan.endDate ? new Date(plan.endDate).toISOString().split('T')[0] : 'N/A';
+      
+      return {
+        date: startDate,
+        productName: plan.product,
+        line: plan.product,
+        actual: plan.finishedUnits || 0,
+        target: plan.totalStock || 0,
+        remaining: remainingUnits,
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: (plan.finishedUnits || 0) - (plan.totalStock || 0),
+        remainingDays: plan.remainingDays || 0,
+        dailyTarget: plan.dailyTarget || 0,
+        weeklyTarget: plan.weeklyTarget || 0,
+        dueDate: endDate,
+        createdAt: plan.createdAt || startDate,
+        startDate: startDate,
+        endDate: endDate
+      };
+    });
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  const transformDefectData = (defectRate, allDefects, period) => {
+    // Ensure allDefects is an array
+    if (!Array.isArray(allDefects)) {
+      console.error('transformDefectData: Expected array but got:', typeof allDefects);
+      return [];
+    }
+
+    const defectsByWorker = {};
+    
+    const filteredDefects = allDefects.filter(defectDoc => {
+      const defectDate = new Date(defectDoc.Time_Stamp);
+      const now = new Date();
+      
+      switch(period) {
+        case 'today':
+          return defectDate.toDateString() === now.toDateString();
+        case 'weekly':
+          return defectDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        case 'monthly':
+          return defectDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        case 'annually':
+          return defectDate >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        default:
+          return true;
+      }
+    });
+
+    filteredDefects.forEach(defectDoc => {
+      defectDoc.Defects.forEach(defect => {
+        const key = defectDoc.Station_ID;
+        if (!defectsByWorker[key]) {
+          defectsByWorker[key] = {
+            stationId: defectDoc.Station_ID,
+            tagUID: defectDoc.Tag_UID,
+            defects: [],
+            timestamp: defectDoc.Time_Stamp
+          };
+        }
+        defectsByWorker[key].defects.push(defect);
+      });
+    });
+
+    return Object.values(defectsByWorker).map((item, index) => ({
+      date: new Date(item.timestamp).toISOString().split('T')[0],
+      workerId: `ST-${item.stationId}`,
+      workerName: `Station ${item.stationId}`,
+      line: `Line ${Math.ceil(item.stationId / 2)}`,
+      defectType: item.defects.map(d => getDefectName(d.Type, d.Subtype)).join(', '),
+      defects: item.defects.length,
+      achievement: (100 - (item.defects.length * 0.5)).toFixed(1),
+      status: item.defects.length <= 2 ? 'Excellent' : item.defects.length <= 5 ? 'Good' : 'Poor',
+      variance: item.defects.length
+    }));
+  };
+
+  const transformSupervisorData = (supervisors, period) => {
+    // Ensure supervisors is an array
+    if (!Array.isArray(supervisors)) {
+      console.error('transformSupervisorData: Expected array but got:', typeof supervisors);
+      return [];
+    }
+
+    const transformed = supervisors.map(sup => ({
+      date: new Date(sup.createdAt).toISOString().split('T')[0],
+      supervisorId: sup._id.substring(0, 8),
+      supervisorName: sup.name,
+      assignedLines: Array.isArray(sup.lineNo) ? sup.lineNo.join(', ') : sup.lineNo,
+      lineCount: Array.isArray(sup.lineNo) ? sup.lineNo.length : 1,
+      status: 'Active',
+      efficiency: 100,
+      achievement: 100,
+      createdAt: sup.createdAt
+    }));
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  // Helper functions
+  const getLineTarget = (lineNumber) => {
+    const targets = { 1: 1000, 2: 800, 3: 900, 4: 1100, 5: 950, 6: 1050, 7: 700, 8: 850 };
+    return targets[lineNumber] || 800;
+  };
+
+  const getStatus = (percentage) => {
+    if (percentage >= 95) return 'Excellent';
+    if (percentage >= 85) return 'Good';
+    if (percentage >= 70) return 'Average';
+    return 'Poor';
+  };
+
+  const getDefectName = (type, subtype) => {
+    const defectMap = {
+      0: { name: 'Fabric', subtypes: { 0: 'Hole', 1: 'Stain', 2: 'Shading', 3: 'Slub' } },
+      1: { name: 'Stitching', subtypes: { 0: 'Broken', 1: 'Uneven' } },
+      2: { name: 'Button', subtypes: { 0: 'Missing', 1: 'Loose' } }
+    };
+    return defectMap[type]?.subtypes[subtype] || `Type ${type}-${subtype}`;
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Excellent': return 'bg-green-100 text-green-800';
+      case 'Good': return 'bg-blue-100 text-blue-800';
+      case 'Average': return 'bg-yellow-100 text-yellow-800';
+      case 'Poor': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Filter and sort data
   const getCurrentData = () => {
     if (!selectedReport) return [];
     return reportData[selectedReport][selectedPeriod] || [];
