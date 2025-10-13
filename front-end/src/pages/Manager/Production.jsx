@@ -12,7 +12,7 @@ import LineProductivityChart from '../../components/Manager/LineProductivityChar
 import DailyTotalBarChart from '../../components/Manager/DailyTotalBarChart';
 import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
 
-const API_URL = "http://localhost:8000/api/production"; // Your backend endpoint
+const API_URL = "http://localhost:8001/api/production"; // Your backend endpoint
 
 const Production = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('Today');
