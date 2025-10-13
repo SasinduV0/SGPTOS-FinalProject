@@ -3,6 +3,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { AlertTriangle } from 'lucide-react';
 import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../../pages/Data/SidebarNavlinks';
+import DefectRateChart from '../../components/live-dashboard/DefectRateChart';
+import DefectRateQC from '../../components/QC/DefectRateQC';
 
 // Helper function to get consistent colors for defect types
 const getDefectColor = (defectType) => {
@@ -190,7 +192,12 @@ function QualityControl() {
             {/* Product Quality Distribution */}
             <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-4">Product Quality Distribution</h3>
-              <ResponsiveContainer width="100%" height={280}>
+              <div className='-ml-5'>
+                <DefectRateQC/>
+              </div>
+              
+              
+              {/* <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={[
@@ -220,8 +227,8 @@ function QualityControl() {
                     }}
                   />
                 </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-4 text-center">
+              </ResponsiveContainer> */}
+              {/* <div className="mt-4 text-center">
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div className="flex items-center justify-center">
                     <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
@@ -240,7 +247,7 @@ function QualityControl() {
                     "Defect rate is within acceptable range"
                   }
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
