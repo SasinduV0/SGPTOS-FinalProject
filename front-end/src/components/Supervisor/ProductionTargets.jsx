@@ -107,10 +107,6 @@ function ProductionTargets() {
 
   return (
     <div className="bg-white rounded-2xl shadow p-8 w-full max-w-3xl">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">
-        Production Targets vs Actual
-      </h2>
-
       {/* Daily Target */}
       <div className="mb-6">
         <div className="flex justify-between text-sm font-semibold text-gray-700">

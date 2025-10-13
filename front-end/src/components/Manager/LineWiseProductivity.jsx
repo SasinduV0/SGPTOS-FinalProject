@@ -87,15 +87,15 @@ const LineWiseProductivity = () => {
     // Applying the same modern card style for consistency
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200/80 w-full">
       <h3 className="text-xl font-semibold text-gray-700 mb-4">
-        Line Target vs. Production (%)
+        Line Production
       </h3>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={chartData} barGap={8}>
           {/* SVG gradient definition for the production bars */}
           <defs>
             <linearGradient id="productionGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0.6}/>
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
+              <stop offset="95%" stopColor="#059669" stopOpacity={0.8}/>
             </linearGradient>
           </defs>
 
@@ -132,7 +132,7 @@ const LineWiseProductivity = () => {
           />
           <Bar 
             dataKey="production" 
-            fill="url(#productionGradient)" 
+            fill="#10b981" 
             name="Production" 
             radius={[4, 4, 0, 0]}
             barSize={25}
