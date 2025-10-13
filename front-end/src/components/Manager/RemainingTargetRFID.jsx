@@ -65,7 +65,7 @@ const RemainingTargetRFID = () => {
         {/* Left side (text content) */}
         <div className="text-left">
           <h3 className="text-lg font-semibold text-gray-700">Remaining Target</h3>
-          <p className="text-3xl font-bold text-red-600">{remainingTarget.toLocaleString()} Pcs</p>
+          <p className="text-2xl font-bold text-red-600">{remainingTarget.toLocaleString()} Pcs</p>
         </div>
 
         {/* Right side (icon) */}
