@@ -38,7 +38,7 @@ router.post("/signup", async (req, res) => {
             username,
             phoneNumber,
             department,
-            password: hashPassword,
+            password,
             role: role || "qc"
         });
 

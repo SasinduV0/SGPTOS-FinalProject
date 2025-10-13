@@ -3,35 +3,26 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import SideBar from '../../components/SideBar';
 import { SupervisorLinks } from '../Data/SidebarNavlinks';
+import { dashboardData } from '../Data/dashboardData';
 
 // WebSocket connection
 const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
-// Define 4 positions for each line
-const LINE_POSITIONS = [
-  { id: 1, name: 'Position 1', description: 'Primary Position' },
-  { id: 2, name: 'Position 2', description: 'Secondary Position' },
-  { id: 3, name: 'Position 3', description: 'Tertiary Position' },
-  { id: 4, name: 'Position 4', description: 'Quaternary Position' }
-];
 
 const AssignmentPage = () => {
   const [selectedLine, setSelectedLine] = useState(1);
-  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [selectedWorkers, setSelectedWorkers] = useState([]);
   const [lineAssignments, setLineAssignments] = useState({
-    1: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    2: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    3: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    4: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    5: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    6: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    7: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) },
-    8: { positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null})) }
+    1: { stations: [...dashboardData.stations], assignedWorkerIds: [] },
+    2: { stations: [...dashboardData.stations], assignedWorkerIds: [] },
+    3: { stations: [...dashboardData.stations], assignedWorkerIds: [] },
+    4: { stations: [...dashboardData.stations], assignedWorkerIds: [] }
   });
+  const [showOptimizeTable, setShowOptimizeTable] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [lineManagement, setLineManagement] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAssignmentTable, setShowAssignmentTable] = useState(false);
 
   // Fetch employees from backend
   useEffect(() => {
@@ -39,41 +30,8 @@ const AssignmentPage = () => {
       try {
         setLoading(true);
         const { data } = await axios.get("http://localhost:8001/api/employees");
-        // Use backend data
         setEmployees(data);
         setError(null);
-
-        // Ensure lines 1 and 4 each have at least 2 available employees
-        const ensureLines = [1, 4];
-        const toAddMocks = [];
-        ensureLines.forEach(lineNum => {
-          const availableCount = data.filter(emp => Number(emp.line) === lineNum && (!emp.status || emp.status.toLowerCase() !== 'reallocated')).length;
-          const desired = 2;
-          for (let i = availableCount; i < desired; i++) {
-            toAddMocks.push({
-              name: `Temp Emp L${lineNum}-${i + 1}`,
-              line: lineNum,
-              position: 'General Worker',
-              pcs: 0,
-              status: 'Active'
-            });
-          }
-        });
-
-        if (toAddMocks.length > 0) {
-          const added = [];
-          for (const mock of toAddMocks) {
-            try {
-              const res = await axios.post("http://localhost:8001/api/employees", mock);
-              added.push(res.data);
-            } catch (err) {
-              // If backend persist fails, add a client-only temp record
-              console.warn('Could not persist mock employee; adding locally:', err && err.message ? err.message : err);
-              added.push({ ...mock, _id: `temp-${mock.line}-${Date.now()}-${Math.random().toString(36).slice(2,8)}` });
-            }
-          }
-          setEmployees(prev => [...prev, ...added]);
-        }
       } catch (err) {
         console.error("Error fetching employees:", err);
         setError("Failed to fetch employees data");
@@ -84,109 +42,143 @@ const AssignmentPage = () => {
     fetchEmployees();
   }, []);
 
+  // Fetch line management data
+  useEffect(() => {
+    const fetchLineManagement = async () => {
+      try {
+        const { data } = await axios.get("http://localhost:8001/api/line-management");
+        setLineManagement(data);
+      } catch (err) {
+        console.error("Error fetching line management:", err);
+      }
+    };
+    fetchLineManagement();
+  }, []);
+
   // WebSocket listeners for real-time updates
   useEffect(() => {
     socket.on("leadingLineUpdate", (updatedEmployees) => {
       setEmployees(updatedEmployees);
     });
 
-    socket.on("employeeUpdate", (updatedEmployee) => {
-      setEmployees(prev => 
-        prev.map(emp => emp._id === updatedEmployee._id ? updatedEmployee : emp)
-      );
+    socket.on("supervisorUpdate", (updatedSupervisors) => {
+      setLineManagement(updatedSupervisors);
+    });
+
+    socket.on("reallocationUpdate", (reallocationData) => {
+      // Handle real-time reallocation updates
+      console.log("Reallocation update received:", reallocationData);
     });
 
     return () => {
       socket.off("leadingLineUpdate");
-      socket.off("employeeUpdate");
+      socket.off("supervisorUpdate");
+      socket.off("reallocationUpdate");
     };
   }, []);
 
-  // Clear selected worker when switching lines
+  // Clear selected workers when switching lines
   useEffect(() => {
-    setSelectedWorker(null);
+    setSelectedWorkers([]);
   }, [selectedLine]);
 
   // Get current line's data
   const currentLineData = lineAssignments[selectedLine];
-  const positions = currentLineData.positions;
+  const stations = currentLineData.stations;
   
-  // Get all assigned employee IDs for the current line
-  const assignedEmployeeIds = positions
-    .filter(p => p.employeeId)
-    .map(p => p.employeeId);
-
   // Filter available workers by line and exclude already assigned workers
   const getAvailableWorkers = () => {
     if (loading || employees.length === 0) {
-      return [];
+      // Fallback to static data when backend data is not available
+      const lineInfo = dashboardData.lines.find(line => line.id === selectedLine);
+      const lineWorkerIds = lineInfo ? lineInfo.workerDetails.map(w => w.id) : [];
+      
+      return dashboardData.availableWorkers.filter(worker => 
+        lineWorkerIds.includes(worker.id) && 
+        !currentLineData.assignedWorkerIds.includes(worker.id)
+      );
     }
 
-    // Use backend data - filter employees by line and not assigned
-    const lineEmployees = employees.filter(emp => 
-      emp.line === selectedLine && 
-      !assignedEmployeeIds.includes(emp._id)
-    );
+    // Use backend data - filter employees by line
+    const lineEmployees = employees.filter(emp => emp.line === selectedLine);
     
-    return lineEmployees.map(emp => ({
-      id: emp._id,
-      name: emp.name,
-      position: emp.position || 'General Worker',
-      pcs: emp.pcs || 0,
-      line: emp.line,
-      status: emp.status || 'Active'
-    }));
+    // Convert backend employee data to expected format and filter out assigned workers
+    return lineEmployees
+      .filter(emp => !currentLineData.assignedWorkerIds.includes(emp._id))
+      .map(emp => {
+        // Find matching worker from static data for skills and experience
+        const staticWorker = dashboardData.availableWorkers.find(w => 
+          w.name.toLowerCase() === emp.name.toLowerCase()
+        );
+        
+        return {
+          id: emp._id,
+          name: emp.name,
+          skills: staticWorker ? staticWorker.skills : ['General Work'],
+          experience: staticWorker ? staticWorker.experience : 1,
+          pcs: emp.pcs || 0,
+          line: emp.line
+        };
+      });
   };
   
   const availableWorkers = getAvailableWorkers();
 
-  // Select worker
-  const handleWorkerSelect = (worker) => {
-    setSelectedWorker(selectedWorker?.id === worker.id ? null : worker);
+  //select one time
+  const handleWorkerSelect = (workerId) => {
+    setSelectedWorkers((prev) =>
+      prev.includes(workerId)
+        ? []
+        : [workerId]
+    );
   };
 
-  // Assign worker to position
-  const assignWorkerToPosition = async (positionId) => {
-    if (!selectedWorker) return;
-    
-    // Check if position is already occupied
-    const position = positions.find(p => p.id === positionId);
-    if (position.employeeId) {
-      setError("This position is already occupied. Please unassign the current worker first.");
-      return;
-    }
+  //worker assignment to station
+  const assignWorkerToStation = async (stationId) => {
+    if (selectedWorkers.length === 0) return;
+    const workerId = selectedWorkers[0];
+    const worker = availableWorkers.find(w => w.id === workerId);
+    if (!worker) return;
     
     try {
-      // Update employee's line and position in backend
-      await axios.put(
-        `http://localhost:8001/api/employees/${selectedWorker.id}`,
-        {
-          line: selectedLine,
-          position: position.name,
-          status: 'Active'
-        }
-      );
+      // Save assignment to backend via line reallocation API
+      const reallocationData = {
+        EmployeeID: workerId,
+        name: worker.name,
+        unit: "Unit A", // Default unit, you can modify this
+        lineNo: [`Line 0${selectedLine}`], // Current line
+        newLineNo: [`Line 0${selectedLine}`], // Assigned to same line
+        position: worker.skills[0] || 'General Worker',
+        status: "Active",
+        startedDate: new Date().toISOString(),
+        stationId: stationId
+      };
+
+      await axios.post("http://localhost:8001/api/line-reallocation", reallocationData);
       
       // Update local state
       setLineAssignments(prev => ({
         ...prev,
         [selectedLine]: {
-          positions: prev[selectedLine].positions.map(p => {
-            if (p.id === positionId) {
+          ...prev[selectedLine],
+          stations: prev[selectedLine].stations.map(station => {
+            if (station.id === stationId && !station.occupied) {
               return {
-                ...p,
-                employee: selectedWorker.name,
-                employeeId: selectedWorker.id,
-                employeePosition: selectedWorker.position
+                ...station,
+                worker: worker.name,
+                task: worker.skills[0] || 'Assigned',
+                efficiency: 90, 
+                occupied: true,
+                workerId: workerId
               };
             }
-            return p;
-          })
+            return station;
+          }),
+          assignedWorkerIds: [...prev[selectedLine].assignedWorkerIds, workerId]
         }
       }));
       
-      setSelectedWorker(null);
-      setError(null);
+      setSelectedWorkers([]);
       console.log("✅ Worker assigned successfully");
       
     } catch (error) {
@@ -195,395 +187,275 @@ const AssignmentPage = () => {
     }
   };
 
-  // Unassign worker from position
-  const unassignWorkerFromPosition = async (positionId) => {
-    const position = positions.find(p => p.id === positionId);
-    if (!position.employeeId) return;
-
-    if (!window.confirm(`Are you sure you want to unassign ${position.employee} from ${position.name}?`)) {
-      return;
-    }
-
-    try {
-      // Update employee status in backend (optional - you can keep them assigned or mark as unassigned)
-      await axios.put(
-        `http://localhost:8001/api/employees/${position.employeeId}`,
-        {
-          position: 'Unassigned'
-        }
-      );
-
-      // Update local state
-      setLineAssignments(prev => ({
-        ...prev,
-        [selectedLine]: {
-          positions: prev[selectedLine].positions.map(p => {
-            if (p.id === positionId) {
-              return {
-                ...p,
-                employee: null,
-                employeeId: null,
-                employeePosition: null
-              };
-            }
-            return p;
-          })
-        }
-      }));
-
-      setError(null);
-      console.log("✅ Worker unassigned successfully");
-
-    } catch (error) {
-      console.error("❌ Error unassigning worker:", error);
-      setError("Failed to unassign worker. Please try again.");
-    }
-  };
-
-  // Clear all assignments for current line
-  const handleClearLine = async () => {
-    if (!window.confirm(`Are you sure you want to clear all assignments for Line ${selectedLine}?`)) {
-      return;
-    }
-
-    try {
-      // Unassign all employees on this line
-      const assignedIds = positions.filter(p => p.employeeId).map(p => p.employeeId);
-      
-      for (const empId of assignedIds) {
-        await axios.put(
-          `http://localhost:8001/api/employees/${empId}`,
-          { position: 'Unassigned' }
-        );
+  const handleReassignWorkers = () => {
+    setLineAssignments(prev => ({
+      ...prev,
+      [selectedLine]: {
+        stations: [...dashboardData.stations], // Reset to original state
+        assignedWorkerIds: [] // Clear assigned workers for this line
       }
+    }));
+    setSelectedWorkers([]);
+  };
 
-      // Reset local state
-      setLineAssignments(prev => ({
-        ...prev,
-        [selectedLine]: {
-          positions: LINE_POSITIONS.map(p => ({...p, employee: null, employeeId: null}))
-        }
-      }));
-
-      setSelectedWorker(null);
-      setError(null);
-
-    } catch (error) {
-      console.error("❌ Error clearing line:", error);
-      setError("Failed to clear line assignments. Please try again.");
+  // Get all workers for the selected line with backend data
+  const getLineInfo = () => {
+    if (employees.length > 0) {
+      // Use backend data
+      const lineEmployees = employees.filter(emp => emp.line === selectedLine);
+      return {
+        id: selectedLine,
+        name: `Line ${selectedLine}`,
+        workers: lineEmployees.length,
+        workerDetails: lineEmployees.map(emp => ({
+          id: emp._id,
+          name: emp.name,
+          pcs: emp.pcs || 0
+        }))
+      };
+    } else {
+      // Fallback to static data
+      return dashboardData.lines.find(line => line.id === selectedLine);
     }
   };
 
-  // Get assignment summary for all lines
-  const getAssignmentSummary = () => {
-    return Object.entries(lineAssignments).map(([lineNum, data]) => {
-      const assignedCount = data.positions.filter(p => p.employeeId).length;
-      const assignedEmployees = data.positions
-        .filter(p => p.employee)
-        .map(p => ({
-          position: p.name,
-          employee: p.employee,
-          employeePosition: p.employeePosition || 'N/A'
-        }));
-
+  const lineInfo = getLineInfo();
+  const lineWorkers = lineInfo ? lineInfo.workers : [];
+  
+  // Only show assigned workers who are in availableWorkers for current line
+  const assignedWorkers = stations
+    .filter(s => s.occupied && s.worker)
+    .map((station) => {
+      const original = dashboardData.availableWorkers.find(w => w.name === station.worker);
       return {
-        lineNum: parseInt(lineNum),
-        assignedCount,
-        totalPositions: data.positions.length,
-        employees: assignedEmployees
+        id: original?.id || station.worker,
+        name: station.worker,
+        occupation: station.task,
+        station: station.name
       };
     });
+  
+  const unassignedWorkers = availableWorkers.map(w => ({
+    id: w.id,
+    name: w.name,
+    occupation: w.skills[0] || 'Unassigned',
+    station: 'Unassigned'
+  }));
+  
+  const allWorkersForTable = [...assignedWorkers, ...unassignedWorkers];
+
+  const handleOptimizeClick = () => {
+    setShowOptimizeTable(true);
   };
 
-  const handleShowAssignmentTable = () => {
-    setShowAssignmentTable(true);
+  const handleCloseOptimizeTable = () => {
+    setShowOptimizeTable(false);
   };
-
-  const handleCloseAssignmentTable = () => {
-    setShowAssignmentTable(false);
-  };
-
-  // Compute available employees per line (not assigned to any position on that line)
-  const availableByLine = React.useMemo(() => {
-    const map = {};
-    // initialize lines 1..8
-    for (let i = 1; i <= 8; i++) map[i] = 0;
-
-    // For each line, compute assigned ids
-    for (let i = 1; i <= 8; i++) {
-      const assignedIds = lineAssignments[i]?.positions
-        .filter(p => p.employeeId)
-        .map(p => p.employeeId) || [];
-
-      const count = employees.filter(emp => (
-        // consider employees whose recorded line equals this line
-        Number(emp.line) === i &&
-        // and who are not currently assigned to a position on this line
-        !assignedIds.includes(emp._id) &&
-        // and who are active (optional check)
-        (emp.status ? emp.status.toLowerCase() !== 'reallocated' : true)
-      )).length;
-
-      map[i] = count;
-    }
-
-    return map;
-  }, [employees, lineAssignments]);
 
   return (
     <div className="flex">
       <SideBar title="Supervisor Panel" links={SupervisorLinks} />
-      <div className="space-y-6 ml-64 w-full mt-16 p-6">
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
-            <div className="flex items-center">
-              <span className="font-medium">Error: </span>
-              <span className="ml-2">{error}</span>
-              <button 
-                onClick={() => setError(null)}
-                className="ml-auto text-red-700 hover:text-red-900"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Loading State */}
-        {loading && (
-          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-lg mb-4">
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
-              <span>Loading employee data...</span>
-            </div>
-          </div>
-        )}
-        
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Employee Assignment Management</h2>
-            <button
-              onClick={handleShowAssignmentTable}
-              className="px-6 py-3 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all duration-300 shadow-lg"
+    <div className="space-y-6 ml-64 w-full mt-16">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+          <div className="flex items-center">
+            <span className="font-medium">Error: </span>
+            <span className="ml-2">{error}</span>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-auto text-red-700 hover:text-red-900"
             >
-              View All Assignments
+              ✕
             </button>
           </div>
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4">Select Production Line:</h3>
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((lineNum) => {
-                const assigned = lineAssignments[lineNum].positions.filter(p => p.employeeId).length;
-                return (
-                  <button
-                    key={lineNum}
-                    onClick={() => setSelectedLine(lineNum)}
-                    className={`px-4 py-3 rounded-xl font-medium transition-all duration-300 relative ${
-                      selectedLine === lineNum
-                        ? 'bg-blue-500 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div>Line {lineNum}</div>
-                    <div className="text-xs mt-1">{assigned}/4</div>
-                  </button>
-                );
-              })}
-            </div>
+        </div>
+      )}
+      
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-lg mb-4">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+            <span>Loading worker data...</span>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Position Layout */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Line {selectedLine} - Positions</h3>
-                <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
-                  {positions.filter(p => p.employeeId).length}/4 Filled
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {positions.map((position) => (
-                  <div
-                    key={position.id}
-                    className={`p-5 rounded-xl text-center min-h-32 flex flex-col justify-center transition-all duration-300 ${
-                      position.employeeId
-                        ? 'bg-green-50 border-2 border-green-500 border-solid'
-                        : 'bg-gray-50 border-2 border-gray-300 border-dashed'
-                    }`}
-                  >
-                    <strong className="block mb-2 text-lg">{position.name}</strong>
-                    <small className="text-gray-500 mb-3">{position.description}</small>
-                    
-                    {position.employeeId ? (
-                      <>
-                        <p className="font-medium text-gray-800 mb-1">{position.employee}</p>
-                        <small className="text-gray-600 mb-3">{position.employeePosition}</small>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => assignWorkerToPosition(position.id)}
-                            disabled={!selectedWorker}
-                            className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
-                              selectedWorker
-                                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            }`}
-                          >
-                            Reassign
-                          </button>
-                          <button
-                            onClick={() => unassignWorkerFromPosition(position.id)}
-                            className="flex-1 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-sm"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => assignWorkerToPosition(position.id)}
-                        disabled={!selectedWorker}
-                        className={`px-4 py-2 rounded-lg transition-all ${
-                          selectedWorker
-                            ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        }`}
-                      >
-                        {selectedWorker ? 'Assign Selected' : 'Select Worker First'}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex gap-3">
-                <button
-                  className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-300"
-                  onClick={handleClearLine}
-                >
-                  Clear All Assignments
-                </button>
-              </div>
-            </div>
-
-            {/* Available Workers */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Available Employees - Line {selectedLine}</h3>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">
-                  {availableWorkers.length} Available
-                </span>
-              </div>
-              
-              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                {availableWorkers.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No available employees for this line</p>
-                    <small className="text-xs">All employees are assigned or no employees exist for Line {selectedLine}</small>
-                  </div>
-                ) : (
-                  availableWorkers.map((worker) => (
-                    <div
-                      key={worker.id}
-                      onClick={() => handleWorkerSelect(worker)}
-                      className={`p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                        selectedWorker?.id === worker.id
-                          ? 'border-blue-500 bg-blue-50 shadow-lg'
-                          : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <div className="font-bold text-gray-800">{worker.name}</div>
-                          <div className="text-sm text-gray-600">ID: {worker.id}</div>
-                        </div>
-                        {selectedWorker?.id === worker.id && (
-                          <span className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
-                            Selected
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <strong>Position:</strong> {worker.position}
-                        </div>
-                        <div>
-                          <strong>Production:</strong> {worker.pcs} pcs
-                        </div>
-                        <div>
-                          <strong>Line:</strong> {worker.line}
-                        </div>
-                        <div>
-                          <strong>Status:</strong>
-                          <span className={`ml-1 px-2 py-0.5 rounded text-xs ${
-                            worker.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {worker.status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+        </div>
+      )}
+      
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Worker Assignment Management</h2>
+        
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Select Production Line:</h3>
+          <div className="flex gap-3 flex-wrap">
+            {[1, 2, 3, 4].map((lineNum) => (
+              <button
+                key={lineNum}
+                onClick={() => setSelectedLine(lineNum)}
+                className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  selectedLine === lineNum
+                    ? 'bg-blue-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Line {lineNum}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Assignment Table Modal */}
-        {showAssignmentTable && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-black/30">
-            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-800">All Line Assignments</h3>
-                <button
-                  className="text-gray-500 hover:text-gray-800 text-3xl font-bold leading-none"
-                  onClick={handleCloseAssignmentTable}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Station Layout */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-800">Line {selectedLine} - Station Layout</h3>
+              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                {stations.filter(s => s.occupied).length}/{stations.length} Stations Occupied
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 max-h-96 overflow-y-auto pr-2">
+              {stations.map((station) => (
+                <div
+                  key={station.id}
+                  onClick={() => assignWorkerToStation(station.id)}
+                  className={`p-5 rounded-xl text-center min-h-32 flex flex-col justify-center cursor-pointer transition-all duration-300 ${
+                    station.occupied
+                      ? 'bg-green-50 border-2 border-green-500 border-solid'
+                      : 'bg-gray-50 border-2 border-gray-300 border-dashed hover:bg-yellow-50 hover:border-yellow-400'
+                  }`}
                 >
-                  &times;
-                </button>
+                  <strong className="block mb-2">{station.name}</strong>
+                  {station.occupied ? (
+                    <>
+                      <p className="font-medium">{station.worker}</p>
+                      <small className="text-gray-600">{station.task} • {station.efficiency}% Eff.</small>
+                    </>
+                  ) : (
+                    <p className="text-gray-500">Click to assign worker</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-300 hover:shadow-lg"
+                onClick={handleOptimizeClick}
+              >
+                Optimize Assignments
+              </button>
+              <button
+                className="px-6 py-3 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all duration-300"
+                onClick={handleReassignWorkers}
+              >
+                Reassign Workers
+              </button>
+            </div>
+            
+            {/* Optimize Table Modal */}
+            {showOptimizeTable && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-white/30">
+                <div className="bg-white rounded-2xl p-8 shadow-2xl min-w-[350px] max-w-lg w-full relative">
+                  <button
+                    className="absolute top-2 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold"
+                    onClick={handleCloseOptimizeTable}
+                  >
+                    &times;
+                  </button>
+                  <h3 className="text-xl font-bold mb-4 text-center">Optimized Worker Assignments for {lineInfo?.name || `Line ${selectedLine}`}</h3>
+                  <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 max-h-80" style={{maxHeight:'22rem'}}>
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900">
+                          <th className="py-3 px-4 text-left font-semibold rounded-tl-xl w-32">Worker ID</th>
+                          <th className="py-3 px-4 text-left font-semibold w-40">Worker Name</th>
+                          <th className="py-3 px-4 text-left font-semibold w-40">Occupation</th>
+                          <th className="py-3 px-4 text-left font-semibold rounded-tr-xl w-40">Station</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {allWorkersForTable.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-6 px-4 text-center text-gray-400">No workers found for this line.</td>
+                          </tr>
+                        ) : (
+                          [...allWorkersForTable]
+                            .sort((a, b) => (a.id || '').localeCompare(b.id || ''))
+                            .map((w, idx) => (
+                              <tr
+                                key={w.id + '-' + idx}
+                                className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100`}
+                              >
+                                <td className="py-2 px-4 font-mono text-xs text-gray-500">{w.id}</td>
+                                <td className="py-2 px-4 font-medium text-gray-800">{w.name}</td>
+                                <td className="py-2 px-4 text-gray-700">{w.occupation}</td>
+                                <td className={"py-2 px-4 " + (w.station === 'Unassigned' ? 'text-gray-400 font-semibold' : 'text-blue-600 font-semibold')}>{w.station === 'Unassigned' ? 'Unassigned' : w.station}</td>
+                              </tr>
+                            ))
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan={4} className="py-2 px-4 text-right text-xs text-gray-400 rounded-b-xl">
+                            Total: {allWorkersForTable.length} workers
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {getAssignmentSummary().map((lineSummary) => (
-                  <div key={lineSummary.lineNum} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-lg font-bold text-gray-800">Line {lineSummary.lineNum}</h4>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        lineSummary.assignedCount === lineSummary.totalPositions
-                          ? 'bg-green-100 text-green-800'
-                          : lineSummary.assignedCount > 0
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {lineSummary.assignedCount}/{lineSummary.totalPositions} Filled
-                      </span>
+            )}
+          </div>
+
+          {/* Available Workers */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-800">Available Workers</h3>
+              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                {availableWorkers.length} Available
+              </span>
+            </div>
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+              {[...availableWorkers].sort((a, b) => a.id.localeCompare(b.id)).map((worker) => (
+                <div
+                  key={worker.id}
+                  onClick={() => handleWorkerSelect(worker.id)}
+                  className={`p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
+                    selectedWorkers.includes(worker.id)
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="font-bold text-gray-800">{worker.name}</div>
+                      <div className="text-sm text-gray-600">ID: {worker.id}</div>
                     </div>
-                    
-                    {lineSummary.employees.length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">No assignments</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {lineSummary.employees.map((emp, idx) => (
-                          <div key={idx} className="bg-blue-50 rounded-lg p-3 text-sm">
-                            <div className="font-semibold text-gray-800">{emp.position}</div>
-                            <div className="text-gray-700">{emp.employee}</div>
-                            <div className="text-xs text-gray-500">{emp.employeePosition}</div>
-                          </div>
-                        ))}
-                      </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {worker.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><strong>Experience:</strong> {worker.experience} years</div>
+                    {worker.pcs && (
+                      <div><strong>Production:</strong> {worker.pcs} pcs</div>
                     )}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
-        )}
+        </div>
       </div>
+    </div>
     </div>
   );
 };

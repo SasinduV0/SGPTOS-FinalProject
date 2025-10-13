@@ -108,7 +108,7 @@ const ProductivityIncrease = () => {
       <h3 className="text-2xl font-bold text-gray-800 mb-6">
         Productivity Increase
       </h3>
-      <div className="relative flex items-center justify-center w-57 h-57">
+      <div className="relative flex items-center justify-center w-52 h-52">
         <Doughnut data={data} options={options} />
         <div className="absolute text-center">
           <div className="text-lg font-bold">{completed}%</div>

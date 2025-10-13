@@ -114,7 +114,7 @@ const LineTargetChart = () => {
 
   return (
     <div className="bg-white rounded-2xl w-[500px] max-w-xl ">
-      <h2 className="text-center text-gray-800 font-bold text-2xl mb-6">
+      <h2 className="text-center text-gray-800 font-bold text-2xl ">
         Total Productivity - Line Wise Target
         {/* {connectionStatus === "connected" && <span className="text-green-500 text-xs ml-2">●</span>}
         {connectionStatus === "disconnected" && <span className="text-red-500 text-xs ml-2">●</span>} */}

@@ -1,241 +1,422 @@
-import React, { useState } from 'react';
-import { X, Download, BarChart3, FileText, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Download, BarChart3, FileText, Filter, RefreshCw, AlertCircle } from 'lucide-react';
+import SideBar from '../../components/SideBar';
+import { ManagerLinks } from '../../pages/Data/SidebarNavlinks';
+
+import LineWiseProductivity from '../../components/Manager/LineWiseProductivity';
+import DashboardSummary from '../../components/Manager/DashboardSummary';
+import LinePerformanceTable from '../../components/Manager/LinePerformanceTable';
 
 const ReportAnalytics = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('Today');
-  const [sortBy, setSortBy] = useState('date');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [filterStatus, setFilterStatus] = useState('All');
 
-  // Sample data for Employee Efficiency
-  const employeeEfficiencyData = {
-    Today: [
-      { date: '2025-10-11', workerId: 'W001', workerName: 'John Doe', line: 'Line A', pieces: 450, efficiency: 92, achievement: 95, status: 'Excellent', variance: 25 },
-      { date: '2025-10-11', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', pieces: 380, efficiency: 85, achievement: 88, status: 'Good', variance: 15 },
-      { date: '2025-10-11', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', pieces: 420, efficiency: 88, achievement: 90, status: 'Good', variance: 20 },
-      { date: '2025-10-11', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', pieces: 310, efficiency: 72, achievement: 75, status: 'Average', variance: -10 },
-    ],
-    Weekly: [
-      { date: '2025-10-05', workerId: 'W001', workerName: 'John Doe', line: 'Line A', pieces: 3150, efficiency: 93, achievement: 96, status: 'Excellent', variance: 150 },
-      { date: '2025-10-05', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', pieces: 2660, efficiency: 86, achievement: 89, status: 'Good', variance: 110 },
-      { date: '2025-10-05', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', pieces: 2940, efficiency: 89, achievement: 91, status: 'Good', variance: 140 },
-      { date: '2025-10-05', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', pieces: 2170, efficiency: 73, achievement: 76, status: 'Average', variance: -70 },
-    ],
-    Monthly: [
-      { date: '2025-09-01', workerId: 'W001', workerName: 'John Doe', line: 'Line A', pieces: 13500, efficiency: 94, achievement: 97, status: 'Excellent', variance: 600 },
-      { date: '2025-09-01', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', pieces: 11400, efficiency: 87, achievement: 90, status: 'Good', variance: 450 },
-      { date: '2025-09-01', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', pieces: 12600, efficiency: 90, achievement: 92, status: 'Excellent', variance: 550 },
-      { date: '2025-09-01', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', pieces: 9300, efficiency: 74, achievement: 77, status: 'Average', variance: -300 },
-    ],
-    Annually: [
-      { date: '2024-01-01', workerId: 'W001', workerName: 'John Doe', line: 'Line A', pieces: 162000, efficiency: 95, achievement: 98, status: 'Excellent', variance: 7200 },
-      { date: '2024-01-01', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', pieces: 136800, efficiency: 88, achievement: 91, status: 'Good', variance: 5400 },
-      { date: '2024-01-01', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', pieces: 151200, efficiency: 91, achievement: 93, status: 'Excellent', variance: 6600 },
-      { date: '2024-01-01', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', pieces: 111600, efficiency: 75, achievement: 78, status: 'Average', variance: -3600 },
-    ]
-  };
-
-  // Sample data for Line Efficiency
-  const lineEfficiencyData = {
-    Today: [
-      { date: '2025-10-11', line: 'Line A', pieces: 1250, efficiency: 91, achievement: 94, status: 'Excellent', variance: 50 },
-      { date: '2025-10-11', line: 'Line B', pieces: 1080, efficiency: 86, achievement: 88, status: 'Good', variance: 30 },
-      { date: '2025-10-11', line: 'Line C', pieces: 920, efficiency: 78, achievement: 80, status: 'Average', variance: -20 },
-      { date: '2025-10-11', line: 'Line D', pieces: 1150, efficiency: 89, achievement: 92, status: 'Good', variance: 45 },
-    ],
-    Weekly: [
-      { date: '2025-10-05', line: 'Line A', pieces: 8750, efficiency: 92, achievement: 95, status: 'Excellent', variance: 350 },
-      { date: '2025-10-05', line: 'Line B', pieces: 7560, efficiency: 87, achievement: 89, status: 'Good', variance: 210 },
-      { date: '2025-10-05', line: 'Line C', pieces: 6440, efficiency: 79, achievement: 81, status: 'Average', variance: -140 },
-      { date: '2025-10-05', line: 'Line D', pieces: 8050, efficiency: 90, achievement: 93, status: 'Excellent', variance: 315 },
-    ],
-    Monthly: [
-      { date: '2025-09-01', line: 'Line A', pieces: 37500, efficiency: 93, achievement: 96, status: 'Excellent', variance: 1500 },
-      { date: '2025-09-01', line: 'Line B', pieces: 32400, efficiency: 88, achievement: 90, status: 'Good', variance: 900 },
-      { date: '2025-09-01', line: 'Line C', pieces: 27600, efficiency: 80, achievement: 82, status: 'Average', variance: -600 },
-      { date: '2025-09-01', line: 'Line D', pieces: 34500, efficiency: 91, achievement: 94, status: 'Excellent', variance: 1350 },
-    ],
-    Annually: [
-      { date: '2024-01-01', line: 'Line A', pieces: 450000, efficiency: 94, achievement: 97, status: 'Excellent', variance: 18000 },
-      { date: '2024-01-01', line: 'Line B', pieces: 388800, efficiency: 89, achievement: 91, status: 'Good', variance: 10800 },
-      { date: '2024-01-01', line: 'Line C', pieces: 331200, efficiency: 81, achievement: 83, status: 'Average', variance: -7200 },
-      { date: '2024-01-01', line: 'Line D', pieces: 414000, efficiency: 92, achievement: 95, status: 'Excellent', variance: 16200 },
-    ]
-  };
-
-  // Sample data for Target Achievement
-  const targetAchievementData = {
-    Today: [
-      { date: '2025-10-11', line: 'Line A', actual: 1250, target: 1200, achievement: 104, status: 'Excellent', variance: 50 },
-      { date: '2025-10-11', line: 'Line B', actual: 1080, target: 1100, achievement: 98, status: 'Good', variance: -20 },
-      { date: '2025-10-11', line: 'Line C', actual: 920, target: 1000, achievement: 92, status: 'Good', variance: -80 },
-      { date: '2025-10-11', line: 'Line D', actual: 1150, target: 1150, achievement: 100, status: 'Excellent', variance: 0 },
-    ],
-    Weekly: [
-      { date: '2025-10-05', line: 'Line A', actual: 8750, target: 8400, achievement: 104, status: 'Excellent', variance: 350 },
-      { date: '2025-10-05', line: 'Line B', actual: 7560, target: 7700, achievement: 98, status: 'Good', variance: -140 },
-      { date: '2025-10-05', line: 'Line C', actual: 6440, target: 7000, achievement: 92, status: 'Good', variance: -560 },
-      { date: '2025-10-05', line: 'Line D', actual: 8050, target: 8050, achievement: 100, status: 'Excellent', variance: 0 },
-    ],
-    Monthly: [
-      { date: '2025-09-01', line: 'Line A', actual: 37500, target: 36000, achievement: 104, status: 'Excellent', variance: 1500 },
-      { date: '2025-09-01', line: 'Line B', actual: 32400, target: 33000, achievement: 98, status: 'Good', variance: -600 },
-      { date: '2025-09-01', line: 'Line C', actual: 27600, target: 30000, achievement: 92, status: 'Good', variance: -2400 },
-      { date: '2025-09-01', line: 'Line D', actual: 34500, target: 34500, achievement: 100, status: 'Excellent', variance: 0 },
-    ],
-    Annually: [
-      { date: '2024-01-01', line: 'Line A', actual: 450000, target: 432000, achievement: 104, status: 'Excellent', variance: 18000 },
-      { date: '2024-01-01', line: 'Line B', actual: 388800, target: 396000, achievement: 98, status: 'Good', variance: -7200 },
-      { date: '2024-01-01', line: 'Line C', actual: 331200, target: 360000, achievement: 92, status: 'Good', variance: -28800 },
-      { date: '2024-01-01', line: 'Line D', actual: 414000, target: 414000, achievement: 100, status: 'Excellent', variance: 0 },
-    ]
-  };
-
-  // Sample data for Defect Rate
-  const defectRateData = {
-    Today: [
-      { date: '2025-10-11', workerId: 'W001', workerName: 'John Doe', line: 'Line A', defectType: 'Stitching', defects: 5, achievement: 98.9, status: 'Good', variance: 5 },
-      { date: '2025-10-11', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', defectType: 'Sizing', defects: 8, achievement: 97.9, status: 'Average', variance: 8 },
-      { date: '2025-10-11', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', defectType: 'Button', defects: 3, achievement: 99.3, status: 'Excellent', variance: 3 },
-      { date: '2025-10-11', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', defectType: 'Fabric', defects: 12, achievement: 96.1, status: 'Poor', variance: 12 },
-    ],
-    Weekly: [
-      { date: '2025-10-05', workerId: 'W001', workerName: 'John Doe', line: 'Line A', defectType: 'Stitching', defects: 35, achievement: 98.9, status: 'Good', variance: 35 },
-      { date: '2025-10-05', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', defectType: 'Sizing', defects: 56, achievement: 97.9, status: 'Average', variance: 56 },
-      { date: '2025-10-05', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', defectType: 'Button', defects: 21, achievement: 99.3, status: 'Excellent', variance: 21 },
-      { date: '2025-10-05', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', defectType: 'Fabric', defects: 84, achievement: 96.1, status: 'Poor', variance: 84 },
-    ],
-    Monthly: [
-      { date: '2025-09-01', workerId: 'W001', workerName: 'John Doe', line: 'Line A', defectType: 'Stitching', defects: 150, achievement: 98.9, status: 'Good', variance: 150 },
-      { date: '2025-09-01', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', defectType: 'Sizing', defects: 240, achievement: 97.9, status: 'Average', variance: 240 },
-      { date: '2025-09-01', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', defectType: 'Button', defects: 90, achievement: 99.3, status: 'Excellent', variance: 90 },
-      { date: '2025-09-01', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', defectType: 'Fabric', defects: 360, achievement: 96.1, status: 'Poor', variance: 360 },
-    ],
-    Annually: [
-      { date: '2024-01-01', workerId: 'W001', workerName: 'John Doe', line: 'Line A', defectType: 'Stitching', defects: 1800, achievement: 98.9, status: 'Good', variance: 1800 },
-      { date: '2024-01-01', workerId: 'W002', workerName: 'Jane Smith', line: 'Line B', defectType: 'Sizing', defects: 2880, achievement: 97.9, status: 'Average', variance: 2880 },
-      { date: '2024-01-01', workerId: 'W003', workerName: 'Mike Johnson', line: 'Line A', defectType: 'Button', defects: 1080, achievement: 99.3, status: 'Excellent', variance: 1080 },
-      { date: '2024-01-01', workerId: 'W004', workerName: 'Sarah Williams', line: 'Line C', defectType: 'Fabric', defects: 4320, achievement: 96.1, status: 'Poor', variance: 4320 },
-    ]
-  };
-
-  // Sample data for Productivity
-  const productivityData = {
-    Today: [
-      { date: '2025-10-11', line: 'Line A', actual: 1250, target: 1200, achievement: 104, status: 'Excellent', variance: 50 },
-      { date: '2025-10-11', line: 'Line B', actual: 1080, target: 1150, achievement: 94, status: 'Good', variance: -70 },
-      { date: '2025-10-11', line: 'Line C', actual: 920, target: 1000, achievement: 92, status: 'Good', variance: -80 },
-      { date: '2025-10-11', line: 'Line D', actual: 1150, target: 1100, achievement: 105, status: 'Excellent', variance: 50 },
-    ],
-    Weekly: [
-      { date: '2025-10-05', line: 'Line A', actual: 8750, target: 8400, achievement: 104, status: 'Excellent', variance: 350 },
-      { date: '2025-10-05', line: 'Line B', actual: 7560, target: 8050, achievement: 94, status: 'Good', variance: -490 },
-      { date: '2025-10-05', line: 'Line C', actual: 6440, target: 7000, achievement: 92, status: 'Good', variance: -560 },
-      { date: '2025-10-05', line: 'Line D', actual: 8050, target: 7700, achievement: 105, status: 'Excellent', variance: 350 },
-    ],
-    Monthly: [
-      { date: '2025-09-01', line: 'Line A', actual: 37500, target: 36000, achievement: 104, status: 'Excellent', variance: 1500 },
-      { date: '2025-09-01', line: 'Line B', actual: 32400, target: 34500, achievement: 94, status: 'Good', variance: -2100 },
-      { date: '2025-09-01', line: 'Line C', actual: 27600, target: 30000, achievement: 92, status: 'Good', variance: -2400 },
-      { date: '2025-09-01', line: 'Line D', actual: 34500, target: 33000, achievement: 105, status: 'Excellent', variance: 1500 },
-    ],
-    Annually: [
-      { date: '2024-01-01', line: 'Line A', actual: 450000, target: 432000, achievement: 104, status: 'Excellent', variance: 18000 },
-      { date: '2024-01-01', line: 'Line B', actual: 388800, target: 414000, achievement: 94, status: 'Good', variance: -25200 },
-      { date: '2024-01-01', line: 'Line C', actual: 331200, target: 360000, achievement: 92, status: 'Good', variance: -28800 },
-      { date: '2024-01-01', line: 'Line D', actual: 414000, target: 396000, achievement: 105, status: 'Excellent', variance: 18000 },
-    ]
+  // Sample data for different report types and periods
+  const reportData = {
+    'Employee Efficiency': {
+      Today: [16, 45, 37, 7],
+      Weekly: [120, 300, 250, 80],
+      Monthly: [480, 1200, 1000, 320],
+      Annually: [5760, 14400, 12000, 3840]
+    },
+    'Line Efficiency': {
+      Today: [25, 35, 42, 18],
+      Weekly: [175, 245, 294, 126],
+      Monthly: [700, 980, 1176, 504],
+      Annually: [8400, 11760, 14112, 6048]
+    },
+    'Target Achievement': {
+      Today: [30, 40, 25, 15],
+      Weekly: [210, 280, 175, 105],
+      Monthly: [840, 1120, 700, 420],
+      Annually: [10080, 13440, 8400, 5040]
+    },
+    'Defect Rate': {
+      Today: [5, 12, 8, 3],
+      Weekly: [35, 84, 56, 21],
+      Monthly: [140, 336, 224, 84],
+      Annually: [1680, 4032, 2688, 1008]
+    },
+    'Productivity': {
+      Today: [28, 52, 34, 16],
+      Weekly: [196, 364, 238, 112],
+      Monthly: [784, 1456, 952, 448],
+      Annually: [9408, 17472, 11424, 5376]
+    }
   };
 
   const reportOptions = [
     { 
       name: 'Employee Efficiency', 
-      description: 'Track individual and team performance metrics',
-      icon: '👥'
+      description: 'Track individual worker performance and output',
+      icon: '👥',
+      endpoint: 'employees'
     },
     { 
       name: 'Line Efficiency', 
-      description: 'Monitor production line performance and output',
-      icon: '🏭'
+      description: 'Monitor production line performance metrics',
+      icon: '🏭',
+      endpoint: 'line-performance'
     },
     { 
       name: 'Target Achievement', 
-      description: 'Compare actual vs target production goals',
-      icon: '🎯'
+      description: 'Compare actual vs planned production goals',
+      icon: '🎯',
+      endpoint: 'product'
     },
     { 
       name: 'Defect Rate', 
-      description: 'Quality control and defect tracking analysis',
-      icon: '⚠️'
+      description: 'Quality control and defect analysis',
+      icon: '⚠️',
+      endpoint: 'iot/defect-rate'
     },
     { 
-      name: 'Productivity', 
-      description: 'Overall productivity and efficiency trends',
-      icon: '📈'
+      name: 'Supervisor Management', 
+      description: 'Line supervisor assignments and coverage',
+      icon: '👨‍💼',
+      endpoint: 'line-management'
     }
   ];
 
-  const getCurrentData = () => {
-    if (!selectedReport) return [];
+  // Fetch data based on report type and period
+  const fetchReportData = async () => {
+    if (!selectedReport) return;
     
-    let data = [];
-    switch(selectedReport) {
-      case 'Employee Efficiency':
-        data = employeeEfficiencyData[selectedPeriod] || [];
-        break;
-      case 'Line Efficiency':
-        data = lineEfficiencyData[selectedPeriod] || [];
-        break;
-      case 'Target Achievement':
-        data = targetAchievementData[selectedPeriod] || [];
-        break;
-      case 'Defect Rate':
-        data = defectRateData[selectedPeriod] || [];
-        break;
-      case 'Productivity':
-        data = productivityData[selectedPeriod] || [];
-        break;
-      default:
-        data = [];
-    }
+    setLoading(true);
+    setError(null);
 
-    // Apply status filter
-    if (filterStatus !== 'All') {
-      data = data.filter(item => item.status === filterStatus);
-    }
+    try {
+      const reportConfig = reportOptions.find(r => r.name === selectedReport);
+      let response;
 
-    // Apply sorting
-    const sortedData = [...data].sort((a, b) => {
-      let aValue, bValue;
-      
-      switch(sortBy) {
-        case 'date':
-          aValue = new Date(a.date);
-          bValue = new Date(b.date);
+      switch(selectedReport) {
+        case 'Employee Efficiency':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const employeesResponse = await response.json();
+          const employees = Array.isArray(employeesResponse) ? employeesResponse : (employeesResponse.data || employeesResponse.employees || []);
+          setReportData(transformEmployeeData(employees, selectedPeriod));
           break;
-        case 'achievement':
-          aValue = a.achievement;
-          bValue = b.achievement;
+
+        case 'Line Efficiency':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const lineDataResponse = await response.json();
+          const lineData = Array.isArray(lineDataResponse) ? lineDataResponse : (lineDataResponse.data || lineDataResponse.lines || []);
+          setReportData(transformLineData(lineData, selectedPeriod));
           break;
-        case 'variance':
-          aValue = a.variance;
-          bValue = b.variance;
+
+        case 'Target Achievement':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const plansResponse = await response.json();
+          // Handle both array and object with data property
+          const plans = Array.isArray(plansResponse) ? plansResponse : (plansResponse.data || plansResponse.plans || []);
+          setReportData(transformTargetData(plans, selectedPeriod));
           break;
+
+        case 'Defect Rate':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const defectData = await response.json();
+          const defectsResponse = await fetch(`${API_BASE_URL}/iot/defects`);
+          const allDefectsResponse = await defectsResponse.json();
+          const allDefects = Array.isArray(allDefectsResponse) ? allDefectsResponse : (allDefectsResponse.data || allDefectsResponse.defects || []);
+          setReportData(transformDefectData(defectData, allDefects, selectedPeriod));
+          break;
+
+        case 'Supervisor Management':
+          response = await fetch(`${API_BASE_URL}/${reportConfig.endpoint}`);
+          const supervisorsResponse = await response.json();
+          const supervisors = Array.isArray(supervisorsResponse) ? supervisorsResponse : (supervisorsResponse.data || supervisorsResponse.supervisors || []);
+          setReportData(transformSupervisorData(supervisors, selectedPeriod));
+          break;
+
         default:
-          return 0;
+          throw new Error('Invalid report type');
       }
+    } catch (err) {
+      setError(err.message || 'Failed to fetch data');
+      console.error('Error fetching report data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
+  // Re-fetch data when period changes
+  useEffect(() => {
+    if (showDashboard && selectedReport) {
+      fetchReportData();
+    }
+  }, [selectedPeriod]);
+
+  // Helper to filter data by period
+  const filterDataByPeriod = (data, period) => {
+    const now = new Date();
+    const filtered = data.filter(item => {
+      const itemDate = new Date(item.date || item.updatedAt || item.createdAt);
+      
+      switch(period) {
+        case 'today':
+          return itemDate.toDateString() === now.toDateString();
+        case 'weekly':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return itemDate >= weekAgo;
+        case 'monthly':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return itemDate >= monthAgo;
+        case 'annually':
+          const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          return itemDate >= yearAgo;
+        default:
+          return true;
+      }
+    });
+    return filtered;
+  };
+
+  // Aggregate data based on period
+  const aggregateByPeriod = (data, period, groupKey) => {
+    if (period === 'today') return data;
+
+    const grouped = {};
+    data.forEach(item => {
+      const key = item[groupKey];
+      if (!grouped[key]) {
+        grouped[key] = { ...item, pieces: 0, actual: 0, defects: 0, count: 0 };
+      }
+      grouped[key].pieces += item.pieces || 0;
+      grouped[key].actual += item.actual || 0;
+      grouped[key].defects += item.defects || 0;
+      grouped[key].count += 1;
+    });
+
+    return Object.values(grouped).map(item => {
+      const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : 365;
+      const target = getLineTarget(parseInt(item.line?.replace('Line ', '') || 1)) * multiplier;
+      const achievement = target > 0 ? ((item.pieces / target) * 100).toFixed(1) : 0;
+      
+      return {
+        ...item,
+        efficiency: parseFloat(achievement),
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: item.pieces - target
+      };
+    });
+  };
+
+  // Data transformation functions
+  const transformEmployeeData = (employees, period) => {
+    // Ensure employees is an array
+    if (!Array.isArray(employees)) {
+      console.error('transformEmployeeData: Expected array but got:', typeof employees);
+      return [];
+    }
+
+    const transformed = employees.map(emp => {
+      const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
+      const target = getLineTarget(emp.line) * multiplier;
+      const actualPieces = (emp.pcs || 0) * (period === 'today' ? 1 : multiplier);
+      const achievement = target > 0 ? ((actualPieces / target) * 100).toFixed(1) : 0;
+      const variance = actualPieces - target;
+      
+      return {
+        date: new Date(emp.updatedAt).toISOString().split('T')[0],
+        workerId: emp.employeeId,
+        workerName: emp.name,
+        line: `Line ${emp.line}`,
+        pieces: actualPieces,
+        efficiency: parseFloat(achievement),
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: variance,
+        updatedAt: emp.updatedAt
+      };
+    });
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  const transformLineData = (lineData, period) => {
+    // Ensure lineData is an array
+    if (!Array.isArray(lineData)) {
+      console.error('transformLineData: Expected array but got:', typeof lineData);
+      return [];
+    }
+
+    const multiplier = period === 'weekly' ? 7 : period === 'monthly' ? 30 : period === 'annually' ? 365 : 1;
+    
+    return lineData.map(line => ({
+      date: new Date().toISOString().split('T')[0],
+      line: line.line,
+      pieces: line.actual * multiplier,
+      efficiency: line.efficiency,
+      achievement: line.efficiency,
+      status: getStatus(line.efficiency),
+      variance: (line.actual - line.target) * multiplier
+    }));
+  };
+
+  const transformTargetData = (plans, period) => {
+    // Ensure plans is an array
+    if (!Array.isArray(plans)) {
+      console.error('transformTargetData: Expected array but got:', typeof plans);
+      return [];
+    }
+
+    const transformed = plans.map(plan => {
+      // Calculate achievement percentage
+      const achievement = plan.totalStock > 0 
+        ? ((plan.finishedUnits / plan.totalStock) * 100).toFixed(1) 
+        : 0;
+      
+      // Calculate remaining units
+      const remainingUnits = plan.remainingUnits || (plan.totalStock - plan.finishedUnits);
+      
+      // Format dates
+      const startDate = plan.startDate ? new Date(plan.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      const endDate = plan.endDate ? new Date(plan.endDate).toISOString().split('T')[0] : 'N/A';
+      
+      return {
+        date: startDate,
+        productName: plan.product,
+        line: plan.product,
+        actual: plan.finishedUnits || 0,
+        target: plan.totalStock || 0,
+        remaining: remainingUnits,
+        achievement: parseFloat(achievement),
+        status: getStatus(parseFloat(achievement)),
+        variance: (plan.finishedUnits || 0) - (plan.totalStock || 0),
+        remainingDays: plan.remainingDays || 0,
+        dailyTarget: plan.dailyTarget || 0,
+        weeklyTarget: plan.weeklyTarget || 0,
+        dueDate: endDate,
+        createdAt: plan.createdAt || startDate,
+        startDate: startDate,
+        endDate: endDate
+      };
+    });
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  const transformDefectData = (defectRate, allDefects, period) => {
+    // Ensure allDefects is an array
+    if (!Array.isArray(allDefects)) {
+      console.error('transformDefectData: Expected array but got:', typeof allDefects);
+      return [];
+    }
+
+    const defectsByWorker = {};
+    
+    const filteredDefects = allDefects.filter(defectDoc => {
+      const defectDate = new Date(defectDoc.Time_Stamp);
+      const now = new Date();
+      
+      switch(period) {
+        case 'today':
+          return defectDate.toDateString() === now.toDateString();
+        case 'weekly':
+          return defectDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        case 'monthly':
+          return defectDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        case 'annually':
+          return defectDate >= new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        default:
+          return true;
       }
     });
 
-    return sortedData;
+    filteredDefects.forEach(defectDoc => {
+      defectDoc.Defects.forEach(defect => {
+        const key = defectDoc.Station_ID;
+        if (!defectsByWorker[key]) {
+          defectsByWorker[key] = {
+            stationId: defectDoc.Station_ID,
+            tagUID: defectDoc.Tag_UID,
+            defects: [],
+            timestamp: defectDoc.Time_Stamp
+          };
+        }
+        defectsByWorker[key].defects.push(defect);
+      });
+    });
+
+    return Object.values(defectsByWorker).map((item, index) => ({
+      date: new Date(item.timestamp).toISOString().split('T')[0],
+      workerId: `ST-${item.stationId}`,
+      workerName: `Station ${item.stationId}`,
+      line: `Line ${Math.ceil(item.stationId / 2)}`,
+      defectType: item.defects.map(d => getDefectName(d.Type, d.Subtype)).join(', '),
+      defects: item.defects.length,
+      achievement: (100 - (item.defects.length * 0.5)).toFixed(1),
+      status: item.defects.length <= 2 ? 'Excellent' : item.defects.length <= 5 ? 'Good' : 'Poor',
+      variance: item.defects.length
+    }));
+  };
+
+  const transformSupervisorData = (supervisors, period) => {
+    // Ensure supervisors is an array
+    if (!Array.isArray(supervisors)) {
+      console.error('transformSupervisorData: Expected array but got:', typeof supervisors);
+      return [];
+    }
+
+    const transformed = supervisors.map(sup => ({
+      date: new Date(sup.createdAt).toISOString().split('T')[0],
+      supervisorId: sup._id.substring(0, 8),
+      supervisorName: sup.name,
+      assignedLines: Array.isArray(sup.lineNo) ? sup.lineNo.join(', ') : sup.lineNo,
+      lineCount: Array.isArray(sup.lineNo) ? sup.lineNo.length : 1,
+      status: 'Active',
+      efficiency: 100,
+      achievement: 100,
+      createdAt: sup.createdAt
+    }));
+
+    return filterDataByPeriod(transformed, period);
+  };
+
+  // Helper functions
+  const getLineTarget = (lineNumber) => {
+    const targets = { 1: 1000, 2: 800, 3: 900, 4: 1100, 5: 950, 6: 1050, 7: 700, 8: 850 };
+    return targets[lineNumber] || 800;
+  };
+
+  const getStatus = (percentage) => {
+    if (percentage >= 95) return 'Excellent';
+    if (percentage >= 85) return 'Good';
+    if (percentage >= 70) return 'Average';
+    return 'Poor';
+  };
+
+  const getDefectName = (type, subtype) => {
+    const defectMap = {
+      0: { name: 'Fabric', subtypes: { 0: 'Hole', 1: 'Stain', 2: 'Shading', 3: 'Slub' } },
+      1: { name: 'Stitching', subtypes: { 0: 'Broken', 1: 'Uneven' } },
+      2: { name: 'Button', subtypes: { 0: 'Missing', 1: 'Loose' } }
+    };
+    return defectMap[type]?.subtypes[subtype] || `Type ${type}-${subtype}`;
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'Excellent': return 'bg-green-100 text-green-800';
+      case 'Good': return 'bg-blue-100 text-blue-800';
+      case 'Average': return 'bg-yellow-100 text-yellow-800';
+      case 'Poor': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Filter and sort data
+  const getCurrentData = () => {
+    if (!selectedReport) return [];
+    return reportData[selectedReport][selectedPeriod] || [];
+  };
+
+  const getMaxValue = () => {
+    const data = getCurrentData();
+    return Math.max(...data);
   };
 
   const generateReport = () => {
@@ -245,509 +426,128 @@ const ReportAnalytics = () => {
   };
 
   const downloadReport = () => {
-    const printWindow = window.open('', '_blank');
-    const htmlContent = generatePDFContent();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-  };
-
-  const printReport = () => {
-    const printWindow = window.open('', '_blank');
-    const htmlContent = generatePDFContent();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-  };
-
-  const generatePDFContent = () => {
-    const data = getCurrentData();
-    let tableHeaders = '';
-    let tableRows = '';
-
-    switch(selectedReport) {
-      case 'Employee Efficiency':
-        tableHeaders = '<th>Date</th><th>Worker ID</th><th>Worker Name</th><th>Line</th><th>Pieces</th><th>Efficiency %</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
-        tableRows = data.map(row => `
-          <tr>
-            <td>${row.date}</td>
-            <td>${row.workerId}</td>
-            <td><strong>${row.workerName}</strong></td>
-            <td>${row.line}</td>
-            <td>${row.pieces}</td>
-            <td>${row.efficiency}%</td>
-            <td>${row.achievement}%</td>
-            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
-            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
-          </tr>
-        `).join('');
-        break;
-
-      case 'Line Efficiency':
-        tableHeaders = '<th>Date</th><th>Line</th><th>Pieces</th><th>Efficiency %</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
-        tableRows = data.map(row => `
-          <tr>
-            <td>${row.date}</td>
-            <td><strong>${row.line}</strong></td>
-            <td>${row.pieces}</td>
-            <td>${row.efficiency}%</td>
-            <td>${row.achievement}%</td>
-            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
-            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
-          </tr>
-        `).join('');
-        break;
-
-      case 'Target Achievement':
-        tableHeaders = '<th>Date</th><th>Line</th><th>Actual</th><th>Target</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
-        tableRows = data.map(row => `
-          <tr>
-            <td>${row.date}</td>
-            <td><strong>${row.line}</strong></td>
-            <td>${row.actual}</td>
-            <td>${row.target}</td>
-            <td>${row.achievement}%</td>
-            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
-            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
-          </tr>
-        `).join('');
-        break;
-
-      case 'Defect Rate':
-        tableHeaders = '<th>Date</th><th>Worker ID</th><th>Worker Name</th><th>Line</th><th>Defect Type</th><th>Defects</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
-        tableRows = data.map(row => `
-          <tr>
-            <td>${row.date}</td>
-            <td>${row.workerId}</td>
-            <td><strong>${row.workerName}</strong></td>
-            <td>${row.line}</td>
-            <td>${row.defectType}</td>
-            <td>${row.defects}</td>
-            <td>${row.achievement}%</td>
-            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
-            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
-          </tr>
-        `).join('');
-        break;
-
-      case 'Productivity':
-        tableHeaders = '<th>Date</th><th>Line</th><th>Actual</th><th>Target</th><th>Achievement %</th><th>Status</th><th>Variance</th>';
-        tableRows = data.map(row => `
-          <tr>
-            <td>${row.date}</td>
-            <td><strong>${row.line}</strong></td>
-            <td>${row.actual}</td>
-            <td>${row.target}</td>
-            <td>${row.achievement}%</td>
-            <td class="status-${row.status.toLowerCase()}">${row.status}</td>
-            <td class="${row.variance >= 0 ? 'positive' : 'negative'}">${row.variance >= 0 ? '+' : ''}${row.variance}</td>
-          </tr>
-        `).join('');
-        break;
-    }
-
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <title>${selectedReport} - ${selectedPeriod} Report</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1f2937; padding-bottom: 20px; }
-    .header h1 { color: #1f2937; margin: 0 0 10px 0; }
-    .header p { color: #6b7280; margin: 5px 0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    thead { background-color: #1f2937; color: white; }
-    th { padding: 12px; text-align: left; font-weight: 600; font-size: 12px; }
-    td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
-    tbody tr:hover { background-color: #f9fafb; }
-    .status-excellent { color: #059669; font-weight: bold; }
-    .status-good { color: #2563eb; font-weight: bold; }
-    .status-average { color: #d97706; font-weight: bold; }
-    .status-poor { color: #dc2626; font-weight: bold; }
-    .positive { color: #059669; font-weight: bold; }
-    .negative { color: #dc2626; font-weight: bold; }
-    .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
-    @media print { body { padding: 20px; } .no-print { display: none; } }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>${selectedReport}</h1>
-    <p><strong>Period:</strong> ${selectedPeriod}</p>
-    <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-    <p><strong>Filter:</strong> ${filterStatus} | <strong>Sort By:</strong> ${sortBy} (${sortOrder})</p>
-  </div>
-  <table>
-    <thead><tr>${tableHeaders}</tr></thead>
-    <tbody>${tableRows}</tbody>
-  </table>
-  <div class="footer">
-    <p>This report was automatically generated by the Report Analytics System</p>
-    <p>&copy; ${new Date().getFullYear()} - All Rights Reserved</p>
-  </div>
-  <div class="no-print" style="margin-top: 30px; text-align: center;">
-    <button onclick="window.print()" style="padding: 10px 20px; background-color: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px;">Print Report</button>
-    <button onclick="downloadPDF()" style="padding: 10px 20px; background-color: #059669; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px;">Download as PDF</button>
-    <button onclick="window.close()" style="padding: 10px 20px; background-color: #6b7280; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Close</button>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script>
-    function downloadPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'pt', 'a4');
-      
-      document.querySelector('.no-print').style.display = 'none';
-      
-      html2canvas(document.body, {
-        scale: 2,
-        useCORS: true,
-        logging: false
-      }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 595.28;
-        const pageHeight = 841.89;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          doc.addPage();
-          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        doc.save('${selectedReport.replace(/\s+/g, '_')}_${selectedPeriod}_Report.pdf');
-        
-        document.querySelector('.no-print').style.display = 'block';
-      });
-    }
-  </script>
-</body>
-</html>`;
-  };
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Excellent':
-        return 'bg-green-100 text-green-800';
-      case 'Good':
-        return 'bg-blue-100 text-blue-800';
-      case 'Average':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Poor':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const renderTableHeaders = () => {
-    switch(selectedReport) {
-      case 'Employee Efficiency':
-        return (
-          <>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Worker ID</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Worker Name</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Pieces</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Efficiency %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
-          </>
-        );
-      case 'Line Efficiency':
-        return (
-          <>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Pieces</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Efficiency %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
-          </>
-        );
-      case 'Target Achievement':
-        return (
-          <>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Actual</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Target</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
-          </>
-        );
-      case 'Defect Rate':
-        return (
-          <>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Worker ID</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Worker Name</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Defect Type</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Defects</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
-          </>
-        );
-      case 'Productivity':
-        return (
-          <>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Date</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Line</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Actual</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Target</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Achievement %</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold">Variance</th>
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const renderTableRow = (row, index) => {
-    switch(selectedReport) {
-      case 'Employee Efficiency':
-        return (
-          <tr key={index} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 text-gray-700">{row.date}</td>
-            <td className="px-6 py-4 text-gray-700">{row.workerId}</td>
-            <td className="px-6 py-4 font-medium text-gray-800">{row.workerName}</td>
-            <td className="px-6 py-4 text-gray-700">{row.line}</td>
-            <td className="px-6 py-4 text-gray-700">{row.pieces}</td>
-            <td className="px-6 py-4 text-gray-700">{row.efficiency}%</td>
-            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
-            <td className="px-6 py-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
-                {row.status}
-              </span>
-            </td>
-            <td className="px-6 py-4">
-              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {row.variance >= 0 ? '+' : ''}{row.variance}
-              </span>
-            </td>
-          </tr>
-        );
-      case 'Line Efficiency':
-        return (
-          <tr key={index} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 text-gray-700">{row.date}</td>
-            <td className="px-6 py-4 font-medium text-gray-800">{row.line}</td>
-            <td className="px-6 py-4 text-gray-700">{row.pieces}</td>
-            <td className="px-6 py-4 text-gray-700">{row.efficiency}%</td>
-            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
-            <td className="px-6 py-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
-                {row.status}
-              </span>
-            </td>
-            <td className="px-6 py-4">
-              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {row.variance >= 0 ? '+' : ''}{row.variance}
-              </span>
-            </td>
-          </tr>
-        );
-      case 'Target Achievement':
-        return (
-          <tr key={index} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 text-gray-700">{row.date}</td>
-            <td className="px-6 py-4 font-medium text-gray-800">{row.line}</td>
-            <td className="px-6 py-4 text-gray-700">{row.actual}</td>
-            <td className="px-6 py-4 text-gray-700">{row.target}</td>
-            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
-            <td className="px-6 py-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
-                {row.status}
-              </span>
-            </td>
-            <td className="px-6 py-4">
-              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {row.variance >= 0 ? '+' : ''}{row.variance}
-              </span>
-            </td>
-          </tr>
-        );
-      case 'Defect Rate':
-        return (
-          <tr key={index} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 text-gray-700">{row.date}</td>
-            <td className="px-6 py-4 text-gray-700">{row.workerId}</td>
-            <td className="px-6 py-4 font-medium text-gray-800">{row.workerName}</td>
-            <td className="px-6 py-4 text-gray-700">{row.line}</td>
-            <td className="px-6 py-4 text-gray-700">{row.defectType}</td>
-            <td className="px-6 py-4 text-gray-700">{row.defects}</td>
-            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
-            <td className="px-6 py-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
-                {row.status}
-              </span>
-            </td>
-            <td className="px-6 py-4">
-              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {row.variance >= 0 ? '+' : ''}{row.variance}
-              </span>
-            </td>
-          </tr>
-        );
-      case 'Productivity':
-        return (
-          <tr key={index} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 text-gray-700">{row.date}</td>
-            <td className="px-6 py-4 font-medium text-gray-800">{row.line}</td>
-            <td className="px-6 py-4 text-gray-700">{row.actual}</td>
-            <td className="px-6 py-4 text-gray-700">{row.target}</td>
-            <td className="px-6 py-4 text-gray-700">{row.achievement}%</td>
-            <td className="px-6 py-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
-                {row.status}
-              </span>
-            </td>
-            <td className="px-6 py-4">
-              <span className={`font-medium ${row.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {row.variance >= 0 ? '+' : ''}{row.variance}
-              </span>
-            </td>
-          </tr>
-        );
-      default:
-        return null;
-    }
+    // Simulate download
+    const fileName = `${selectedReport.replace(/\s+/g, '_')}_${selectedPeriod}_Report.pdf`;
+    
+    // Create a temporary link for download simulation
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(
+      `Report: ${selectedReport}\nPeriod: ${selectedPeriod}\nGenerated: ${new Date().toLocaleDateString()}`
+    );
+    link.click();
+    
+    // Show feedback
+    alert(`${fileName} downloaded successfully!`);
   };
 
   if (showDashboard) {
     const data = getCurrentData();
+    const maxValue = getMaxValue();
 
     return (
-      <div className="bg-gray-50 min-h-screen p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-800">{selectedReport}</h2>
-                <p className="text-gray-600 mt-1">Comprehensive analysis and detailed insights</p>
-              </div>
-              <button 
-                onClick={() => setShowDashboard(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+      <div className="bg-white rounded-lg shadow p-6 mt-20 ml-70 ">
+        <SideBar title ="Manager Panel" links={ManagerLinks}/>
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">{selectedReport}</h2>
+            <p className="text-gray-600 mt-1">Comprehensive analysis and insights</p>
+          </div>
+          <button 
+            onClick={() => setShowDashboard(false)}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
+
+        {/* Time Period Buttons */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            {['Today', 'Weekly', 'Monthly', 'Annually'].map((period) => (
+              <button
+                key={period}
+                onClick={() => setSelectedPeriod(period)}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                  selectedPeriod === period
+                    ? 'bg-gray-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
               >
-                ← Back
+                {period}
               </button>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+              SHOW
+            </button>
+            <button 
+              onClick={downloadReport}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center gap-2"
+            >
+              <Download size={16} />
+              DOWNLOAD
+            </button>
+          </div>
+        </div>
+
+        {/* Chart */}
+        <div className="bg-white rounded-lg border p-6">
+          <div className="flex justify-end items-center mb-6">
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span>Max: {maxValue}</span>
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-              {/* Period Selection */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                {['Today', 'Weekly', 'Monthly', 'Annually'].map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
-                    className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${
-                      selectedPeriod === period
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    {period}
-                  </button>
-                ))}
-              </div>
-
-              {/* Filters and Actions */}
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Status Filter */}
-                <div className="flex items-center gap-2">
-                  <Filter size={16} className="text-gray-600" />
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Excellent">Excellent</option>
-                    <option value="Good">Good</option>
-                    <option value="Average">Average</option>
-                    <option value="Poor">Poor</option>
-                  </select>
-                </div>
-
-                {/* Sort By */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="date">Sort by Date</option>
-                  <option value="achievement">Sort by Achievement</option>
-                  <option value="variance">Sort by Variance</option>
-                </select>
-
-                {/* Sort Order */}
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-                >
-                  {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
-                </button>
-
-                {/* Download and Print */}
-                <button 
-                  onClick={downloadReport}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <Download size={16} />
-                  DOWNLOAD PDF
-                </button>
-                <button 
-                  onClick={printReport}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-                >
-                  <FileText size={16} />
-                  PRINT
-                </button>
-              </div>
+          <div className="relative h-80">
+            {/* Y-axis labels */}
+            <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-sm text-gray-500 pr-4">
+              {[maxValue, Math.floor(maxValue * 0.75), Math.floor(maxValue * 0.5), Math.floor(maxValue * 0.25), 0].map((value, index) => (
+                <span key={index}>{value}</span>
+              ))}
             </div>
-          </div>
 
-          {/* Data Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-800 text-white">
-                  <tr>
-                    {renderTableHeaders()}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {data.length > 0 ? (
-                    data.map((row, index) => renderTableRow(row, index))
-                  ) : (
-                    <tr>
-                      <td colSpan="9" className="px-6 py-8 text-center text-gray-500">
-                        No data available for the selected filters
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            {/* Chart area */}
+            <div className="ml-12 h-full flex items-end justify-center gap-8">
+              {data.map((value, index) => {
+                const height = (value / maxValue) * 100;
+                const colors = ['#ef4444', '#f97316', '#eab308', '#84cc16'];
+                
+                return (
+                  <div key={index} className="flex flex-col items-center">
+                    <div 
+                      className="w-16 rounded-t transition-all duration-1000 relative group cursor-pointer"
+                      style={{ 
+                        height: `${height}%`, 
+                        backgroundColor: colors[index % colors.length],
+                        minHeight: '8px'
+                      }}
+                    >
+                      {/* Tooltip */}
+                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        {value}
+                      </div>
+                    </div>
+                    <span className="mt-2 text-sm font-medium text-gray-700">
+                      {['A', 'B', 'C', 'D'][index]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Grid lines */}
+            <div className="absolute inset-0 ml-12 pointer-events-none">
+              {[0, 25, 50, 75, 100].map((position) => (
+                <div
+                  key={position}
+                  className="absolute w-full border-t border-gray-200"
+                  style={{ bottom: `${position}%` }}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -756,10 +556,11 @@ const ReportAnalytics = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6 ml-70 mt-20">
+      <SideBar title ="Manager Panel" links={ManagerLinks}/>
       <div className="text-center">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Report Analytics</h3>
-        <p className="text-gray-600 mb-6">Generate comprehensive reports and analytics</p>
+        <p className="text-gray-600 mb-6 ">Generate comprehensive reports and analytics</p>
         
         <button 
           onClick={() => setShowPopup(true)}
@@ -774,6 +575,7 @@ const ReportAnalytics = () => {
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Popup Header */}
             <div className="flex justify-between items-center p-6 border-b">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Select Report Type</h2>
@@ -787,6 +589,7 @@ const ReportAnalytics = () => {
               </button>
             </div>
 
+            {/* Report Options */}
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {reportOptions.map((option) => (
@@ -806,6 +609,7 @@ const ReportAnalytics = () => {
                 ))}
               </div>
 
+              {/* Generate Button */}
               <button
                 onClick={generateReport}
                 disabled={!selectedReport}
@@ -821,6 +625,15 @@ const ReportAnalytics = () => {
           </div>
         </div>
       )}
+
+      <div className='mt-10 flex flex-col'>
+          <LineWiseProductivity/>
+          <DashboardSummary />
+          <LinePerformanceTable/>
+
+      </div>
+
+
     </div>
   );
 };

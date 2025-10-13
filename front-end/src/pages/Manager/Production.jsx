@@ -279,33 +279,7 @@ const Production = () => {
       {/* Line Performance Table */}
       <LinePerformanceTable/>
 
-      
-      {/* Quality Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Quality Rate</h3>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">96.2%</div>
-            <div className="text-sm text-gray-600 mt-1">+2.1% from yesterday</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Defect Rate</h3>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-600">3.8%</div>
-            <div className="text-sm text-gray-600 mt-1">-0.5% from yesterday</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Rework Rate</h3>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-yellow-600">2.1%</div>
-            <div className="text-sm text-gray-600 mt-1">-0.3% from yesterday</div>
-          </div>
-        </div>
-      </div>
+    
     </div>
   );
 };

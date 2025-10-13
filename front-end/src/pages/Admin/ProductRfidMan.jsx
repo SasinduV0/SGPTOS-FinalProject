@@ -1,245 +1,167 @@
-import React, { useState } from 'react';
+// src/pages/AdminPanal/ProductRfidMan.jsx
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
+import axios from 'axios';
 import Header from '../../components/AdminPanal/Header';
 import SearchBar from '../../components/AdminPanal/SearchBar';
 import FilterBar from '../../components/AdminPanal/FilterBar';
 import DataTable from '../../components/AdminPanal/DataTable';
 import StatusBadge from '../../components/AdminPanal/StatusBadge';
 import ActionButton from '../../components/AdminPanal/ActionButton';
-import RfidModal from '../../components/AdminPanal/RfidModal';
-import Modal from '../../components/AdminPanal/Modal';
+import ProRfidModal from '../../components/AdminPanal/ProRfidModal';
 import AddButton from '../../components/AdminPanal/AddButton';
+import ConfirmDeleteModal from '../../components/AdminPanal/ConfirmDeleteModal';
+
+const API_BASE_URL = "http://localhost:8001/api/product-rfids";
+
 
 const ProductRfidMan = () => {
-  const [rfidEntries, setRfidEntries] = useState([
-    {
-      id: '1',
-      rfidNumber: 'RFID01-234',
-      unit: 'UNIT 1',
-      workplace: 'LINE 1',
-      status: 'ACTIVE'
-    },
-    {
-      id: '2',
-      rfidNumber: 'RFID01-235',
-      unit: 'UNIT 1',
-      workplace: 'LINE 2',
-      status: 'ACTIVE'
-    },
-    {
-      id: '3',
-      rfidNumber: 'RFID01-236',
-      unit: 'UNIT 2',
-      workplace: 'LINE 3',
-      status: 'INACTIVE'
-    },
-    {
-      id: '4',
-      rfidNumber: 'RFID01-789',
-      unit: 'UNIT 1',
-      workplace: 'LINE 4',
-      status: 'ACTIVE'
-    }
-  ]);
-
-  // State variables for modal, editing, search, and filters
+  const [rfidEntries, setRfidEntries] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [unitFilter, setUnitFilter] = useState('All Units');
   const [workplaceFilter, setWorkplaceFilter] = useState('All Workplaces');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  //delete modal stste
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const units = ['All Units', 'UNIT 1', 'UNIT 2', 'UNIT 3'];
   const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
 
-  // Function to handle adding a new entry
-  const handleAddEntry = () => {
-    setEditingEntry(null);    
-    setIsModalOpen(true);     
-  };
-
-  // Function to handle editing an existing entry
-  const handleEditEntry = (entry) => {
-    setEditingEntry(entry);   // Set the entry to be edited
-    setIsModalOpen(true);
-  };
-
-  // Function to handle deleting an entry
-  const handleDeleteEntry = (id) => {
-    if (window.confirm('Are you sure you want to delete this RFID entry?')) {
-      setRfidEntries(prev => prev.filter(entry => entry.id !== id));    // Remove the entry by ID
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const params = {};
+      if (searchTerm) params.search = searchTerm;
+      if (unitFilter && unitFilter !== 'All Units') params.unit = unitFilter;
+      if (workplaceFilter && workplaceFilter !== 'All Workplaces') params.workplace = workplaceFilter;
+      const res = await axios.get(API_BASE_URL, { params });
+      setRfidEntries(res.data.data || []);
+    } catch (err) {
+      console.error('Fetch product rfids error', err);
+      setError(err.response?.data?.message || err.message || 'Error fetching product rfids');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSaveEntry = (entryData) => {
-    if (editingEntry) {
-      // Edit existing entry
-      setRfidEntries(prev =>
-        prev.map(entry =>
-          entry.id === editingEntry.id
-            ? { ...entryData, id: editingEntry.id }
-            : entry
-        )
-      );
-    } else {
-      // Add new entry
-      const newEntry = {
-        ...entryData,
-        id: Date.now().toString()     // Generate a unique ID
-      };
-      setRfidEntries(prev => [...prev, newEntry]);    // Add the new entry to the list
+  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    const t = setTimeout(fetchData, 400);
+    return () => clearTimeout(t);
+  }, [searchTerm, unitFilter, workplaceFilter]);
+
+  const handleAdd = () => { setEditingEntry(null); setIsModalOpen(true); };
+  const handleEdit = (entry) => { setEditingEntry(entry); setIsModalOpen(true); };
+ 
+  //open delete modal
+  const handleDeleteClick = (entry) => {
+    setDeleteTarget(entry);
+    setDeleteModalOpen(true);
+  };
+
+  //confirm delete after RFID check
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/${deleteTarget._id}`);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || err.message);
+    } finally {
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
     }
-    setIsModalOpen(false);   
-    setEditingEntry(null);    
   };
 
-  // Function to handle status changes for an entry
-  const handleStatusChange = (id, newStatus) => {
-    setRfidEntries(prev =>
-      prev.map(entry =>
-        entry.id === id ? { ...entry, status: newStatus } : entry
-      )
-    );
+  const handleSave = async (entryData) => {
+    try {
+      // entryData already cleaned by modal
+      if (editingEntry) {
+        await axios.put(`${API_BASE_URL}/${editingEntry._id}`, entryData);
+        alert('Updated successfully');
+      } else {
+        await axios.post(API_BASE_URL, entryData);
+        alert('Created successfully');
+      }
+      setIsModalOpen(false);
+      setEditingEntry(null);
+      fetchData();
+    } catch (err) {
+      console.error('Save error', err);
+      const msg = err.response?.data?.message || err.message || 'Error saving';
+      alert(msg);
+      // If validation errors array present, show joined message
+      if (err.response?.data?.errors) alert(err.response.data.errors.join('\n'));
+    }
   };
 
-  // Filter the RFID entries based on search and filter criteria
-  const filteredEntries = rfidEntries.filter(entry => {
-    const matchesSearch = entry.rfidNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.unit.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.workplace.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesUnit = unitFilter === 'All Units' || entry.unit === unitFilter;
-    const matchesWorkplace = workplaceFilter === 'All Workplaces' || entry.workplace === workplaceFilter;
-    
-    return matchesSearch && matchesUnit && matchesWorkplace;
-  });
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await axios.patch(`${API_BASE_URL}/${id}/status`, { status: newStatus });
+      fetchData();
+      alert('Status updated');
+    } catch (err) {
+      alert(err.response?.data?.message || err.message);
+    }
+  };
 
-  // Define the table columns for the DataTable component
   const tableColumns = [
-    {
-      header: 'RFID NUMBER',
-      key: 'rfidNumber',
-      className: 'font-mono text-sm text-gray-800'
-    },
-    {
-      header: 'UNIT',
-      key: 'unit',
-      className: 'text-gray-800'
-    },
-    {
-      header: 'WORKPLACE',
-      key: 'workplace',
-      className: 'text-gray-800'
-    },
-    {
-      header: 'STATUS',
-      key: 'status',
-      render: (entry) => (
-        <StatusBadge
-          status={entry.status}
-          onChange={(newStatus) => handleStatusChange(entry.id, newStatus)}   // Allow status changes
-        />
-      )
-    },
-    {
-      header: 'ACTION',
-      key: 'actions',
-      render: (entry) => (
-        <ActionButton
-          onEdit={() => handleEditEntry(entry)}
-          onDelete={() => handleDeleteEntry(entry.id)}
-          editTooltip="Edit RFID Entry"
-          deleteTooltip="Delete RFID Entry"
-        />
-      )
-    }
-  ];
-
-  const filters = [
-    {
-      value: unitFilter,
-      onChange: setUnitFilter,
-      options: units
-    },
-    {
-      value: workplaceFilter,
-      onChange: setWorkplaceFilter,
-      options: workplaces
-    }
+    { header: 'RFID NUMBER', key: 'rfidNumber', className: 'font-mono text-sm' },
+    { header: 'UNIT', key: 'unit' },
+    { header: 'WORKPLACE', key: 'workplace' },
+    { header: 'STATUS', key: 'status', render: (entry) => <StatusBadge status={entry.status} onChange={(s) => handleStatusChange(entry._id, s)} /> },
+    { header: 'ACTION', key: 'actions', render: (entry) => <ActionButton onEdit={() => handleEdit(entry)} onDelete={() => handleDeleteClick(entry)} /> }
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-
-      {/* Main Content */}
+    <div className="flex min-h-screen bg-gray-50 font-sans text-base text-gray-800">
       <div className="flex-1 flex flex-col">
+        <div className="flex-1 p-6 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center justify-between p-6 border-b">
+            <Header title="Product RFID Management" icon={<User/>} />
+            <AddButton handleAddEntry={handleAdd} text="Add RFID" />
+          </div>
 
-        {/* Page Content */}
-        <div className="flex-1 p-6">
-          <div className="bg-white rounded-lg shadow-sm">
-
-            <div className="flex items-center justify-between p-6 border-b">
-              <Header title="Product RFID Managment" icon={<User />} />
-              <AddButton handleAddEntry={handleAddEntry} text="Add User" />
+          <div className="flex items-center gap-6 bg-gray-50">
+            <FilterBar selectedOption={unitFilter} setSelectedOption={setUnitFilter} options={units} selectLabel="Unit" />
+            <FilterBar selectedOption={workplaceFilter} setSelectedOption={setWorkplaceFilter} options={workplaces} selectLabel="Workplace" />
+            <div className="flex-1">
+              <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} searchPlaceholder="Search RFID"/>
             </div>
+          </div>
 
-            <div className='flex items-center gap-6 p-6 bg-gray-50'>
+          {error && <div className="p-4 text-red-600">{error}</div>}
+          {loading && <div className="p-6 text-center">Loading...</div>}
 
-              {/*Search Bar*/}
-              <div className='flex-1'>
-                <SearchBar
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                searchPlaceholder="Search RFID"
-                />
-              </div>
-
-              {/*Unit filter*/}
-              <FilterBar
-              selectedOption={unitFilter}
-              setSelectedOption={setUnitFilter}
-              options={units}
-              selectLabel='Unit'
-              searchPlaceholder=''/>
-
-              {/*Workplace filter*/}
-              <FilterBar
-              selectedOption={workplaceFilter}
-              setSelectedOption={setWorkplaceFilter}
-              options={workplaces}
-              selectLabel='Workplace'
-              searchPlaceholder=''/>
-              
-            </div>
-
-
-            {/* RFID Entries */}
-            <div className="p-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-medium text-gray-800">
-                  RFID Entries ({filteredEntries.length})
-                </h2>
-              </div>
-
-              <DataTable
-                columns={tableColumns}
-                data={filteredEntries}
-                emptyMessage="Try adjusting your search or filter criteria"
-              />
-            </div>
+          <div className="p-6">
+            <h2 className="text-2xl font-semibold text-gray-900">RFID Entries ({rfidEntries.length})</h2>
+            <DataTable columns={tableColumns} data={rfidEntries} emptyMessage="Try adjusting search or filters" />
           </div>
         </div>
       </div>
 
-      {/* RFID Modal */}
-      <RfidModal
+      <ProRfidModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingEntry(null);
-        }}
-        onSave={handleSaveEntry}
+        onClose={() => { setIsModalOpen(false); setEditingEntry(null); }}
+        onSave={handleSave}
         initialData={editingEntry}
       />
+
+      {deleteTarget &&(
+        <ConfirmDeleteModal
+          isOpen={deleteModalOpen}
+          onClose={()=> setDeleteModalOpen(false)}
+          onConfirm={confirmDelete}
+          rfidNumber={deleteTarget.rfidNumber}
+          entityType='product'/>
+      )}
+
     </div>
   );
 };

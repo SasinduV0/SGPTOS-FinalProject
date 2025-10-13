@@ -14,11 +14,19 @@ const lineReallocation = require("./routes/LineReallocation");
 
 const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
+
+const analyticsRoutes = require("./routes/analytics");
+
+
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 
 const productionRoutes = require("./routes/production");
 
 const userRoute = require('./routes/userRoute');
+const rfidEmployeeRoutes = require('./routes/rfidEmployeeRoute');
+const productRfidRoutes = require('./routes/productRfid')
+const userDetails = require('./routes/userDetails');
+const validRfidsRoutes = require('./routes/validRfids')
 
 
 
@@ -41,6 +49,17 @@ app.use("/api/production", productionRoutes);
 app.use("/api/users", userRoute);
 app.use("/api/iot", iotDefectRoutes);
 app.use("/api/auth", forgotPasswordRoutes);
+
+app.use("/api/analytics", analyticsRoutes);
+
+
+app.use("/api/rfid-employees", rfidEmployeeRoutes);
+app.use("/api/product-rfids", productRfidRoutes);
+app.use('/api/users', userDetails);
+
+app.use('/api/valid-rfids', validRfidsRoutes);
+
+
 app.use("/", (req, res) => {
   res.json({
     "msg": "Hello Smart Garment production tracking system!",
@@ -49,6 +68,7 @@ app.use("/", (req, res) => {
   });
 
 });
+
 
 io.on("connection", (socket) => {
   console.log("⚡ Client connected:", socket.id);
