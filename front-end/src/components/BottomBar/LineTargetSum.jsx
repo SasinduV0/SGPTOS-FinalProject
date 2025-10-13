@@ -2,14 +2,14 @@ import React from "react";
 
 const LineTargetSum = () => {
   const lineTargets = {
-    1: 1000,
-    2: 800,
-    3: 900,
-    4: 1100,
-    5: 950,
-    6: 1050,
-    7: 700,
-    8: 850,
+    1: 10,
+    2: 80,
+    3: 90,
+    4: 110,
+    5: 95,
+    6: 105,
+    7: 70,
+    8: 85,
   };
 
   // Calculate total sum
