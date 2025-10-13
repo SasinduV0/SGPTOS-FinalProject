@@ -17,6 +17,11 @@ const rfidTagScanSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  Line_Number: {
+    type: Number,
+    required: true,
+    index: true // For faster line-based queries
+  },
   Time_Stamp: { 
     type: Number, 
     required: true,
