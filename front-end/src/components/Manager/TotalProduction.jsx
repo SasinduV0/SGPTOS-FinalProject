@@ -33,7 +33,7 @@ socket.off("defectUpdate", fetchProductionCount);
 };
 }, []); // The empty dependency array ensures this effect runs only once on mount.
 return (
-<div className="bg-white p-4 rounded-2xl shadow w-full">
+<div className="bg-white p-4 rounded-2xl shadow w-82">
 <div className="flex items-center justify-between">
 {/* Left side (text) */}
 <div className="text-left">
@@ -46,4 +46,4 @@ return (
 </div>
 );
 };
-export default TotalProduction; 
+export default TotalProduction;
