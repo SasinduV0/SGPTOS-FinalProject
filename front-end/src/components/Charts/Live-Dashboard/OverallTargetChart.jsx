@@ -28,7 +28,7 @@ const OverallTargetChart = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-  const response = await fetch("http://localhost:8001/api/employees");
+        const response = await fetch("http://localhost:8001/api/employees");
         const data = await response.json();
         updateChartData(data);
         setLoading(false);
@@ -100,12 +100,12 @@ const OverallTargetChart = () => {
   };
 
   return (
-    <div className="relative flex flex-col items-center bg-white rounded-2xl p-4 w-[280px]">
-      <h2 className="text-center text-black font-bold text-2xl mb-4">
+    <div className="relative flex flex-col items-center bg-white rounded-2xl p-4 w-[240px]">
+      <h2 className="text-center text-gray-800 font-bold text-2xl mb-2">
         Overall Target
       </h2>
-      <Doughnut data={data} options={options} className="w-45" />
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+      <Doughnut data={data} options={options} className="w-40" />
+      <div className="absolute top-1/2 mt-5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
         <div className="text-xl font-bold text-black">{totalCompleted} Pcs</div>
         <div className="text-sm text-gray-700">{completionPercentage}%</div>
       </div>

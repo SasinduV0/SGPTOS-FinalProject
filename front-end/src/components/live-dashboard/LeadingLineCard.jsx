@@ -77,19 +77,54 @@ import io from "socket.io-client";
 import axios from "axios";
 import { FaUser } from "react-icons/fa";
 
-// ✅ Always use websocket transport
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
+// ✅ Enhanced socket connection with error handling  
+const socket = io("http://localhost:8001", { 
+  transports: ["websocket"],
+  autoConnect: true,
+  forceNew: true
+});
 
 const LeadingLine = () => {
   const [employees, setEmployees] = useState([]);
   const [leadingLine, setLeadingLine] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
 
+  // Handle socket connection events
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+      setConnectionStatus("connected");
+      // Request initial data
+      socket.emit("getAllEmployees");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ Socket disconnected");
+      setConnectionStatus("disconnected");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("❌ Socket connection error:", error);
+      setConnectionStatus("error");
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+    };
+  }, []);
 
   // fetch all employees initially
   useEffect(() => {
     const fetchData = async () => {
-  const res = await axios.get(`http://localhost:8001/api/employees`);
-      updateLeadingLine(res.data);
+      try {
+        const res = await axios.get(`http://localhost:8001/api/employees`);
+        console.log("📤 Fetched initial data:", res.data.length, "employees");
+        updateLeadingLine(res.data);
+      } catch (error) {
+        console.error("❌ Error fetching initial data:", error);
+      }
     };
     fetchData();
   }, []);
@@ -97,6 +132,7 @@ const LeadingLine = () => {
   // listen for real-time updates
   useEffect(() => {
     socket.on("leadingLineUpdate", (updatedEmployees) => {
+      console.log("🔄 Received real-time update:", updatedEmployees.length, "employees");
       updateLeadingLine(updatedEmployees);
     });
 
@@ -134,7 +170,11 @@ const LeadingLine = () => {
   return (
     <div className="p-2">
       <div className="text-white rounded-2xl px-3">
-        <h2 className="text-lg font-bold text-center">Leading Line</h2>
+        <h2 className="text-lg font-bold text-center">
+          Leading Line 
+          {/* {connectionStatus === "connected" && <span className="text-green-400 text-xs ml-2">●</span>}
+          {connectionStatus === "disconnected" && <span className="text-red-400 text-xs ml-2">●</span>} */}
+        </h2>
 
         {leadingLine !== null && (
           <p className="text-center text-sm text-gray-300">
@@ -142,19 +182,25 @@ const LeadingLine = () => {
           </p>
         )}
 
-        <div className="mt-3 space-y-2">
-          {topEmployees.map((emp) => (
-            <div
-              key={emp._id}
-              className="flex justify-between items-center px-3 py-1 rounded-lg hover:bg-gray-700 transition"
-            >
-              <div className="flex items-center gap-4">
-                <FaUser className="text-blue-400" />
-                <span>{emp.name}</span>
+        <div className="mt-3 space-y-1">
+          {topEmployees.length > 0 ? (
+            topEmployees.map((emp) => (
+              <div
+                key={emp._id}
+                className="flex justify-between items-center px-3 py-1 rounded-lg hover:bg-gray-700 transition"
+              >
+                <div className="flex items-center gap-4">
+                  <FaUser className="text-blue-400" />
+                  <span>{emp.name}</span>
+                </div>
+                <span className="font-semibold">{emp.pcs} Pcs</span>
               </div>
-              <span className="font-semibold">{emp.pcs} Pcs</span>
+            ))
+          ) : (
+            <div className="text-center text-gray-400 py-4">
+              No employees found
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
