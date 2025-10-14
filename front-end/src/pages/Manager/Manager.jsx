@@ -15,6 +15,7 @@ import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
 import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
 import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
+import ChatContainer from '../../components/ChatContainer'; 
 
 const ManagerHome = ({ lineData }) => {
 
@@ -44,6 +45,7 @@ const ManagerHome = ({ lineData }) => {
   return (
     <>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ml-70 mt-22 mr-5">
+      <ChatContainer role="Manager" />
       <SideBar title ="Manager Panel" links={ManagerLinks}/>
       
       {/* Total Status Card */}

@@ -5,6 +5,7 @@ import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../../pages/Data/SidebarNavlinks';
 import DefectRateChart from '../../components/live-dashboard/DefectRateChart';
 import DefectRateQC from '../../components/QC/DefectRateQC';
+import ChatContainer from '../../components/ChatContainer';
 
 // Helper function to get consistent colors for defect types
 const getDefectColor = (defectType) => {
@@ -84,6 +85,8 @@ function QualityControl() {
     <div className="min-h-screen bg-gray-50 flex ml-70 mt-20">
       {/* Sidebar Component */}
       <SideBar title="QC Panel" links={QCManagerLinks} />
+      <ChatContainer role="Quality Controller" />
+      <ChatContainer role="Quality Controller" />
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">

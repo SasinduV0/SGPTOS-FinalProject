@@ -25,12 +25,14 @@ import ProductivityIncrease from '../../components/Manager/ProductivityIncrease'
 import LineProductivityChart from '../../components/Manager/LineProductivityChart';
 import DailyEmployeesList from '../../components/Supervisor/DailyEmployeesList';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import ChatContainer from '../../components/ChatContainer';
 
 
 const HomePage = ({ dashboardData }) => {
   return (
     <div className="flex min-h-screen">
       <SideBar title="Supervisor Panel" links={SupervisorLinks} />
+      <ChatContainer role="Supervisor" />
     <div className="flex-1 space-y-6 ml-64 mr-5 pt-20 px-4 overflow-x-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

@@ -7,13 +7,15 @@ import UserRegistration from './UserRegistration';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import EmployeeRfidMan from './EmployeeRfidMan';
 import UserManagment from './UserManagment';
+import ChatContainer from '../../components/ChatContainer'; 
 
 function AdminDashboard() {
 
 return(
 
   <div className='ml-70 mt-20'>
-        <SideBar title="Admin Panal" links={adminLinks} />
+    <SideBar title="Admin Panal" links={adminLinks} />
+    <ChatContainer role="Admin" />
 
   <div className='flex-1 p-5'>
     <Routes>

@@ -1,23 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from 'react';
 import {
   LineChart,
   Line,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
-  CartesianGrid, // Added for a background grid
-} from "recharts";
-import io from "socket.io-client";
-import axios from "axios";
-
-// Backend connection remains unchanged
-const socket = io("http://localhost:8001", {
-  transports: ["websocket"],
-  autoConnect: true,
-  forceNew: true,
-});
+  ResponsiveContainer,
+} from 'recharts';
 
 // A stylish, custom tooltip component
 const CustomTooltip = ({ active, payload, label }) => {
@@ -36,113 +27,91 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// An improved loading spinner component
-const ChartLoader = () => (
-  <div className="flex flex-col justify-center items-center h-96 bg-white rounded-xl shadow-lg border border-gray-200/80 w-full max-w-4xl p-6">
-    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-    <span className="text-gray-600 text-lg font-medium mt-4">Loading Chart Data...</span>
-  </div>
-);
+// Dummy data that mimics the structure of your fetched data
+// In your actual implementation, you would use the fetched and processed data.
+const sampleData = [
+  { date: 'Aug 20', 'Line 1': 0, 'Line 2': 0, 'Line 3': 0, 'Line 4': 0, 'Line 5': 0, 'Line 6': 0, 'Line 7': 0, 'Line 8': 480 },
+  { date: 'Aug 26', 'Line 1': 0, 'Line 2': 20, 'Line 3': 0, 'Line 4': 0, 'Line 5': 120, 'Line 6': 130, 'Line 7': 125, 'Line 8': 0 },
+  { date: 'Sep 10', 'Line 1': 0, 'Line 2': 0, 'Line 3': 0, 'Line 4': 0, 'Line 5': 30, 'Line 6': 0, 'Line 7': 40, 'Line 8': 0 },
+  { date: 'Sep 14', 'Line 1': 0, 'Line 2': 130, 'Line 3': 0, 'Line 4': 160, 'Line 5': 0, 'Line 6': 150, 'Line 7': 0, 'Line 8': 0 },
+  { date: 'Sep 19', 'Line 1': 0, 'Line 2': 70, 'Line 3': 0, 'Line 4': 155, 'Line 5': 0, 'Line 6': 90, 'Line 7': 80, 'Line 8': 0 },
+  { date: 'Oct 02', 'Line 1': 0, 'Line 2': 0, 'Line 3': 40, 'Line 4': 0, 'Line 5': 0, 'Line 6': 0, 'Line 7': 20, 'Line 8': 0 },
+  { date: 'Oct 08', 'Line 1': 0, 'Line 2': 0, 'Line 3': 250, 'Line 4': 0, 'Line 5': 0, 'Line 6': 0, 'Line 7': 0, 'Line 8': 0 },
+  { date: 'Oct 12', 'Line 1': 0, 'Line 2': 0, 'Line 3': 0, 'Line 4': 0, 'Line 5': 0, 'Line 6': 0, 'Line 7': 0, 'Line 8': 10 },
+];
+
 
 const LineProductivityChart = () => {
-  const [chartData, setChartData] = useState([]);
-  const [loading, setLoading] = useState(true);
+    // This state would normally be populated by your useEffect fetch call
+    const [chartData, setChartData] = React.useState(sampleData);
+    const [loading, setLoading] = React.useState(false); // Set to false to show chart with sample data
 
-  const lines = [1, 2, 3, 4, 5, 6, 7, 8];
-  
-  // A more professional and harmonious color palette
-  const lineColors = [
-    "#3b82f6", "#10b981", "#f97316", "#ef4444",
-    "#8b5cf6", "#ec4899", "#facc15", "#06b6d4"
-  ];
+    const lines = [1, 2, 3, 4, 5, 6, 7, 8];
+    
+    // New color palette inspired by the image provided
+    const lineColors = [
+        '#0088FE', // Line 1 - Blue
+        '#00C49F', // Line 2 - Green
+        '#FF8042', // Line 3 - Orange
+        '#FFBB28', // Line 4 - Yellow (swapped for better visibility)
+        '#A463F2', // Line 5 - Purple
+        '#FF6384', // Line 6 - Pink
+        '#FFCD56', // Line 7 - Lighter Yellow
+        '#4BC0C0', // Line 8 - Cyan
+    ];
 
-  // Data fetching and processing logic remains the same
+  // The original useEffect for fetching data would be here.
+  // For this styling example, we are using the sampleData above.
+  /*
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const { data } = await axios.get("http://localhost:8001/api/employees");
-        processChartData(data);
-        setLoading(false);
+        const { data } = await axios.get("http://localhost:8001/api/iot/rfid-scans");
+        // processChartData(data); // You would process the real data here
       } catch (err) {
-        console.error("Error fetching employees:", err);
+        console.error("Error fetching RFID scans:", err);
+        setChartData([]);
+      } finally {
         setLoading(false);
       }
     };
+    
     fetchData();
   }, []);
+  */
 
-  useEffect(() => {
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      processChartData(updatedEmployees);
-    });
-    return () => socket.off("leadingLineUpdate");
-  }, []);
-
-  const processChartData = (employees) => {
-    const dateMap = {};
-    employees.forEach((emp) => {
-      const date = new Date(emp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!dateMap[date]) dateMap[date] = {};
-      dateMap[date][`Line ${emp.line}`] = (dateMap[date][`Line ${emp.line}`] || 0) + emp.pcs;
-    });
-
-    const processedData = Object.keys(dateMap)
-      .sort((a, b) => new Date(a) - new Date(b))
-      .map((date) => ({
-        date,
-        ...lines.reduce((acc, line) => {
-          acc[`Line ${line}`] = dateMap[date][`Line ${line}`] || 0;
-          return acc;
-        }, {}),
-      }));
-    setChartData(processedData);
-  };
-  
-  // Render the new loader while data is being fetched
   if (loading) {
-    return <ChartLoader />;
+    // Your loader component
+    return <div>Loading...</div>;
   }
 
   return (
-    // Enhanced container with shadow, border, and more padding
     <div className="bg-white rounded-xl shadow-lg w-full max-w-5xl p-6 border border-gray-200/80">
-      <h2 className="text-xl font-semibold text-gray-700 mb-4">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
         Daily Productivity - Line Wise
       </h2>
       <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          {/* Added a subtle grid for better readability */}
+        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-          
-          {/* Styled axes */}
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 12, fill: '#6b7280' }} 
-            axisLine={{ stroke: '#d1d5db' }}
-            tickLine={false}
+          <XAxis dataKey="date" tick={{ fill: '#6B7280' }} />
+          <YAxis tick={{ fill: '#6B7280' }} />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            verticalAlign="bottom"
+            height={36}
+            iconType="circle"
+            wrapperStyle={{ paddingTop: '20px' }}
           />
-          <YAxis 
-            tick={{ fontSize: 12, fill: '#6b7280' }} 
-            axisLine={{ stroke: '#d1d5db' }}
-            tickLine={false}
-          />
-          
-          {/* Using the new custom tooltip */}
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }} />
-
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
-          
-          {lines.map((line, idx) => (
+          {lines.map((line, index) => (
             <Line
               key={line}
               type="monotone"
               dataKey={`Line ${line}`}
-              // Using the new color palette
-              stroke={lineColors[idx % lineColors.length]}
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: lineColors[idx % lineColors.length] }}
-              // Adds a larger dot on hover for better interaction
-              activeDot={{ r: 7, strokeWidth: 2, stroke: '#ffffff' }}
+              stroke={lineColors[index]}
+              strokeWidth={3}
+              dot={{ r: 5 }}
+              activeDot={{ r: 8, strokeWidth: 2, stroke: '#fff' }}
             />
           ))}
         </LineChart>
@@ -152,3 +121,4 @@ const LineProductivityChart = () => {
 };
 
 export default LineProductivityChart;
+
