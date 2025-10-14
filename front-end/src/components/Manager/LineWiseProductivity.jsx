@@ -108,7 +108,7 @@ const LineWiseProductivity = () => {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200/80 w-full">
-      <h3 className="text-xl font-semibold text-gray-700 mb-4">
+      <h3 className="text-xl font-semibold text-gray-700 mb-10">
         Line Production
       </h3>
       <ResponsiveContainer width="100%" height={400}>
