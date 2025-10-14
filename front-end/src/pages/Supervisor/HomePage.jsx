@@ -26,6 +26,7 @@ import LineProductivityChart from '../../components/Manager/LineProductivityChar
 import DailyEmployeesList from '../../components/Supervisor/DailyEmployeesList';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
 import { AlertTriangle, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import RemainingTargetRFID from '../../components/Manager/RemainingTargetRFID';
 
 const HomePage = ({ dashboardData }) => {
   // Helper function to get alert icon based on type
@@ -79,7 +80,7 @@ const HomePage = ({ dashboardData }) => {
             <TotalProduction/>
             <EfficiencyRate/>
             <ActiveWorkers/>
-            <RemainingTarget/>
+            <RemainingTargetRFID/>
           </div>
         </div>
 
