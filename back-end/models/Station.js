@@ -8,13 +8,6 @@ const StationSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         uppercase: true,
-        validate: {
-            validator: function(v) {
-                // Validate format: A102 (A=Unit, 1=Line, 02=Station)
-                return /^[A-Z]\d{2,3}$/i.test(v);
-            },
-            message: 'Station ID must follow format: Unit(A-Z) + Line(digit) + Station(2-3 digits) (e.g., A102, B205)'
-        },
         index: true // For faster queries
     },
     Unit: {
@@ -22,38 +15,16 @@ const StationSchema = new mongoose.Schema({
         required: true,
         trim: true,
         uppercase: true,
-        validate: {
-            validator: function(v) {
-                // Should be single capital letter
-                return /^[A-Z]$/.test(v);
-            },
-            message: 'Unit must be a single capital letter (A, B, C, etc.)'
-        },
         index: true // For unit-based queries
     },
     Line: {
         type: Number,
         required: true,
-        min: 1,
-        validate: {
-            validator: function(v) {
-                // Should be positive integer
-                return Number.isInteger(v) && v > 0;
-            },
-            message: 'Line must be a positive integer'
-        },
         index: true // For line-based queries
     },
     Employee_ID: {
         type: String,
         trim: true,
-        validate: {
-            validator: function(v) {
-                // If provided, should match Employee ID format (E + hexadecimal)
-                return !v || /^E[0-9A-F]+$/i.test(v);
-            },
-            message: 'Employee_ID must follow Employee ID format (E + hexadecimal, e.g., E2D3)'
-        },
         index: true, // For employee assignment queries
         default: null // Optional field for employee assignment
     },

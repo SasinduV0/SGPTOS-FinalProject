@@ -20,19 +20,12 @@ module.exports = mongoose.model("Employee", EmployeeSchema);*/
 const mongoose = require("mongoose");
 
 // New Employee Schema with enhanced structure
-const NewEmployeeSchema = new mongoose.Schema({
+const EmployeeSchema = new mongoose.Schema({
     ID: {
         type: String,
         required: true,
         unique: true,
         trim: true,
-        validate: {
-            validator: function(v) {
-                // Validate format: E followed by hexadecimal characters (E2D3, EA1F, etc.)
-                return /^E[0-9A-F]+$/i.test(v);
-            },
-            message: 'Employee ID must start with "E" followed by hexadecimal characters (e.g., E2D3)'
-        },
         index: true // For faster queries
     },
     Card_UID: {
@@ -51,13 +44,6 @@ const NewEmployeeSchema = new mongoose.Schema({
         type: String,
         trim: true,
         uppercase: true, // Convert to uppercase automatically
-        validate: {
-            validator: function(v) {
-                // If provided, should be single capital letter
-                return !v || /^[A-Z]$/.test(v);
-            },
-            message: 'Unit must be a single capital letter (A, B, C, etc.)'
-        },
         default: null // Optional field for unit assignment
     },
     Type: {
@@ -85,17 +71,17 @@ const NewEmployeeSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-NewEmployeeSchema.index({ Card_UID: 1 }, { sparse: true }); // Sparse index for optional Card_UID
-NewEmployeeSchema.index({ Unit: 1, Type: 1 }); // Compound index for unit and type queries
-NewEmployeeSchema.index({ Assigned: 1, Active: 1 }); // Compound index for status queries
+EmployeeSchema.index({ Card_UID: 1 }, { sparse: true }); // Sparse index for optional Card_UID
+EmployeeSchema.index({ Unit: 1, Type: 1 }); // Compound index for unit and type queries
+EmployeeSchema.index({ Assigned: 1, Active: 1 }); // Compound index for status queries
 
 // Pre-save middleware to ensure ID is uppercase
-NewEmployeeSchema.pre('save', function(next) {
+EmployeeSchema.pre('save', function(next) {
     if (this.ID) {
         this.ID = this.ID.toUpperCase();
     }
     next();
 });
 
-module.exports = mongoose.model("Employee", NewEmployeeSchema);
+module.exports = mongoose.model("Employee", EmployeeSchema);
 
