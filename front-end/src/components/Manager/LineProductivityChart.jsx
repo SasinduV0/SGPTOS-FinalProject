@@ -243,11 +243,11 @@ const LineProductivityChart = () => {
       </ResponsiveContainer>
 
       {/* Data source indicator */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      {/* <div className="mt-4 pt-4 border-t border-gray-200">
         <p className="text-xs text-gray-500">
           📊 Data sources: Employee production records + RFID scan tracking system
         </p>
-      </div>
+      </div> */}
     </div>
   );
 };
