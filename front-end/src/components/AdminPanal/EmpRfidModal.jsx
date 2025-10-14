@@ -20,7 +20,7 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [loadingRfids, setLoadingRfids] = useState(false);
   const [rfidError, setRfidError] = useState('');
 
-  const departmentOptions = ['Quality Control', 'Cutting', 'Sewing', 'Finishing', 'Packing'];
+  const departmentOptions = ['Quality Control','Sewing'];
 
   // Fetch valid RFID numbers
   const fetchValidRfids = async () => {
@@ -77,6 +77,7 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
 
   const validateForm = () => {
     const newErrors = {};
+    const empIdRegex = /^E[1-9a-f]{3}$/;
     
     if (!formData.rfidNumber.trim()) {
       newErrors.rfidNumber = 'RFID Number is required';
@@ -85,7 +86,12 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     }
     
     if (!formData.empName.trim()) newErrors.empName = 'Employee Name is required';
-    if (!formData.empId.trim()) newErrors.empId = 'Employee ID is required';
+    
+    if (!formData.empId.trim()) {
+       newErrors.empId = 'Employee ID is required';
+     } else if (!empIdRegex.test(formData.empId.trim())) {
+       newErrors.empId = "Employee ID format invalid. Must be 4 chars: start with 'E' (capital) followed by three characters each 1-9 or a-f (lowercase). Example: E1a3";
+     }
     
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email.trim())) {
       newErrors.email = 'Please enter a valid email address';
@@ -169,16 +175,6 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
           error={errors.empName}
         />
 
-        <FormField
-          label="Employee ID"
-          type="text"
-          value={formData.empId}
-          onChange={(v) => handleInputChange('empId', v)}
-          placeholder="e.g. EMP001"
-          required
-          error={errors.empId}
-        />
-
         {/* Department Dropdown */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
@@ -195,6 +191,16 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
             </select>
           </div>
         </div>
+
+        <FormField
+          label="Employee ID"
+          type="text"
+          value={formData.empId}
+          onChange={(v) => handleInputChange('empId', v)}
+          placeholder="e.g. E95c"
+          required
+          error={errors.empId}
+        />
 
         <FormField
           label="Phone Number"

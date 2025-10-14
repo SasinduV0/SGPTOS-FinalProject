@@ -129,17 +129,17 @@ function UserManagment() {
     {
       header: 'User ID',
       key: 'userID',
-      className: 'font-mono text-sm'
+      className: 'text-gray-800'
     },
     {
       header: 'Username',
       key: 'username',
-      className: 'font-mono text-sm'
+      className: 'text-gray-800'
     },
     {
       header: 'User Role',
       key: 'role',
-      className: 'font-mono text-sm'
+      className: 'text-gray-800'
     },
     {
       header: 'Actions',
@@ -158,11 +158,8 @@ function UserManagment() {
   // Updated departments list
   const departments = [
     'All Departments', 
-    'Cutting', 
     'Quality Control', 
     'Sewing', 
-    'Packing',
-    'Finishing'
   ];
 
   return (

@@ -110,26 +110,7 @@ function EmployeeDetails({formData, setFormData}) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/*Employee ID*/}
-
-          <div className="relative">
-            <label htmlFor="userID" className="block text-sm font-medium text-gray-700 mb-2">
-              User ID
-            </label>
-            <div className="relative">
-              <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                name="userID"
-                value={formData.userID}
-                onChange={e => setFormData({ ...formData, userID: e.target.value})}
-                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                placeholder="Enter employee ID"
-              />
-            </div>
-          </div>
-
-          {/*Username - NEW FIELD*/}
+          {/*Username*/}
           <div className="relative">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
               Username
@@ -187,12 +168,31 @@ function EmployeeDetails({formData, setFormData}) {
                 className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-white"
               >
                 <option value="" disabled>Select Department</option>
-                <option value="Cutting">Cutting</option>
-                <option value="Packing">Packing</option>
                 <option value="Sawing">Sawing</option>
+                <option value="Quality Control">Cutting</option>
               </select>
             </div>
           </div>
+
+          {/*Employee ID*/}
+
+          <div className="relative">
+            <label htmlFor="userID" className="block text-sm font-medium text-gray-700 mb-2">
+              User ID
+            </label>
+            <div className="relative">
+              <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                name="userID"
+                value={formData.userID}
+                onChange={e => setFormData({ ...formData, userID: e.target.value})}
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                placeholder="EX: E96c"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

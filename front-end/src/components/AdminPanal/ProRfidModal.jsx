@@ -18,8 +18,8 @@ const ProRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [validRfids, setValidRfids] = useState([]);
   const [loadingRfids, setLoadingRfids] = useState(false);
 
-  const unitOptions = ['UNIT 1', 'UNIT 2', 'UNIT 3'];
-  const workplaceOptions = ['LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
+  const unitOptions = ['UNIT A', 'UNIT B', 'UNIT C'];
+  const workplaceOptions = ['LINE 1', 'LINE 2', 'LINE 3', 'LINE 4','LINE 5', 'LINE 6', 'LINE 7', 'LINE 8'];
 
   //fetch valid RFID numbers
   const fetchValidRfids = async () => {
