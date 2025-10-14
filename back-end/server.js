@@ -11,6 +11,7 @@ const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 const authRoutes = require("./routes/auth");
 const iotRoutes = require("./routes/iotRoute");
 const employeeRoutes = require("./routes/employee");
+const iotDefectRoutes = require("./routes/iotRoute");
 const lineManagement = require("./routes/lineManagement");
 const lineReallocation = require("./routes/LineReallocation");
 const userProfileRoutes = require("./routes/userProfile");
