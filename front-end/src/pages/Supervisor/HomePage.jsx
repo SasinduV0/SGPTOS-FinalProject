@@ -25,7 +25,7 @@ import ProductivityIncrease from '../../components/Manager/ProductivityIncrease'
 import LineProductivityChart from '../../components/Manager/LineProductivityChart';
 import DailyEmployeesList from '../../components/Supervisor/DailyEmployeesList';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
-
+import ChatContainer from '../../components/ChatContainer';
 
 const HomePage = ({ dashboardData }) => {
   return (
@@ -87,6 +87,7 @@ const HomePage = ({ dashboardData }) => {
         </div>
       </div>
       </div>
+      <ChatContainer role="Supervisor" />
     </div>
   );
 };
