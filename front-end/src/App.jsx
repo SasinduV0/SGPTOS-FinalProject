@@ -23,6 +23,8 @@ import AssignmentPage from './pages/Supervisor/AssignmentPage';
 import ProductivityPage from './pages/Supervisor/ProductivityPage';
 import LineReallocationApp from './pages/Supervisor/LineReallocationApp';
 
+import DefectTable from './pages/QC/DefectTable';
+
 
 
 
@@ -140,6 +142,14 @@ const showNavbar = !hideNavbarPaths.includes(location.pathname);
           element={
             <ProtectedRoute allowedRoles={['qc']}>
               <DefectRate />
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/qc/DefectDef"
+          element={
+            <ProtectedRoute allowedRoles={['qc']}>
+              <DefectTable />
             </ProtectedRoute>
           }
         />
