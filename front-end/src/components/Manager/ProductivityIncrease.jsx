@@ -145,7 +145,7 @@ return (
 <h3 className="text-2xl font-bold text-gray-800">
 Production Quality
 </h3>
-<div className="flex items-center gap-2">
+<div className="flex items-center gap-2 ml-5">
 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
 <span className="text-sm text-gray-600">Live</span>
 </div>
