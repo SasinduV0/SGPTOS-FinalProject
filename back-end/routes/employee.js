@@ -13,6 +13,72 @@ const emitEmployeeUpdate = async (io) => {
   }
 };
 
+// ========== NEW EMPLOYEE SCHEMA ROUTES ==========
+
+// Create new employee with new schema structure
+router.post("/employee", async (req, res) => {
+  try {
+    const { ID, Card_UID, Name, Unit, Type, Assigned, Active } = req.body;
+
+    // Validate required fields
+    if (!ID || !Name || !Type) {
+      return res.status(400).json({ 
+        error: "Missing required fields",
+        required: ["ID", "Name", "Type"]
+      });
+    }
+
+    // Create new employee
+    const employee = new Employee({
+      ID,
+      Card_UID: Card_UID || null,
+      Name,
+      Unit: Unit || null,
+      Type,
+      Assigned: Assigned !== undefined ? Assigned : false,
+      Active: Active !== undefined ? Active : false
+    });
+
+    await employee.save();
+
+    console.log("✅ New Employee created:", employee.Name, "ID:", employee.ID, "Type:", employee.Type);
+
+    // Emit real-time update
+    const io = req.app.get("io");
+    if (io) {
+      await emitEmployeeUpdate(io);
+    }
+
+    res.status(201).json({
+      message: "Employee created successfully",
+      employee: employee
+    });
+  } catch (err) {
+    console.error("❌ Error creating new employee:", err);
+    
+    // Handle duplicate ID error
+    if (err.code === 11000) {
+      return res.status(409).json({ 
+        error: "Employee ID already exists",
+        field: "ID"
+      });
+    }
+    
+    // Handle validation errors
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ 
+        error: "Validation error",
+        details: err.message
+      });
+    }
+    
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== OLD EMPLOYEE SCHEMA ROUTES (Legacy - Commented Out) ==========
+
+
 // 1️⃣ Create new employee
 router.post("/employees", async (req, res) => {
   try {
