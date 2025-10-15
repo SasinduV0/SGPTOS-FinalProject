@@ -14,7 +14,8 @@ const FollowingLine = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-  const res = await axios.get(`http://localhost:8001/api/employees`);
+        // ✅ Use new endpoint with scan counts
+        const res = await axios.get(`http://localhost:8001/api/employees-with-scans`);
         updateLowestLine(res.data);
       } catch (err) {
         console.error("Error fetching employees:", err);

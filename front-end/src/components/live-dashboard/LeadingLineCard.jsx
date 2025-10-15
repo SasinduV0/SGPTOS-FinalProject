@@ -119,7 +119,8 @@ const LeadingLine = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:8001/api/employees`);
+        // ✅ Use new endpoint with scan counts
+        const res = await axios.get(`http://localhost:8001/api/employees-with-scans`);
         console.log("📤 Fetched initial data:", res.data.length, "employees");
         updateLeadingLine(res.data);
       } catch (error) {
