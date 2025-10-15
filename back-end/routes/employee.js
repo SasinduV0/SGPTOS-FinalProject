@@ -244,6 +244,196 @@ router.get("/top-employees-by-station-scans", async (req, res) => {
   }
 });
 
+// Get leading line data (line with highest scan count and its employees)
+router.get("/leading-line-data", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Build match filter for date range
+    const matchFilter = {};
+    if (startDate && endDate) {
+      matchFilter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    // Step 1: Aggregate scans by Station_ID
+    const stationScanCounts = await RFIDTagScan.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$Station_ID",
+          scanCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Step 2: Get all stations with employee assignments (exclude QC stations)
+    const Station = require("../models/Station");
+    const stationIDs = stationScanCounts.map(s => s._id);
+    const stations = await Station.find({ 
+      ID: { $in: stationIDs },
+      Employee_ID: { $ne: null },
+      Line: { $ne: null, $ne: 0 } // Exclude QC stations (Line 0)
+    });
+
+    // Step 3: Calculate total scans per line
+    const lineTotals = {};
+    const lineStationsMap = {};
+    
+    stationScanCounts.forEach(scan => {
+      const station = stations.find(s => s.ID === scan._id);
+      if (station && station.Line) {
+        if (!lineTotals[station.Line]) {
+          lineTotals[station.Line] = 0;
+          lineStationsMap[station.Line] = [];
+        }
+        lineTotals[station.Line] += scan.scanCount;
+        lineStationsMap[station.Line].push({
+          station: station,
+          scanCount: scan.scanCount
+        });
+      }
+    });
+
+    // Step 4: Find leading line (highest total)
+    let leadingLine = null;
+    let leadingLineTotal = 0;
+    Object.entries(lineTotals).forEach(([line, total]) => {
+      if (total > leadingLineTotal) {
+        leadingLineTotal = total;
+        leadingLine = parseInt(line);
+      }
+    });
+
+    if (leadingLine === null) {
+      return res.json({
+        leadingLine: null,
+        leadingLineTotal: 0,
+        employees: []
+      });
+    }
+
+    // Step 5: Get employees for leading line
+    const leadingLineEmployees = lineStationsMap[leadingLine]
+      .map(item => ({
+        _id: item.station._id,
+        employeeId: item.station.Employee_ID,
+        name: item.station.Employee_Name,
+        stationId: item.station.ID,
+        pcs: item.scanCount,
+        line: item.station.Line
+      }))
+      .sort((a, b) => b.pcs - a.pcs);
+
+    res.json({
+      leadingLine: leadingLine,
+      leadingLineTotal: leadingLineTotal,
+      employees: leadingLineEmployees
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching leading line data:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get delayed line data (line with lowest scan count and its employees)
+router.get("/delayed-line-data", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Build match filter for date range
+    const matchFilter = {};
+    if (startDate && endDate) {
+      matchFilter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    // Step 1: Aggregate scans by Station_ID
+    const stationScanCounts = await RFIDTagScan.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$Station_ID",
+          scanCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Step 2: Get all stations with employee assignments (exclude QC stations)
+    const Station = require("../models/Station");
+    const stationIDs = stationScanCounts.map(s => s._id);
+    const stations = await Station.find({ 
+      ID: { $in: stationIDs },
+      Employee_ID: { $ne: null },
+      Line: { $ne: null, $ne: 0 } // Exclude QC stations (Line 0)
+    });
+
+    // Step 3: Calculate total scans per line
+    const lineTotals = {};
+    const lineStationsMap = {};
+    
+    stationScanCounts.forEach(scan => {
+      const station = stations.find(s => s.ID === scan._id);
+      if (station && station.Line) {
+        if (!lineTotals[station.Line]) {
+          lineTotals[station.Line] = 0;
+          lineStationsMap[station.Line] = [];
+        }
+        lineTotals[station.Line] += scan.scanCount;
+        lineStationsMap[station.Line].push({
+          station: station,
+          scanCount: scan.scanCount
+        });
+      }
+    });
+
+    // Step 4: Find delayed line (lowest total)
+    let delayedLine = null;
+    let delayedLineTotal = Infinity;
+    Object.entries(lineTotals).forEach(([line, total]) => {
+      if (total < delayedLineTotal) {
+        delayedLineTotal = total;
+        delayedLine = parseInt(line);
+      }
+    });
+
+    if (delayedLine === null) {
+      return res.json({
+        delayedLine: null,
+        delayedLineTotal: 0,
+        employees: []
+      });
+    }
+
+    // Step 5: Get employees for delayed line (sorted by lowest pcs first)
+    const delayedLineEmployees = lineStationsMap[delayedLine]
+      .map(item => ({
+        _id: item.station._id,
+        employeeId: item.station.Employee_ID,
+        name: item.station.Employee_Name,
+        stationId: item.station.ID,
+        pcs: item.scanCount,
+        line: item.station.Line
+      }))
+      .sort((a, b) => a.pcs - b.pcs); // Sort ascending (lowest first)
+
+    res.json({
+      delayedLine: delayedLine,
+      delayedLineTotal: delayedLineTotal,
+      employees: delayedLineEmployees
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching delayed line data:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ========== OLD EMPLOYEE SCHEMA ROUTES (Legacy - Commented Out) ==========
 
 

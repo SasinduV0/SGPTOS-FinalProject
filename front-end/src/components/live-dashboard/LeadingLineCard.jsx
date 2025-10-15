@@ -87,6 +87,7 @@ const socket = io("http://localhost:8001", {
 const LeadingLine = () => {
   const [employees, setEmployees] = useState([]);
   const [leadingLine, setLeadingLine] = useState(null);
+  const [leadingLineTotal, setLeadingLineTotal] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
 
   // Handle socket connection events
@@ -94,8 +95,6 @@ const LeadingLine = () => {
     socket.on("connect", () => {
       console.log("✅ Socket connected:", socket.id);
       setConnectionStatus("connected");
-      // Request initial data
-      socket.emit("getAllEmployees");
     });
 
     socket.on("disconnect", () => {
@@ -115,26 +114,33 @@ const LeadingLine = () => {
     };
   }, []);
 
-  // fetch all employees initially
+  // Fetch leading line data using station-based aggregation
+  const fetchLeadingLineData = async () => {
+    try {
+      // Use new backend endpoint that handles all the logic
+      const res = await axios.get(`http://localhost:8001/api/leading-line-data`);
+      const { leadingLine: line, leadingLineTotal: total, employees: emps } = res.data;
+
+      setLeadingLine(line);
+      setLeadingLineTotal(total);
+      setEmployees(emps);
+      
+      console.log("📊 Leading line data:", { line, total, employeeCount: emps.length });
+    } catch (error) {
+      console.error("❌ Error fetching leading line data:", error);
+    }
+  };
+
+  // Fetch initial data
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // ✅ Use new endpoint with scan counts
-        const res = await axios.get(`http://localhost:8001/api/employees-with-scans`);
-        console.log("📤 Fetched initial data:", res.data.length, "employees");
-        updateLeadingLine(res.data);
-      } catch (error) {
-        console.error("❌ Error fetching initial data:", error);
-      }
-    };
-    fetchData();
+    fetchLeadingLineData();
   }, []);
 
-  // listen for real-time updates
+  // Listen for real-time updates
   useEffect(() => {
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      console.log("🔄 Received real-time update:", updatedEmployees.length, "employees");
-      updateLeadingLine(updatedEmployees);
+    socket.on("leadingLineUpdate", () => {
+      console.log("🔄 Received real-time update, refreshing data");
+      fetchLeadingLineData();
     });
 
     return () => {
@@ -142,44 +148,19 @@ const LeadingLine = () => {
     };
   }, []);
 
-  // function to calculate leading line and its employees
-  const updateLeadingLine = (allEmployees) => {
-    if (!allEmployees.length) return;
-
-    // sum pcs per line
-    const lineTotals = allEmployees.reduce((acc, emp) => {
-      acc[emp.line] = (acc[emp.line] || 0) + emp.pcs;
-      return acc;
-    }, {});
-
-    // find line with highest PCS
-    const topLine = Object.entries(lineTotals).reduce(
-      (max, [line, total]) => (total > max.total ? { line, total } : max),
-      { line: null, total: 0 }
-    ).line;
-
-    // filter employees for top line
-    const topLineEmployees = allEmployees.filter(emp => emp.line === Number(topLine));
-
-    setLeadingLine(topLine);
-    setEmployees(topLineEmployees);
-  };
-
-  // sort employees by pcs and pick top 5
-  const topEmployees = [...employees].sort((a, b) => b.pcs - a.pcs).slice(0, 5);
+  // Top 5 employees already sorted
+  const topEmployees = employees.slice(0, 5);
 
   return (
     <div className="p-2">
       <div className="text-white rounded-2xl px-3">
         <h2 className="text-lg font-bold text-center">
-          Leading Line 
-          {/* {connectionStatus === "connected" && <span className="text-green-400 text-xs ml-2">●</span>}
-          {connectionStatus === "disconnected" && <span className="text-red-400 text-xs ml-2">●</span>} */}
+          Leading Line
         </h2>
 
         {leadingLine !== null && (
           <p className="text-center text-sm text-gray-300">
-            Line {leadingLine} : {employees.reduce((sum, emp) => sum + emp.pcs, 0)} Total PCS
+            Line {leadingLine} : {leadingLineTotal} Total PCS
           </p>
         )}
 
