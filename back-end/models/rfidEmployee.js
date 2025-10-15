@@ -16,7 +16,10 @@ const rfidEmployeeSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    minlength: 4,
+    maxlength: 4,
+    match: [/^E[1-9a-f]{3}$/, "empId format invalid. Must start with capital 'E' followed by three characters each 1-9 or a-f (lowercase). Example: E1a3"],
   },
   status: {
     type: String,
