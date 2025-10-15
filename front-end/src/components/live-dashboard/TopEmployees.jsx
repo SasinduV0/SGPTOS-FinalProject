@@ -9,24 +9,26 @@ const socket = io("http://localhost:8001", { transports: ["websocket"] });
 const TopEmployees = () => {
   const [employees, setEmployees] = useState([]);
 
+  // Fetch top employees data
+  const fetchTopEmployees = async () => {
+    try {
+      // ✅ Use station-based aggregation endpoint (works with old data)
+      const res = await axios.get(`http://localhost:8001/api/top-employees-by-station-scans?limit=4`);
+      setEmployees(res.data);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    }
+  };
+
   // Fetch all employees initially
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // ✅ Use station-based aggregation endpoint (works with old data)
-        const res = await axios.get(`http://localhost:8001/api/top-employees-by-station-scans?limit=4`);
-        setEmployees(res.data);
-      } catch (err) {
-        console.error("Error fetching employees:", err);
-      }
-    };
-    fetchData();
+    fetchTopEmployees();
   }, []);
 
-  // Listen for real-time updates
+  // Listen for real-time updates - trigger re-fetch instead of using payload
   useEffect(() => {
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      setEmployees(updatedEmployees);
+    socket.on("leadingLineUpdate", () => {
+      fetchTopEmployees();
     });
 
     return () => {
