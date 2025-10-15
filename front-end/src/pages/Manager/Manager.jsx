@@ -14,6 +14,7 @@ import ProductionLineStatus from '../../components/Supervisor/ProductionLineStat
 import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
 import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import ChatContainer from '../../components/ChatContainer';
 import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
 
 const ManagerHome = ({ lineData }) => {
@@ -49,36 +50,17 @@ const ManagerHome = ({ lineData }) => {
       {/* Total Status Card */}
       <div className="bg-white rounded-lg shadow px-6">
         {/* <h3 className="text-lg font-semibold text-gray-800 mb-4">Total status</h3> */}
-        <div className="space-y-4">
+        <div className="space-y-3">
 
         <DashboardSummary />
 
 
-          {/* <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">Defect Rate</div>
-            <div className="text-xl font-bold text-red-500">21.37%</div>
-          </div>
-
-
-          
-          <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">Completed units</div>
-            <div className="text-xl font-bold">196</div>
-          </div>
-          <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">Units in progress</div>
-            <div className="text-xl font-bold">54</div>
-          </div>
-          <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">Units Remaining</div>
-            <div className="text-xl font-bold">70</div>
-          </div> */}
         </div>
       </div>
        
 
       {/* Productivity Chart */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-3">
         {/* <h3 className="text-lg font-semibold text-gray-800 mb-4">Productivity increase</h3> */}
         <div className="flex items-center justify-center">
 
@@ -169,7 +151,7 @@ const ManagerHome = ({ lineData }) => {
 
 
       {/* Production Table */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="mr-5">
         <ProductionTargets/>
       </div>
 
@@ -182,8 +164,7 @@ const ManagerHome = ({ lineData }) => {
         <ProductionSummaryTable/>
     </div> 
     
-      
-
+    <ChatContainer role="Manager" />
     
     </>
   );

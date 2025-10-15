@@ -21,7 +21,10 @@ const userSchema = new mongoose.Schema({
   userID:{
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      minlength: 4,
+      maxlength: 4,
+      match: [/^E[1-9a-f]{3}$/, "userID format invalid. Must start with capital 'E' followed by three characters each 1-9 or a-f (lowercase). Example: E1a3"]
   },
   password:{
       type: String,

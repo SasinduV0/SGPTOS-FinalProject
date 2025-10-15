@@ -29,8 +29,8 @@ const ProductRfidMan = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const units = ['All Units', 'UNIT 1', 'UNIT 2', 'UNIT 3'];
-  const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4'];
+  const units = ['All Units', 'UNIT A', 'UNIT B', 'UNIT C'];
+  const workplaces = ['All Workplaces', 'LINE 1', 'LINE 2', 'LINE 3', 'LINE 4','LINE 5', 'LINE 6', 'LINE 7', 'LINE 8'];
 
   const fetchData = async () => {
     try {

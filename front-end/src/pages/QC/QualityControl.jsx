@@ -5,6 +5,13 @@ import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../../pages/Data/SidebarNavlinks';
 import DefectRateChart from '../../components/live-dashboard/DefectRateChart';
 import DefectRateQC from '../../components/QC/DefectRateQC';
+import ChatContainer from '../../components/ChatContainer';
+import TotalProduction from '../../components/Manager/TotalProduction';
+import DefectRate from '../../components/QC/DefectRate';
+import EfficiencyRate from '../../components/Manager/EfficiencyRate';
+import DefectDefinitionsTable from '../../components/QC/DefectDefinitionsTable';
+import TotalDefectTypes from '../../components/QC/TotalDefectTypes';
+import DefectTable from './DefectTable';
 
 // Helper function to get consistent colors for defect types
 const getDefectColor = (defectType) => {
@@ -90,57 +97,17 @@ function QualityControl() {
         {/* Dashboard Content */}
         <div className="p-4 lg:p-6">
           {/* Summary Cards Row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <div className="flex items-center justif y-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Products</p>
-                  <p className="text-2xl font-bold text-blue-600">{totalProductCount.toLocaleString()}</p>
-                </div>
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <div className="w-6 h-6 bg-blue-600 rounded-full"></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Defects</p>
-                  <p className="text-2xl font-bold text-red-600">{totalDefects}</p>
-                </div>
-                <div className="p-2 bg-red-100 rounded-full">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Overall Defect Rate</p>
-                  <p className="text-2xl font-bold text-orange-600">{overallDefectRate}%</p>
-                </div>
-                <div className="p-2 bg-orange-100 rounded-full">
-                  <div className="w-6 h-6 bg-orange-600 rounded-full"></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Defect Types</p>
-                  <p className="text-2xl font-bold text-green-600">{aggregatedDefectData.length}</p>
-                </div>
-                <div className="p-2 bg-green-100 rounded-full">
-                  <div className="w-6 h-6 bg-green-600 rounded-full"></div>
-                </div>
-              </div>
-            </div>
+          <div className='flex gap-5 mb-5'>
+            <TotalProduction/>
+            <EfficiencyRate/>
+            <DefectRate/>
+            <TotalDefectTypes/>
           </div>
+          <DefectDefinitionsTable/>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+          
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
             {/* Defects Table */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
@@ -195,64 +162,12 @@ function QualityControl() {
               <div className='-ml-5'>
                 <DefectRateQC/>
               </div>
-              
-              
-              {/* <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Good Products', value: totalProductCount - totalDefects, color: '#3B82F6' },
-                      { name: 'Defected Products', value: totalDefects, color: '#EF4444' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
-                    labelLine={false}
-                  >
-                    <Cell fill="#3B82F6" />
-                    <Cell fill="#EF4444" />
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value, name) => [
-                      `${value.toLocaleString()} products`,
-                      name
-                    ]}
-                    contentStyle={{
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #e9ecef',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer> */}
-              {/* <div className="mt-4 text-center">
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div className="flex items-center justify-center">
-                    <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
-                    <span className="text-sm text-gray-600">Good: {(totalProductCount - totalDefects).toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-center">
-                    <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-                    <span className="text-sm text-gray-600">Defected: {totalDefects}</span>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600">Total Defects</div>
-                <div className="text-2xl font-bold text-red-600">{totalDefects} Pcs</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {parseFloat(overallDefectRate) > 2 ? 
-                    "Defect rate is higher than target (2%)" : 
-                    "Defect rate is within acceptable range"
-                  }
-                </div>
-              </div> */}
+            
             </div>
           </div>
 
           {/* Product Breakdown */}
-          <div className="mt-6">
+          {/* <div className="mt-6">
             <div className="bg-white rounded-lg shadow-lg p-4 lg:p-6">
               <h3 className="text-lg lg:text-xl font-semibold text-gray-800 mb-4">Product-wise Summary</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -287,9 +202,10 @@ function QualityControl() {
                 })}
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
+      <ChatContainer role="Quality Controller" />
     </div>
   );
 }
