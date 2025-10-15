@@ -1,6 +1,7 @@
 const express = require('express');
 const RfidEmployee = require('../models/RfidEmployee');
 const router = express.Router();
+const ID_REGEX = /^E[1-9a-f]{3}$/;
 
 // Valid RFIDs list (should match validRfids.js and productRfid.js)
 const getValidRfids = () => {
@@ -160,6 +161,13 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Validate empId format early for clearer message
+    const ID_REGEX = /^E[1-9a-f]{3}$/;
+    if (!ID_REGEX.test(trimmedEmpId)) {
+      console.log('Invalid empId format:', trimmedEmpId);
+      return res.status(400).json({ success: false, message: "empId format invalid. Must start with capital 'E' followed by three characters each 1-9 or a-f. Example: E1a3" });
+    }
+
     // Check if Employee ID already exists  
     const existingEmpId = await RfidEmployee.findOne({ empId: trimmedEmpId });
     if (existingEmpId) {
@@ -268,6 +276,13 @@ router.put('/:id', async (req, res) => {
     const trimmedRfidNumber = String(rfidNumber || '').trim();
     const trimmedEmpName = String(empName || '').trim();
     const trimmedEmpId = String(empId || '').trim();
+
+    // Validate empId format early in update
+    const ID_REGEX = /^E[1-9a-f]{3}$/;
+    if (!ID_REGEX.test(trimmedEmpId)) {
+      console.log('Invalid empId format (update):', trimmedEmpId);
+      return res.status(400).json({ success: false, message: "empId format invalid. Must start with capital 'E' followed by three characters each 1-9 or a-f. Example: E1a3" });
+    }
 
     console.log('Trimmed values:', { trimmedRfidNumber, trimmedEmpName, trimmedEmpId });
 

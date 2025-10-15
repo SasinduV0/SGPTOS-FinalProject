@@ -47,6 +47,7 @@ function UserRegistration() {
       const nameRegex = /^[A-Za-z]+$/;
       const phoneRegex = /^[0-9]{10}$/;
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const idRegex = /^E[1-9a-f]{3}$/; // E + three chars (1-9 or a-f)
 
       if (
         !formData.firstname ||
@@ -77,6 +78,11 @@ function UserRegistration() {
 
       if (!emailRegex.test(formData.email)) {
         alert("Please enter a valid email address with '@' (e.g., user@example.com).");
+        return false;
+      }
+
+      if (!idRegex.test(formData.userID.trim())) {
+        alert("User ID format invalid. Must be 4 chars: start with 'E' (capital) followed by three characters each 1-9 or a-f (lowercase). Example: E1a3");
         return false;
       }
 
