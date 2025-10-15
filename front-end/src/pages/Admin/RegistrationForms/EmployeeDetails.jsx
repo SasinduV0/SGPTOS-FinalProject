@@ -169,7 +169,7 @@ function EmployeeDetails({formData, setFormData}) {
               >
                 <option value="" disabled>Select Department</option>
                 <option value="Sawing">Sawing</option>
-                <option value="Quality Control">Cutting</option>
+                <option value="Quality Control">Quality Control</option>
               </select>
             </div>
           </div>

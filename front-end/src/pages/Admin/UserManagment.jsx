@@ -116,7 +116,7 @@ function UserManagment() {
   // Table columns configuration
   const columns = [
     {
-      header: 'User Name',
+      header: 'Full Name',
       key: 'name',
       render: (row) => `${row.firstname || ''} ${row.lastname || ''}`,
       className: 'font-medium text-gray-900'
@@ -132,7 +132,7 @@ function UserManagment() {
       className: 'text-gray-800'
     },
     {
-      header: 'Username',
+      header: 'User Name',
       key: 'username',
       className: 'text-gray-800'
     },

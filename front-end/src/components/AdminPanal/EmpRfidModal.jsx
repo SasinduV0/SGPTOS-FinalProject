@@ -22,16 +22,23 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
 
   const departmentOptions = ['Quality Control','Sewing'];
 
-  // Fetch valid RFID numbers
+  // Fetch valid RFID numbers (only unassigned ones, or include current if editing)
   const fetchValidRfids = async () => {
     try {
       setLoadingRfids(true);
       setRfidError('');
-      const response = await axios.get('http://localhost:8001/api/valid-rfids');
+      
+      const params = { type: 'employee' };
+      // If editing, pass the ID to include current RFID
+      if (initialData?._id) {
+        params.excludeId = initialData._id;
+      }
+      
+      const response = await axios.get('http://localhost:8001/api/valid-rfids', { params });
       
       if (response.data.success) {
         setValidRfids(response.data.data || []);
-        console.log('Valid RFIDs loaded for employee:', response.data.data);
+        console.log('Available RFIDs for employee:', response.data);
       } else {
         setRfidError('Failed to load valid RFIDs');
         setValidRfids([]);
@@ -105,7 +112,6 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    // Safe form data for backend
     const cleanData = {
       rfidNumber: String(formData.rfidNumber || '').trim(),
       empName: String(formData.empName || '').trim(),
@@ -156,7 +162,6 @@ const EmpRfidModal = ({ isOpen, onClose, onSave, initialData }) => {
                 </option>
               ))}
             </select>
-
           </div>
           {rfidError && <p className="text-red-600 text-sm mt-1">{rfidError}</p>}
           {errors.rfidNumber && <p className="text-red-600 text-sm mt-1">{errors.rfidNumber}</p>}
