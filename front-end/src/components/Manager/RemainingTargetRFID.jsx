@@ -60,7 +60,7 @@ const RemainingTargetRFID = () => {
   const remainingTarget = Math.max(0, totalTarget - totalCompleted);
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg w-82">
+    <div className="bg-white p-6 rounded-2xl shadow-sm w-82">
       <div className="flex items-center justify-between">
         {/* Left side (text content) */}
         <div className="text-left">

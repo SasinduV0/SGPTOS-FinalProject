@@ -100,7 +100,7 @@ const DailyEmployeesList = () => {
         </select>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+      <div className="space-y-3 max-h-96 overflow-y-auto mt-10 pr-2">
         {todaysEmployees.length > 0 ? (
           todaysEmployees.map((emp) => (
             <div

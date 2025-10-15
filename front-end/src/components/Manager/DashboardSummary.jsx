@@ -61,33 +61,77 @@ console.error("❌ Error fetching rates:", err);
 }
 };
 
-useEffect(() => {
-const socket = io("http://localhost:8001", { transports: ["websocket"] });
-// Initial data fetch
-fetchTotalProduction();
-fetchRates();
-// Connection event handlers
-socket.on("connect", () => console.log("🔌 DashboardSummary Socket.IO connected:", socket.id));
-socket.on("disconnect", () => console.log("❌ DashboardSummary Socket.IO disconnected"));
-socket.on("connect_error", (error) => console.error("🔌 DashboardSummary Socket connection error:", error));
-
-// This function will be called whenever a defect is updated.
-const handleRealtimeUpdate = () => {
-console.log("📊 Received 'defectUpdate', refetching all data.");
+// Fetch all data (reusable function)
+const fetchAllData = () => {
 fetchTotalProduction();
 fetchRates();
 };
-// Listen for the 'defectUpdate' event from the server.
+
+// Initial data fetch
+useEffect(() => {
+fetchAllData();
+}, []);
+
+// Polling: Fetch data every 5 seconds for real-time updates
+useEffect(() => {
+const interval = setInterval(() => {
+console.log("🔄 DashboardSummary: Polling for updates...");
+fetchAllData();
+}, 5000);
+
+return () => clearInterval(interval);
+}, []);
+
+// Socket event listeners for instant updates
+useEffect(() => {
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
+
+// Connection event handlers
+socket.on("connect", () => {
+console.log("✅ DashboardSummary Socket.IO connected:", socket.id);
+fetchAllData(); // Fetch fresh data on connection
+});
+
+socket.on("disconnect", () => {
+console.log("❌ DashboardSummary Socket.IO disconnected");
+});
+
+socket.on("connect_error", (error) => {
+console.error("🔌 DashboardSummary Socket connection error:", error);
+});
+
+// Listen for various update events
+const handleRealtimeUpdate = () => {
+console.log("📊 DashboardSummary: Received real-time update event");
+fetchAllData();
+};
+
 socket.on("defectUpdate", handleRealtimeUpdate);
-// Cleanup function: remove the listener and disconnect the socket.
+socket.on("rfidUpdate", handleRealtimeUpdate);
+socket.on("rfidScanUpdate", handleRealtimeUpdate);
+socket.on("scanUpdate", handleRealtimeUpdate);
+
+// Cleanup function: remove listeners and disconnect socket
 return () => {
 console.log("🧹 DashboardSummary cleaning up socket connections");
 socket.off("defectUpdate", handleRealtimeUpdate);
+socket.off("rfidUpdate", handleRealtimeUpdate);
+socket.off("rfidScanUpdate", handleRealtimeUpdate);
+socket.off("scanUpdate", handleRealtimeUpdate);
+socket.off("connect");
+socket.off("disconnect");
+socket.off("connect_error");
 socket.disconnect();
 };
 }, []); // The empty dependency array ensures this effect runs only once on mount.
 return (
 <div className="flex flex-col gap-6 my-8">
+{/* Live Indicator */}
+<div className="flex items-center justify-end gap-2 -mb-4">
+<div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+<span className="text-xs text-gray-600 font-medium">Live Updates</span>
+</div>
+
 <StatsCard
 title="Total Production"
 value={summary.totalProduction}

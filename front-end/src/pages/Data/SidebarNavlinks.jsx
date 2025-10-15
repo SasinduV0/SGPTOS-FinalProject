@@ -34,6 +34,7 @@ export const adminLinks = [
 export const QCManagerLinks = [
   { label: 'Dashboard', href: '/qc', icon: <FaTachometerAlt /> },
   { label: 'Defect Rate', href: '/qc/DefectRate', icon: <FiAlertTriangle /> },
+  { label: 'Defect Definition', href: '/qc/DefectDef', icon: <BsBarChartLine /> },
   { label: 'Employee Management', href: '/qc/Employee', icon: <FaUser /> },
 ];
 export const ProfileLinks = [
