@@ -10,14 +10,14 @@ const RemainingTarget = () => {
 
   // Define line targets
   const lineTargets = {
-    1: 1000,
-    2: 800,
-    3: 900,
-    4: 1100,
-    5: 950,
-    6: 1050,
-    7: 700,
-    8: 850,
+    1: 30,
+    2: 30,
+    3: 30,
+    4: 30,
+    5: 30,
+    6: 30,
+    7: 30,
+    8: 30,
   };
 
   // Fetch initial data from backend
