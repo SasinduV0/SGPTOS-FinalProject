@@ -181,6 +181,69 @@ router.get("/employee/:employeeId/scan-count", async (req, res) => {
   }
 });
 
+// Get top employees based on station scan counts (works with old data without Employee_ID)
+router.get("/top-employees-by-station-scans", async (req, res) => {
+  try {
+    const { startDate, endDate, limit = 4 } = req.query;
+
+    // Build match filter for date range
+    const matchFilter = {};
+    if (startDate && endDate) {
+      matchFilter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    // Step 1: Aggregate scans by Station_ID
+    const stationScanCounts = await RFIDTagScan.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$Station_ID",
+          scanCount: { $sum: 1 }
+        }
+      },
+      { $sort: { scanCount: -1 } }
+    ]);
+
+    // Step 2: Get all stations with employee assignments
+    const Station = require("../models/Station");
+    const stationIDs = stationScanCounts.map(s => s._id);
+    const stations = await Station.find({ 
+      ID: { $in: stationIDs },
+      Employee_ID: { $ne: null }
+    });
+
+    // Step 3: Match scans to employees and get top performers
+    const topEmployees = stationScanCounts
+      .map(scan => {
+        const station = stations.find(s => s.ID === scan._id);
+        if (!station || !station.Employee_ID) return null;
+        
+        return {
+          _id: station._id,
+          employeeId: station.Employee_ID,
+          name: station.Employee_Name,
+          stationId: scan._id,
+          pcs: scan.scanCount,
+          unit: station.Unit,
+          line: station.Line || 0,
+          type: 'SE', // Assume SE for now, can be enhanced
+          assigned: true,
+          active: true
+        };
+      })
+      .filter(e => e !== null)
+      .slice(0, parseInt(limit));
+
+    res.json(topEmployees);
+  } catch (err) {
+    console.error("❌ Error fetching top employees by station scans:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ========== OLD EMPLOYEE SCHEMA ROUTES (Legacy - Commented Out) ==========
 
 

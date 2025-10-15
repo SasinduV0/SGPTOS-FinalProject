@@ -13,8 +13,8 @@ const TopEmployees = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ Use new endpoint with scan counts
-        const res = await axios.get(`http://localhost:8001/api/employees-with-scans`);
+        // ✅ Use station-based aggregation endpoint (works with old data)
+        const res = await axios.get(`http://localhost:8001/api/top-employees-by-station-scans?limit=4`);
         setEmployees(res.data);
       } catch (err) {
         console.error("Error fetching employees:", err);
@@ -34,10 +34,8 @@ const TopEmployees = () => {
     };
   }, []);
 
-  // Sort all employees by pcs (highest first) and select top 4
-  const topEmployees = [...employees]
-    .sort((a, b) => Number(b.pcs) - Number(a.pcs))
-    .slice(0, 4);
+  // Data is already sorted and limited from backend, no need to re-sort
+  const topEmployees = employees;
 
   return (
     <div className="">
