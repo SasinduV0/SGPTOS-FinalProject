@@ -29,11 +29,6 @@ const rfidTagScanSchema = new mongoose.Schema({
     required: true,
     index: true // For faster line-based queries
   },
-  Employee_ID: {
-    type: String,
-    index: true, // For employee-based scan count queries
-    default: null // Will be populated from Station assignment
-  },
   Time_Stamp: { 
     type: Number, 
     required: true,
