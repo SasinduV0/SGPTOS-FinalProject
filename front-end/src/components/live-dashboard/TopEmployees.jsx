@@ -50,11 +50,14 @@ const TopEmployees = () => {
             >
               <div className="flex items-center gap-4">
                 <FaUser className="text-yellow-700" />
-                <span className="font-medium flex gap-10 text-gray-700">
-                  {index + 1}. {emp.name} <span className="text-yellow-300 indent-10"> </span> Line {emp.line}
+                <span className="font-medium text-gray-700">
+                  {index + 1}. {emp.name}
                 </span>
               </div>
-              <span className="font-semibold">{emp.pcs} Pcs</span>
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-gray-700">Line {emp.line}</span>
+                <span className="font-semibold">{emp.pcs} Pcs</span>
+              </div>
             </div>
           ))}
         </div>
