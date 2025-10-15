@@ -20,13 +20,14 @@ const StationSchema = new mongoose.Schema({
     Line: {
         type: Number,
         required: false,
+        min: 0, // 0 for QC unit (no lines), 1+ for Sewing units
         index: true // For line-based queries
     },
     Station_Number: {
         type: Number,
         required: true,
         min: 0,
-        max: 9, // Single digit (0-9)
+        max: 99, // Two digits (0-99) for new format
         index: true // For station number queries
     },
     Employee_ID: {
@@ -80,13 +81,13 @@ StationSchema.pre('save', function(next) {
         const match = this.ID.match(/^([A-Z])(\d)/);
         if (match) {
             this.Unit = match[1];
-            this.Line = parseInt(match[2]);
+            this.Line = parseInt(match[2]); // For QC unit (Q), this will be 0
         }
     }
     
-    // Auto-extract Station_Number from ID (last digit) if not set
+    // Auto-extract Station_Number from ID (last 1-2 digits) if not set
     if (this.ID && !this.isModified('Station_Number')) {
-        const match = this.ID.match(/(\d)$/);
+        const match = this.ID.match(/(\d{1,2})$/);
         if (match) {
             this.Station_Number = parseInt(match[1]);
         }
@@ -102,6 +103,11 @@ StationSchema.methods.isAssigned = function() {
 
 // Instance method to get station display name
 StationSchema.methods.getDisplayName = function() {
+    // Handle QC unit (Line 0 or null means no lines)
+    if (this.Unit === 'Q' || this.Line === 0) {
+        return `QC Unit - Station ${this.ID}`;
+    }
+    // Handle Sewing units with line numbers
     const linePart = this.Line !== null && this.Line !== undefined ? ` - Line ${this.Line}` : '';
     return `Unit ${this.Unit}${linePart} - Station ${this.ID}`;
 };

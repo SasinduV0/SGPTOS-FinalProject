@@ -177,7 +177,7 @@ struct ScannedData {
     uint8_t uid[10];            // RFID UID (max 10 bytes for MIFARE)
     uint8_t uidSize;           // Actual UID size
     char scanID[16];           // Generated scan ID
-    char stationID[8];         // Station ID (e.g., "A105", "A205", "QC01")
+    char stationID[8];         // Station ID (e.g., "A105", "A205", "Q001")
 };
 
 // FreeRTOS Queue handle
@@ -1589,9 +1589,9 @@ String generateScanID(uint8_t stationNumber) {
 // Generate station ID based on station type
 String generateStationID(uint8_t stationNumber) {
     switch(stationNumber) {
-        case 1: return "A105";  // Line 1-Station 5
-        case 2: return "A205";  // Line 2-Station 5
-        case 3: return "QC01";  // QC Station
+        case 1: return "A105";  // Sewing Unit A, Line 1, Station 05
+        case 2: return "A205";  // Sewing Unit A, Line 2, Station 05
+        case 3: return "Q001";  // QC Unit, No Line (0), Station 01
         default: return "0000"; // Unknown
     }
 }
@@ -1599,9 +1599,9 @@ String generateStationID(uint8_t stationNumber) {
 // Get line number based on station
 uint8_t getLineNumber(uint8_t stationNumber) {
     switch(stationNumber) {
-        case 1: return 1;  // Line 1-Station 5
-        case 2: return 2;  // Line 2-Station 5
-        case 3: return 3;  // QC Station (Line 3)
+        case 1: return 1;  // Sewing Unit A, Line 1, Station 05
+        case 2: return 2;  // Sewing Unit A, Line 2, Station 05
+        case 3: return 0;  // QC Unit, No Line (0), Station 01
         default: return 0; // Unknown
     }
 }
