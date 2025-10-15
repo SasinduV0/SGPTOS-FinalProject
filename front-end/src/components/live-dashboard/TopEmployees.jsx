@@ -13,7 +13,8 @@ const TopEmployees = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:8001/api/employees`);
+        // ✅ Use station-based aggregation endpoint (works with old data)
+        const res = await axios.get(`http://localhost:8001/api/top-employees-by-station-scans?limit=4`);
         setEmployees(res.data);
       } catch (err) {
         console.error("Error fetching employees:", err);
@@ -33,10 +34,8 @@ const TopEmployees = () => {
     };
   }, []);
 
-  // Sort all employees by pcs (highest first) and select top 4
-  const topEmployees = [...employees]
-    .sort((a, b) => Number(b.pcs) - Number(a.pcs))
-    .slice(0, 4);
+  // Data is already sorted and limited from backend, no need to re-sort
+  const topEmployees = employees;
 
   return (
     <div className="">
@@ -51,11 +50,14 @@ const TopEmployees = () => {
             >
               <div className="flex items-center gap-4">
                 <FaUser className="text-yellow-700" />
-                <span className="font-medium flex gap-10 text-gray-700">
-                  {index + 1}. {emp.name} <span className="text-yellow-300 indent-10"> </span> Line {emp.line}
+                <span className="font-medium text-gray-700">
+                  {index + 1}. {emp.name}
                 </span>
               </div>
-              <span className="font-semibold">{emp.pcs} Pcs</span>
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-gray-700">Line {emp.line}</span>
+                <span className="font-semibold">{emp.pcs} Pcs</span>
+              </div>
             </div>
           ))}
         </div>

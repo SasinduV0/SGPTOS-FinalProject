@@ -64,7 +64,6 @@ router.get("/defects/:tagUID", async (req, res) => {
 });
 
 // Add or update defect for a garment
-// Add or update defect for a garment
 router.post("/defect", async (req, res) => {
   try {
     const { ID, Section, Type, Subtype, Tag_UID, Station_ID, Time_Stamp } = req.body;
