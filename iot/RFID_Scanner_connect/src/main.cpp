@@ -1635,6 +1635,7 @@ bool sendRFIDDataViaWebSocket(const ScannedData& data) {
     doc["data"]["ID"] = String(data.scanID);
     doc["data"]["Tag_UID"] = uidToString((uint8_t*)data.uid, data.uidSize);
     doc["data"]["Station_ID"] = String(data.stationID);
+    doc["data"]["Station_Number"] = data.stationNumber; // Single digit station number
     doc["data"]["Line_Number"] = data.lineNumber;
     doc["data"]["Time_Stamp"] = data.timestamp;
     

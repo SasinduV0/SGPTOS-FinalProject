@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Station = require("../models/Station");
+const Employee = require("../models/Employee");
 
 // Helper function to emit updates (for future real-time functionality)
 const emitStationUpdate = async (io) => {
@@ -18,13 +19,13 @@ const emitStationUpdate = async (io) => {
 // Create new station
 router.post("/station", async (req, res) => {
   try {
-    const { ID, Unit, Line, Employee_ID, Employee_Name, Available, Active } = req.body;
+    const { ID, Unit, Line, Station_Number, Employee_ID, Employee_Name, Available, Active } = req.body;
 
     // Validate required fields
-    if (!ID || !Unit || !Line) {
+    if (!ID || !Unit || Station_Number === undefined) {
       return res.status(400).json({ 
         error: "Missing required fields",
-        required: ["ID", "Unit", "Line"]
+        required: ["ID", "Unit", "Station_Number"]
       });
     }
 
@@ -33,6 +34,7 @@ router.post("/station", async (req, res) => {
       ID,
       Unit,
       Line,
+      Station_Number,
       Employee_ID: Employee_ID || null,
       Employee_Name: Employee_Name || null,
       Available: Available !== undefined ? Available : true,
@@ -151,11 +153,11 @@ router.get("/stations/active", async (req, res) => {
 // Update station by ID
 router.put("/station/:id", async (req, res) => {
   try {
-    const { Unit, Line, Employee_ID, Employee_Name, Available, Active } = req.body;
+    const { Unit, Line, Station_Number, Employee_ID, Employee_Name, Available, Active } = req.body;
     
     const station = await Station.findOneAndUpdate(
       { ID: req.params.id.toUpperCase() },
-      { Unit, Line, Employee_ID, Employee_Name, Available, Active },
+      { Unit, Line, Station_Number, Employee_ID, Employee_Name, Available, Active },
       { new: true, runValidators: true }
     );
 
@@ -181,21 +183,35 @@ router.put("/station/:id", async (req, res) => {
   }
 });
 
-// Assign employee to station
+// Assign employee to station (auto-fetch employee name from Employee collection)
 router.patch("/station/:id/assign", async (req, res) => {
   try {
-    const { Employee_ID, Employee_Name } = req.body;
+    const { Employee_ID } = req.body;
 
-    if (!Employee_ID || !Employee_Name) {
+    if (!Employee_ID) {
       return res.status(400).json({ 
-        error: "Missing required fields",
-        required: ["Employee_ID", "Employee_Name"]
+        error: "Missing required field: Employee_ID"
       });
     }
 
+    // Find employee by ID to get name automatically
+    const employee = await Employee.findOne({ ID: Employee_ID.toUpperCase() });
+
+    if (!employee) {
+      return res.status(404).json({ 
+        error: "Employee not found",
+        employeeId: Employee_ID
+      });
+    }
+
+    // Update station with employee ID and name
     const station = await Station.findOneAndUpdate(
       { ID: req.params.id.toUpperCase() },
-      { Employee_ID, Employee_Name },
+      { 
+        Employee_ID: employee.ID, 
+        Employee_Name: employee.Name,
+        Assigned: true // Mark as assigned
+      },
       { new: true, runValidators: true }
     );
 
@@ -203,7 +219,13 @@ router.patch("/station/:id/assign", async (req, res) => {
       return res.status(404).json({ error: "Station not found" });
     }
 
-    console.log("✅ Employee assigned to station:", station.ID, "Employee:", Employee_Name);
+    // Update employee to mark as assigned
+    await Employee.findOneAndUpdate(
+      { ID: employee.ID },
+      { Assigned: true, Unit: station.Unit }
+    );
+
+    console.log("✅ Employee assigned to station:", station.ID, "Employee:", employee.Name);
 
     // Emit real-time update
     const io = req.app.get("io");
@@ -213,7 +235,12 @@ router.patch("/station/:id/assign", async (req, res) => {
 
     res.json({
       message: "Employee assigned successfully",
-      station: station
+      station: station,
+      employee: {
+        ID: employee.ID,
+        Name: employee.Name,
+        Type: employee.Type
+      }
     });
   } catch (err) {
     console.error("❌ Error assigning employee:", err);
@@ -224,14 +251,26 @@ router.patch("/station/:id/assign", async (req, res) => {
 // Unassign employee from station
 router.patch("/station/:id/unassign", async (req, res) => {
   try {
-    const station = await Station.findOneAndUpdate(
-      { ID: req.params.id.toUpperCase() },
-      { Employee_ID: null, Employee_Name: null, Active: false },
-      { new: true }
-    );
+    const station = await Station.findOne({ ID: req.params.id.toUpperCase() });
 
     if (!station) {
       return res.status(404).json({ error: "Station not found" });
+    }
+
+    const employeeId = station.Employee_ID;
+
+    // Update station to remove employee
+    station.Employee_ID = null;
+    station.Employee_Name = null;
+    station.Active = false;
+    await station.save();
+
+    // Update employee to mark as unassigned if employee exists
+    if (employeeId) {
+      await Employee.findOneAndUpdate(
+        { ID: employeeId },
+        { Assigned: false, Unit: null }
+      );
     }
 
     console.log("✅ Employee unassigned from station:", station.ID);
