@@ -19,7 +19,7 @@ function RemainingTime() {
     // Define shift timings
     const dayStart = 8;
     const dayEnd = 18;
-    const nightStart = 19;
+  const nightStart = 18;
     const nightEnd = 6;
 
     let startTime = new Date(currentTime);
@@ -67,8 +67,8 @@ function RemainingTime() {
   };
 
   return (
-    <div className="text-center mt-2">
-      <p className="text-blue-600 text-xl font-semibold">{shiftName}</p>
+    <div className="text-center mt-4">
+      <p className="text-blue-600 text-xl font-bold">{shiftName}</p>
       <p className="text-red-600 text-lg font-semibold">
         Remaining Time: {remaining}
       </p>

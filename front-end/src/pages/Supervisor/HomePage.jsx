@@ -25,17 +25,17 @@ import ProductivityIncrease from '../../components/Manager/ProductivityIncrease'
 import LineProductivityChart from '../../components/Manager/LineProductivityChart';
 import DailyEmployeesList from '../../components/Supervisor/DailyEmployeesList';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
-
+import ChatContainer from '../../components/ChatContainer';
 
 const HomePage = ({ dashboardData }) => {
   return (
-    <div className="flex">
+    <div className="flex min-h-screen">
       <SideBar title="Supervisor Panel" links={SupervisorLinks} />
-    <div className="space-y-6 ml-70 mr-5 w-full pt-25 px-4 max-w-screen-2xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+    <div className="flex-1 space-y-6 ml-64 mr-5 pt-20 px-4 overflow-x-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Today's Overview Stats */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 min-h-fit">
           <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-100">
             <h3 className="text-xl font-bold text-gray-800">Today's Overview</h3>
             <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full uppercase">
@@ -43,7 +43,7 @@ const HomePage = ({ dashboardData }) => {
             </span>
           </div>
 
-          <div className="flex flex-col gap-4 items-center">
+          <div className="space-y-4">
             <TotalProduction/>
             <EfficiencyRate/>
             <ActiveWorkers/>
@@ -56,10 +56,10 @@ const HomePage = ({ dashboardData }) => {
         
 
         {/* Alerts & Notifications */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-100">
-            <h3 className="text-xl font-bold text-gray-800">Alerts & Notifications</h3>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full uppercase">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-white/20">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 pb-4 border-b-2 border-gray-100 gap-2 sm:gap-0">
+            <h3 className="text-lg md:text-xl font-bold text-gray-800">Alerts & Notifications</h3>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full uppercase self-start sm:self-auto">
               3 Alerts
             </span>
           </div>
@@ -87,6 +87,7 @@ const HomePage = ({ dashboardData }) => {
         </div>
       </div>
       </div>
+      <ChatContainer role="Supervisor" />
     </div>
   );
 };

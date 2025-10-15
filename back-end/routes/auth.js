@@ -19,6 +19,12 @@ router.post("/signup", async (req, res) => {
             role
         } = req.body;
 
+        // Basic trimming and validation for userID format
+        const trimmedUserID = String(userID || '').trim();
+        const ID_REGEX = /^E[1-9a-f]{3}$/;
+        if (!ID_REGEX.test(trimmedUserID)) {
+            return res.status(400).json({ msg: "Invalid userID format. Must start with 'E' followed by three chars (1-9 or a-f). Example: E1a3" });
+        }
         // Check if user already exists by email or userID
         const userExist = await User.findOne({ $or: [{ email }, { userID }] });
         if (userExist) {
@@ -31,14 +37,14 @@ router.post("/signup", async (req, res) => {
         
         // Create new user
         const newUser = new User({
-            firstname,
-            lastname,
-            email,
-            userID,
-            username,
-            phoneNumber,
-            department,
-            password: hashPassword,
+            firstname: String(firstname || '').trim(),
+            lastname: String(lastname || '').trim(),
+            email: String(email || '').trim().toLowerCase(),
+            userID: trimmedUserID,
+            username: String(username || '').trim(),
+            phoneNumber: String(phoneNumber || '').trim(),
+            department: String(department || '').trim(),
+            password,
             role: role || "qc"
         });
 

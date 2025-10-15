@@ -24,7 +24,7 @@ const ActiveWorkers = () => {
   }, []);
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow w-82">
+    <div className="bg-white p-4 rounded-2xl shadow w-full">
       <div className="flex items-center justify-between">
         {/* Left side (text) */}
         <div className="text-left">

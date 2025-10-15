@@ -14,6 +14,8 @@ import ProductionLineStatus from '../../components/Supervisor/ProductionLineStat
 import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
 import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import ChatContainer from '../../components/ChatContainer';
+import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
 
 const ManagerHome = ({ lineData }) => {
 
@@ -114,7 +116,9 @@ const ManagerHome = ({ lineData }) => {
        {/* Overall Target */}
       <div className="bg-white rounded-lg shadow p-6 mt-2">
         <div className="flex items-center justify-center">
-          <OverallTargetChart lineTargets={lineTargets} />
+          {/* <OverallTargetChart lineTargets={lineTargets} /> */}
+
+          <OverallTargetChartsRFID/>
         </div>
         <div className="text-center mt-2">
          <RemainingTime/>
@@ -165,20 +169,6 @@ const ManagerHome = ({ lineData }) => {
       <LineWiseProductivity/>
 
 
-      {/* <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Line wise Target</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={lineWiseData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="line" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="target" fill="#93c5fd" name="Target" />
-            <Bar dataKey="actual" fill="#3b82f6" name="Actual" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div> */}
-
       {/* Production Table */}
       <div className="bg-white rounded-lg shadow p-6">
         <ProductionTargets/>
@@ -193,8 +183,7 @@ const ManagerHome = ({ lineData }) => {
         <ProductionSummaryTable/>
     </div> 
     
-      
-
+    <ChatContainer role="Manager" />
     
     </>
   );

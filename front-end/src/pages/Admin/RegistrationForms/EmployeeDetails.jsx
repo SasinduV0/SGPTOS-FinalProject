@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, Building, IdCard } from 'lucide-react'; // Import icons
+import { User, Mail, Phone, Building, IdCard, Shield } from 'lucide-react'; // Import icons
 
 function EmployeeDetails({formData, setFormData}) {
   return (
-    <div className="max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg space-y-8">
+    <div className="w-full py-2">
       {/* Personal Information Section */}
       <div className="space-y-6">
         <div className="text-center space-y-2">
@@ -110,22 +110,44 @@ function EmployeeDetails({formData, setFormData}) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/*Employee ID*/}
-
+          {/*Username*/}
           <div className="relative">
-            <label htmlFor="userID" className="block text-sm font-medium text-gray-700 mb-2">
-              User ID
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
             </label>
             <div className="relative">
-              <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
-                name="userID"
-                value={formData.userID}
-                onChange={e => setFormData({ ...formData, userID: e.target.value})}
+                name="username"
+                value={formData.username}
+                onChange={e => setFormData({ ...formData, username: e.target.value})}
                 className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                placeholder="Enter employee ID"
+                placeholder="Enter username"
               />
+            </div>
+          </div>
+
+          {/*Role*/}
+          <div className="relative">
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+              User Role
+            </label>
+
+            <div className="relative">
+              <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <select
+                name="role"
+                value={formData.role}
+                onChange={e => setFormData({ ...formData, role: e.target.value})}
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-white"
+              >
+                <option value="" disabled>Select Role</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="qc">Quality Control</option>
+              </select>
             </div>
           </div>
 
@@ -146,12 +168,31 @@ function EmployeeDetails({formData, setFormData}) {
                 className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-white"
               >
                 <option value="" disabled>Select Department</option>
-                <option value="Cutting">Cutting</option>
-                <option value="Packing">Packing</option>
                 <option value="Sawing">Sawing</option>
+                <option value="Quality Control">Quality Control</option>
               </select>
             </div>
           </div>
+
+          {/*Employee ID*/}
+
+          <div className="relative">
+            <label htmlFor="userID" className="block text-sm font-medium text-gray-700 mb-2">
+              User ID
+            </label>
+            <div className="relative">
+              <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                name="userID"
+                value={formData.userID}
+                onChange={e => setFormData({ ...formData, userID: e.target.value})}
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                placeholder="EX: E96c"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

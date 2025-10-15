@@ -114,7 +114,7 @@ const LineTargetChart = () => {
 
   return (
     <div className="bg-white rounded-2xl w-[500px] max-w-xl ">
-      <h2 className="text-center text-gray-800 font-bold text-2xl mb-6">
+      <h2 className="text-center text-gray-800 font-bold text-2xl ">
         Total Productivity - Line Wise Target
         {/* {connectionStatus === "connected" && <span className="text-green-500 text-xs ml-2">●</span>}
         {connectionStatus === "disconnected" && <span className="text-red-500 text-xs ml-2">●</span>} */}
@@ -139,22 +139,7 @@ const LineTargetChart = () => {
             />
           </XAxis>
 
-          {/* Y Axis with border and label */}
-          {/* <YAxis
-            domain={[0, Math.max(...lineData.map((d) => d.percentage)) + 20]}
-            tickFormatter={(value) => `${value}%`}
-            tick={{ fill: "#0a0a0a", fontSize: 12 }}
-            axisLine={{ stroke: "#4b5563", strokeWidth: 2 }}
-            tickLine={{ stroke: "#4b5563", strokeWidth: 1 }}
-          >
-            <Label
-              value="Target Completion (%)"
-              angle={-90}
-              position="insideLeft"
-              offset={10}
-              style={{ textAnchor: "middle", fill: "#000", fontWeight: "bold" }}
-            />
-          </YAxis> */}
+          
 
           <Tooltip
             cursor={{ fill: "rgba(0, 0, 0, 0.05)" }}

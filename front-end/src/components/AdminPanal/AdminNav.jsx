@@ -36,7 +36,7 @@ function AdminNav({steps, currentStep}) {
           </div>
             
             {/*Step Description*/}
-            <div className="ml-2 text-base font-medium text-center">{step.description}</div>
+            <div className="ml-2 text-lg font-medium text-center">{step.description}</div>
 
         </div>
       ))}

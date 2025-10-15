@@ -34,7 +34,7 @@ export const dashboardData = {
         { id: 'SW-006', name: 'Sophia' },
         { id: 'SW-007', name: 'William' },
         { id: 'SW-008', name: 'Ava' },
-        { id: 'SW-009', name: 'Benjamin' },
+        { id:'SW-109', name: 'Lisa' },
         { id: 'SW-010', name: 'Marry' }
       ]
     },
@@ -81,7 +81,7 @@ export const dashboardData = {
   topPerformers: [
     { id:'SW-010', name: 'Marry', line: 'Line 1', station: 'Station 3', efficiency: 98 },
     { id:'SW-207', name: 'Ahmed', line: 'Line 3', station: 'Station 7', efficiency: 96 },
-    { id:'SW-102', name: 'Lisa', line: 'Line 2', station: 'Station 2', efficiency: 94 }
+    { id:'SW-109', name: 'Lisa', line: 'Line 2', station: 'Station 2', efficiency: 94 }
   ],
 
   availableWorkers: [
@@ -95,7 +95,7 @@ export const dashboardData = {
     { id: 'SW-006', name: 'Sophia', skills: ['Finishing', 'Sewing'], experience: 2 },
     { id: 'SW-007', name: 'William', skills: ['Button Attach', 'Sewing'], experience: 5 },
     { id: 'SW-008', name: 'Ava', skills: ['Sewing', 'Ironing'], experience: 3 },
-    { id: 'SW-009', name: 'Benjamin', skills: ['Packing', 'Sewing'], experience: 4 },
+    { id: 'SW-109', name: 'Lisa', skills: ['Packing', 'Sewing'], experience: 4 },
     { id: 'SW-010', name: 'Marry', skills: ['Sewing', 'Finishing'], experience: 6 },
     // Line 3 workers
     { id: 'SW-011', name: 'Nimal', skills: ['Cutting', 'Sewing'], experience: 8 },
