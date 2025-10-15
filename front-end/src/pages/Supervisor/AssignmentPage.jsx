@@ -113,8 +113,11 @@ const AssignmentPage = () => {
   };
 
   // Assign worker to position
-  const assignWorkerToPosition = async (positionId) => {
-    if (!selectedWorker) return;
+  const assignWorkerToPosition = (positionId) => {
+    if (!selectedWorker) {
+      setError("Please select a worker first");
+      return;
+    }
     
     // Check if position is already occupied
     const position = positions.find(p => p.id === positionId);
@@ -124,17 +127,7 @@ const AssignmentPage = () => {
     }
     
     try {
-      // Update employee's line and position in backend
-      await axios.put(
-        `http://localhost:8001/api/employees/${selectedWorker.id}`,
-        {
-          line: selectedLine,
-          position: position.name,
-          status: 'Active'
-        }
-      );
-      
-      // Update local state
+      // Update local state only
       setLineAssignments(prev => ({
         ...prev,
         [selectedLine]: {
@@ -152,6 +145,19 @@ const AssignmentPage = () => {
         }
       }));
       
+      // Update the worker's status in the available workers list
+      setEmployees(prev => prev.map(emp => {
+        if (emp.id === selectedWorker.id) {
+          return {
+            ...emp,
+            line: selectedLine,
+            position: position.name,
+            status: 'Active'
+          };
+        }
+        return emp;
+      }));
+      
       setSelectedWorker(null);
       setError(null);
       console.log("✅ Worker assigned successfully");
@@ -163,7 +169,7 @@ const AssignmentPage = () => {
   };
 
   // Unassign worker from position
-  const unassignWorkerFromPosition = async (positionId) => {
+  const unassignWorkerFromPosition = (positionId) => {
     const position = positions.find(p => p.id === positionId);
     if (!position.employeeId) return;
 
@@ -172,15 +178,7 @@ const AssignmentPage = () => {
     }
 
     try {
-      // Update employee status in backend (optional - you can keep them assigned or mark as unassigned)
-      await axios.put(
-        `http://localhost:8001/api/employees/${position.employeeId}`,
-        {
-          position: 'Unassigned'
-        }
-      );
-
-      // Update local state
+      // Update local state for line assignments
       setLineAssignments(prev => ({
         ...prev,
         [selectedLine]: {
@@ -196,6 +194,19 @@ const AssignmentPage = () => {
             return p;
           })
         }
+      }));
+
+      // Update the worker's status in the available workers list
+      setEmployees(prev => prev.map(emp => {
+        if (emp.id === position.employeeId) {
+          return {
+            ...emp,
+            line: null,
+            position: 'Unassigned',
+            status: 'Available'
+          };
+        }
+        return emp;
       }));
 
       setError(null);

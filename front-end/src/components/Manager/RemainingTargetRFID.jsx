@@ -8,14 +8,14 @@ const RemainingTargetRFID = () => {
 
   // Hardcoded line targets. These could be fetched from an API in a real-world scenario.
   const lineTargets = {
-    1: 100,
-    2: 80,
-    3: 90,
-    4: 110,
-    5: 95,
-    6: 105,
-    7: 70,
-    8: 85,
+    1: 30,
+    2: 30,
+    3: 30,
+    4: 30,
+    5: 30,
+    6: 30,
+    7: 30,
+    8: 30,
   };
 
   // Calculate the total target by summing up all individual line targets.

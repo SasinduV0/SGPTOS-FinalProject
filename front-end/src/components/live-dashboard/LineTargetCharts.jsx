@@ -19,14 +19,14 @@ const LineTargetChartRFID = () => {
   // Hardcoded target values for each line.
   // This could also be fetched from an API if needed.
   const lineTargets = {
-    1: 40,
-    2: 80,
-    3: 90,
-    4: 110,
-    5: 16,
-    6: 10,
-    7: 70,
-    8: 85,
+    1: 30,
+    2: 30,
+    3: 30,
+    4: 30,
+    5: 30,
+    6: 30,
+    7: 30,
+    8: 30,
   };
 
   // This function processes the raw data from the backend
