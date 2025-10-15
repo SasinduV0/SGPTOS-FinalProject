@@ -12,20 +12,26 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Backend connection is unchanged
+// Backend WebSocket connection
 const socket = io("http://localhost:8001", { transports: ["websocket"] });
 
-// Production targets are unchanged
+// Production targets for each line (using raw, unscaled values)
 const lineTargets = {
-  1: 1000, 2: 800, 3: 900, 4: 1100, 5: 950, 6: 1050, 7: 700, 8: 850,
+  1: 40,
+  2: 80,
+  3: 90,
+  4: 110,
+  5: 95,
+  6: 105,
+  7: 70,
+  8: 85,
 };
 
-// Custom Tooltip for a consistent, polished look
+// Custom Tooltip now displays the direct values from the chart data
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    // Un-scaling the values to show the original numbers
-    const targetValue = (payload[0].value * 10).toLocaleString();
-    const productionValue = (payload[1].value * 10).toLocaleString();
+    const targetValue = payload[0].value.toLocaleString();
+    const productionValue = payload[1].value.toLocaleString();
     return (
       <div className="p-3 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg">
         <p className="font-bold text-gray-800">{label}</p>
@@ -37,7 +43,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// Custom Legend for a cleaner UI
+// Custom Legend for a clean UI (unchanged)
 const CustomLegend = (props) => {
   const { payload } = props;
   return (
@@ -56,42 +62,57 @@ const CustomLegend = (props) => {
 const LineWiseProductivity = () => {
   const [chartData, setChartData] = useState([]);
 
-  // Data processing logic is unchanged
-  const calculateProductivity = (employees) => {
-    const lineWiseProduction = {};
-    employees.forEach((emp) => {
-      if (emp.line && emp.pcs) {
-        lineWiseProduction[emp.line] = (lineWiseProduction[emp.line] || 0) + emp.pcs;
-      }
-    });
+  // ** CORRECTED DATA PROCESSING LOGIC **
+  // This function now uses the raw, unscaled data directly.
+  const processStationData = (stationCounts) => {
+    const lineWiseProduction = stationCounts.reduce((acc, station) => {
+        acc[station._id] = station.count;
+        return acc;
+    }, {});
 
+    // NO MORE SCALING: The data passed to the chart uses the actual target and production counts.
     const data = Object.keys(lineTargets).map((line) => ({
       name: `Line ${line}`,
-      target: lineTargets[line] / 10,
-      production: (lineWiseProduction[line] || 0) / 10,
+      target: lineTargets[line],
+      production: lineWiseProduction[line] || 0,
     }));
     setChartData(data);
   };
 
+  // Data fetching logic (unchanged)
   useEffect(() => {
-    const fetchEmployees = async () => {
-      const { data } = await axios.get("http://localhost:8001/api/employees");
-      calculateProductivity(data);
+    const fetchStationSummary = async () => {
+      try {
+        const { data } = await axios.get("http://localhost:8001/api/iot/station-summary");
+        if (data && data.stationCounts) {
+            processStationData(data.stationCounts);
+        }
+      } catch (error) {
+        console.error("Error fetching station summary:", error);
+        const emptyData = Object.keys(lineTargets).map((line) => ({
+            name: `Line ${line}`,
+            target: lineTargets[line],
+            production: 0,
+        }));
+        setChartData(emptyData);
+      }
     };
-    fetchEmployees();
-    socket.on("leadingLineUpdate", calculateProductivity);
-    return () => socket.off("leadingLineUpdate", calculateProductivity);
+
+    fetchStationSummary();
+    socket.on("scanUpdate", fetchStationSummary);
+
+    return () => {
+        socket.off("scanUpdate", fetchStationSummary);
+    };
   }, []);
 
   return (
-    // Applying the same modern card style for consistency
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200/80 w-full">
-      <h3 className="text-xl font-semibold text-gray-700 mb-4">
+      <h3 className="text-xl font-semibold text-gray-700 mb-10">
         Line Production
       </h3>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart data={chartData} barGap={8}>
-          {/* SVG gradient definition for the production bars */}
           <defs>
             <linearGradient id="productionGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
@@ -99,10 +120,8 @@ const LineWiseProductivity = () => {
             </linearGradient>
           </defs>
 
-          {/* Clean horizontal grid */}
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e0e0e0" />
           
-          {/* Styled Axes */}
           <XAxis 
             dataKey="name" 
             interval={0} 
@@ -110,19 +129,19 @@ const LineWiseProductivity = () => {
             axisLine={false} 
             tickLine={false} 
           />
+          
+          {/* ** CORRECTED Y-AXIS ** */}
+          {/* REMOVED domain property. Recharts will now automatically calculate the scale,
+              ensuring the bar heights are always proportional to their values. */}
           <YAxis 
-            domain={[0, 120]} // Set domain slightly higher than 100%
             tick={{ fontSize: 12, fill: '#6b7280' }} 
             axisLine={false} 
             tickLine={false}
-            tickFormatter={(value) => `${value}%`} // Add percentage sign
           />
           
-          {/* Custom Tooltip and Legend */}
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(238, 242, 255, 0.6)' }} />
           <Legend content={<CustomLegend />} />
 
-          {/* Styled Bars */}
           <Bar 
             dataKey="target" 
             fill="#e5e7eb" 
@@ -132,7 +151,7 @@ const LineWiseProductivity = () => {
           />
           <Bar 
             dataKey="production" 
-            fill="#10b981" 
+            fill="url(#productionGradient)" 
             name="Production" 
             radius={[4, 4, 0, 0]}
             barSize={25}
@@ -144,3 +163,4 @@ const LineWiseProductivity = () => {
 };
 
 export default LineWiseProductivity;
+

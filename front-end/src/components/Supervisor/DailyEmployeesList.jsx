@@ -106,7 +106,7 @@ const DailyEmployeesList = () => {
   todaysEmployees.sort((a, b) => Number(a.line) - Number(b.line));
 
   return (
-    <div className="bg-white rounded-2xl shadow p-8 w-full max-w-3xl h-94">
+    <div className="bg-white rounded-2xl shadow p-8 w-full max-w-3xl h-126">
       <div className="flex justify-between items-center mb-4">
         <div className="text-sm text-gray-600">
           Date: {selectedDate}
@@ -137,7 +137,7 @@ const DailyEmployeesList = () => {
         </div>
       </div>
 
-      <div className="max-h-64 overflow-y-auto">
+      <div className="max-h-85 overflow-y-auto mt-10">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100 text-left text-sm font-semibold text-gray-600">
