@@ -5,6 +5,7 @@ import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../../pages/Data/SidebarNavlinks';
 import DefectRateChart from '../../components/live-dashboard/DefectRateChart';
 import DefectRateQC from '../../components/QC/DefectRateQC';
+import ChatContainer from '../../components/ChatContainer';
 
 // Helper function to get consistent colors for defect types
 const getDefectColor = (defectType) => {
@@ -290,6 +291,7 @@ function QualityControl() {
           </div>
         </div>
       </div>
+      <ChatContainer role="Quality Controller" />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import UserRegistration from './UserRegistration';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import EmployeeRfidMan from './EmployeeRfidMan';
 import UserManagment from './UserManagment';
+import ChatContainer from '../../components/ChatContainer';
 
 function AdminDashboard() {
 
@@ -29,6 +30,7 @@ return(
     </Routes>
   </div>
    
+  <ChatContainer role="Admin" />
 
 </div>
 )};
