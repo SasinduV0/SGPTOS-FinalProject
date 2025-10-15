@@ -3,6 +3,9 @@ import io from "socket.io-client";
 import axios from "axios";
 import { FaUser } from "react-icons/fa";
 
+// WebSocket connection
+const socket = io("http://localhost:8001", { transports: ["websocket"] });
+
 const FollowingLine = () => {
   const [employees, setEmployees] = useState([]);
   const [delayedLine, setDelayedLine] = useState(null);
