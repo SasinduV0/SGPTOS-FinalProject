@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Employee = require("../models/Employee");
+const { RFIDTagScan } = require("../models/iot"); // Import for scan counts
 
 // Helper function to emit updates
 const emitEmployeeUpdate = async (io) => {
@@ -72,6 +73,110 @@ router.post("/employee", async (req, res) => {
       });
     }
     
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== EMPLOYEE SCAN COUNT ROUTES (New Schema) ==========
+
+// Get all employees with their scan counts
+router.get("/employees-with-scans", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Get all active employees
+    const employees = await Employee.find({ Active: true });
+
+    // Build aggregation pipeline for scan counts
+    const pipeline = [
+      { 
+        $match: { 
+          Employee_ID: { $ne: null } // Only scans with assigned employees
+        } 
+      },
+      { 
+        $group: { 
+          _id: "$Employee_ID", 
+          scanCount: { $sum: 1 },
+          lineNumber: { $first: "$Line_Number" } // Get line number from first scan
+        } 
+      }
+    ];
+
+    // Add date filtering if provided
+    if (startDate && endDate) {
+      pipeline[0].$match.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    const scanCounts = await RFIDTagScan.aggregate(pipeline);
+
+    // Create a map for quick lookup
+    const scanMap = scanCounts.reduce((acc, item) => {
+      acc[item._id] = { 
+        pcs: item.scanCount,
+        line: item.lineNumber 
+      };
+      return acc;
+    }, {});
+
+    // Merge employee data with scan counts
+    const employeesWithScans = employees.map(emp => ({
+      _id: emp._id,
+      employeeId: emp.ID,
+      name: emp.Name,
+      line: scanMap[emp.ID]?.line || emp.Unit ? parseInt(emp.Unit.match(/\d+/)?.[0] || 0) : 0,
+      pcs: scanMap[emp.ID]?.pcs || 0,
+      type: emp.Type,
+      unit: emp.Unit,
+      assigned: emp.Assigned,
+      active: emp.Active
+    }));
+
+    res.json(employeesWithScans);
+  } catch (err) {
+    console.error("❌ Error fetching employees with scans:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single employee scan count
+router.get("/employee/:employeeId/scan-count", async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const employee = await Employee.findOne({ ID: employeeId.toUpperCase() });
+    
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+
+    // Build query filter
+    const filter = { Employee_ID: employeeId.toUpperCase() };
+    
+    if (startDate && endDate) {
+      filter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    const scanCount = await RFIDTagScan.countDocuments(filter);
+
+    res.json({
+      employeeId: employee.ID,
+      employeeName: employee.Name,
+      scanCount,
+      type: employee.Type,
+      unit: employee.Unit,
+      assigned: employee.Assigned,
+      active: employee.Active
+    });
+  } catch (err) {
+    console.error("❌ Error fetching employee scan count:", err);
     res.status(500).json({ error: err.message });
   }
 });

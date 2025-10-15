@@ -19,13 +19,19 @@ const StationSchema = new mongoose.Schema({
     },
     Line: {
         type: Number,
-        required: true,
+        required: false,
         index: true // For line-based queries
+    },
+    Station_Number: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 9, // Single digit (0-9)
+        index: true // For station number queries
     },
     Employee_ID: {
         type: String,
         trim: true,
-        index: true, // For employee assignment queries
         default: null // Optional field for employee assignment
     },
     Employee_Name: {
@@ -78,6 +84,14 @@ StationSchema.pre('save', function(next) {
         }
     }
     
+    // Auto-extract Station_Number from ID (last digit) if not set
+    if (this.ID && !this.isModified('Station_Number')) {
+        const match = this.ID.match(/(\d)$/);
+        if (match) {
+            this.Station_Number = parseInt(match[1]);
+        }
+    }
+    
     next();
 });
 
@@ -88,7 +102,8 @@ StationSchema.methods.isAssigned = function() {
 
 // Instance method to get station display name
 StationSchema.methods.getDisplayName = function() {
-    return `Unit ${this.Unit} - Line ${this.Line} - Station ${this.ID}`;
+    const linePart = this.Line !== null && this.Line !== undefined ? ` - Line ${this.Line}` : '';
+    return `Unit ${this.Unit}${linePart} - Station ${this.ID}`;
 };
 
 // Static method to find stations by unit

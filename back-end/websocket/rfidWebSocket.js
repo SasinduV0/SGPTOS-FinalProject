@@ -1,5 +1,6 @@
 const WebSocket = require("ws");
 const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
+const Station = require("../models/Station"); // Import Station model
 
 class RFIDWebSocketServer {
   constructor(server) {
@@ -26,12 +27,17 @@ class RFIDWebSocketServer {
           const data = JSON.parse(message);
           
           if (data.action === 'rfid_scan') {
+            // Look up station to get assigned employee
+            const station = await Station.findOne({ ID: data.data.Station_ID });
+
             // Save RFID scan data to MongoDB using new model
             const newScan = new RFIDTagScan({
               ID: data.data.ID,
               Tag_UID: data.data.Tag_UID,
               Station_ID: data.data.Station_ID,
+              Station_Number: data.data.Station_Number || station?.Station_Number || 0, // Get from ESP32 or station lookup
               Line_Number: data.data.Line_Number,
+              Employee_ID: station?.Employee_ID || null, // Populate from station assignment
               Time_Stamp: data.data.Time_Stamp
             });
 

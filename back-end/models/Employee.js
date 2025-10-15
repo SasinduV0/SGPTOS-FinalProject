@@ -31,7 +31,6 @@ const EmployeeSchema = new mongoose.Schema({
     Card_UID: {
         type: String,
         trim: true,
-        index: true, // For fast card lookups
         default: null // Optional field for card assignment
     },
     Name: {
@@ -67,7 +66,8 @@ const EmployeeSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true, // Adds createdAt and updatedAt fields
-    versionKey: false // Remove __v field for cleaner documents
+    versionKey: false, // Remove __v field for cleaner documents
+    collection: 'employees' // Force collection name to be 'employees'
 });
 
 // Indexes for better query performance
@@ -83,5 +83,6 @@ EmployeeSchema.pre('save', function(next) {
     next();
 });
 
-module.exports = mongoose.model("Employee", EmployeeSchema);
+// Export the model (prevent OverwriteModelError)
+module.exports = mongoose.models.Employee || mongoose.model("Employee", EmployeeSchema);
 
