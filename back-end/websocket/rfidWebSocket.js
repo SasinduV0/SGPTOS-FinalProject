@@ -1,5 +1,6 @@
 const WebSocket = require("ws");
 const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated import
+const Station = require("../models/Station"); // Import Station model
 
 class RFIDWebSocketServer {
   constructor(server) {
@@ -31,6 +32,7 @@ class RFIDWebSocketServer {
               ID: data.data.ID,
               Tag_UID: data.data.Tag_UID,
               Station_ID: data.data.Station_ID,
+              Station_Number: data.data.Station_Number || 0,
               Line_Number: data.data.Line_Number,
               Time_Stamp: data.data.Time_Stamp
             });
