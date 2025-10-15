@@ -14,6 +14,7 @@ import ProductionLineStatus from '../../components/Supervisor/ProductionLineStat
 import ProductionPlanTable from '../../components/Manager/ProductionPlanTable';
 import ProductionSummaryTable from '../../components/Manager/ProductionSummaryTable';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
+import ChatContainer from '../../components/ChatContainer';
 import OverallTargetChartsRFID from '../../components/Charts/Live-Dashboard/OverallTargetChartsRFID';
 
 const ManagerHome = ({ lineData }) => {
@@ -163,8 +164,7 @@ const ManagerHome = ({ lineData }) => {
         <ProductionSummaryTable/>
     </div> 
     
-      
-
+    <ChatContainer role="Manager" />
     
     </>
   );

@@ -5,6 +5,7 @@ import SideBar from '../../components/SideBar';
 import { QCManagerLinks } from '../../pages/Data/SidebarNavlinks';
 import DefectRateChart from '../../components/live-dashboard/DefectRateChart';
 import DefectRateQC from '../../components/QC/DefectRateQC';
+import ChatContainer from '../../components/ChatContainer';
 import TotalProduction from '../../components/Manager/TotalProduction';
 import DefectRate from '../../components/QC/DefectRate';
 import EfficiencyRate from '../../components/Manager/EfficiencyRate';
@@ -204,6 +205,7 @@ function QualityControl() {
           </div> */}
         </div>
       </div>
+      <ChatContainer role="Quality Controller" />
     </div>
   );
 }

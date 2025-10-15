@@ -25,7 +25,7 @@ import ProductivityIncrease from '../../components/Manager/ProductivityIncrease'
 import LineProductivityChart from '../../components/Manager/LineProductivityChart';
 import DailyEmployeesList from '../../components/Supervisor/DailyEmployeesList';
 import ProductionTargets from '../../components/Supervisor/ProductionTargets';
-import { AlertTriangle, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import ChatContainer from '../../components/ChatContainer';import { AlertTriangle, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import RemainingTargetRFID from '../../components/Manager/RemainingTargetRFID';
 
 const HomePage = ({ dashboardData }) => {
@@ -173,6 +173,7 @@ const HomePage = ({ dashboardData }) => {
         </div>
       </div>
       </div>
+      <ChatContainer role="Supervisor" />
     </div>
   );
 };
