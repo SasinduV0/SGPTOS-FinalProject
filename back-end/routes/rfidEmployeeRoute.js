@@ -1,500 +1,208 @@
 const express = require('express');
-const RfidEmployee = require('../models/RfidEmployee');
 const router = express.Router();
+const RfidEmployee = require('../models/RfidEmployee');
+
 const ID_REGEX = /^E[1-9a-f]{3}$/;
+const VALID_RFID_LIST = ['E9 EB 39 03', 'F5 A6 28 A1', 'E5 B7 9B A1', 'E5 CC 9B A1'];
 
-// Valid RFIDs list (should match validRfids.js and productRfid.js)
-const getValidRfids = () => {
-  return [
-    'E9 EB 39 03', 'F5 A6 28 A1', 'E5 B7 9B A1', 'E5 CC 9B A1'
-  ];
-};
+// Helper functions
+const isValidRfid = (rfid) => VALID_RFID_LIST.includes(rfid);
+const trimAll = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, String(v || '').trim()]));
+const sendError = (res, code, message, extra = {}) => res.status(code).json({ success: false, message, ...extra });
+const sendSuccess = (res, code, message, data = null) => res.status(code).json({ success: true, message, ...(data && { data }) });
+const isValidMongoId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// Debug middleware to log all requests
-router.use((req, res, next) => {
-  console.log(`RFID Route: ${req.method} ${req.path}`);
-  console.log('Request body:', req.body);
-  console.log('Request params:', req.params);
+
+// Debug log middleware (Request Tracking / Monitor)
+router.use((req, _, next) => {
+  console.log(`[RFID ${req.method}] ${req.path}`, req.body || {});
   next();
 });
 
-// GET /api/rfid-employees - සියලුම RFID employees ලබා ගන්න
+// Retrieve all RFID employees with optional search and status filters
 router.get('/', async (req, res) => {
   try {
     const { search, status } = req.query;
-    let query = {};
-    
-    console.log('=== GET EMPLOYEES DEBUG ===');
-    console.log('Query params:', { search, status });
-    
-    // Search functionality
+    const query = {};
+
     if (search) {
-      query.$or = [
-        { rfidNumber: { $regex: search, $options: 'i' } },
-        { empName: { $regex: search, $options: 'i' } },
-        { empId: { $regex: search, $options: 'i' } }
-      ];
+      query.$or = ['rfidNumber', 'empName', 'empId'].map(f => ({ [f]: { $regex: search, $options: 'i' } }));
     }
-    
-    // Status filter
-    if (status) {
-      query.status = status;
-    }
-    
-    console.log('MongoDB query:', query);
-    
-    const employees = await RfidEmployee.find(query).sort({ createdAt: -1 });
-    
-    console.log(`Found ${employees.length} employees`);
-    
-    res.status(200).json({
-      success: true,
-      message: 'RFID employees fetched successfully',
-      data: employees,
-      count: employees.length
-    });
-  } catch (error) {
-    console.error('Error fetching RFID employees:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching RFID employees',
-      error: error.message
-    });
+    if (status) query.status = status;
+
+  const employees = await RfidEmployee.find(query).sort({ createdAt: -1 });
+  // Return the employees array directly as `data` so frontend components
+  // that call `response.data.data.map(...)` receive an array (prevents
+  // DataTable `data.map is not a function` errors).
+  sendSuccess(res, 200, 'RFID employees fetched successfully', employees);
+  } catch (e) {
+    sendError(res, 500, 'Error fetching RFID employees', { error: e.message });
   }
 });
 
-// GET /api/rfid-employees/:id - ID වලින් එක employee එකක් ලබා ගන්න
+// Fetch a single RFID employee by its MongoDB ID
 router.get('/:id', async (req, res) => {
   try {
-    console.log('=== GET SINGLE EMPLOYEE DEBUG ===');
-    console.log('Employee ID:', req.params.id);
-    
-    const employee = await RfidEmployee.findById(req.params.id);
-    
-    if (!employee) {
-      console.log('Employee not found');
-      return res.status(404).json({
-        success: false,
-        message: 'RFID Employee not found'
-      });
-    }
-    
-    console.log('Employee found:', employee);
-    
-    res.status(200).json({
-      success: true,
-      message: 'RFID employee fetched successfully',
-      data: employee
-    });
-  } catch (error) {
-    console.error('Error fetching RFID employee:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching RFID employee',
-      error: error.message
-    });
+    const { id } = req.params;
+
+    // Validate the ID format to ensure it is a valid MongoDB ObjectId
+    if (!isValidMongoId(id)) return sendError(res, 400, 'Invalid ID format');
+
+    // Search for the employee record using the provided ID
+    const employee = await RfidEmployee.findById(id);
+    if (!employee) return sendError(res, 404, 'RFID Employee not found');
+
+    sendSuccess(res, 200, 'RFID employee fetched successfully', item);
+  } catch (err) {
+    sendError(res, 500, 'Error fetching RFID employee', { error: err.message });
   }
 });
 
-// POST /api/rfid-employees - නව RFID employee එකක් හදන්න
+// CREATE a new RFID Employee
 router.post('/', async (req, res) => {
   try {
-    const { rfidNumber, empName, empId, status, department, phoneNumber, email } = req.body;
-    
-    console.log('=== CREATE EMPLOYEE DEBUG ===');
-    console.log('Request body:', req.body);
-    console.log('Extracted fields:', { rfidNumber, empName, empId, status, department, phoneNumber, email });
-    
-    // Validation
-    if (!rfidNumber || !empName || !empId) {
-      console.log('Validation failed: Missing required fields');
-      return res.status(400).json({
-        success: false,
-        message: 'RFID Number, Employee Name, and Employee ID are required',
-        missingFields: {
-          rfidNumber: !rfidNumber,
-          empName: !empName,
-          empId: !empId
-        }
-      });
-    }
+    const { rfidNumber, empName, empId, ...rest } = trimAll(req.body);
 
-    // Safe string conversion and trimming
-    const trimmedRfidNumber = String(rfidNumber || '').trim();
-    const trimmedEmpName = String(empName || '').trim();
-    const trimmedEmpId = String(empId || '').trim();
+    if (!rfidNumber || !empName || !empId)
+      return sendError(res, 400, 'RFID Number, Employee Name, and Employee ID are required');
 
-    console.log('Trimmed values:', { trimmedRfidNumber, trimmedEmpName, trimmedEmpId });
+    if (!isValidRfid(rfidNumber))
+      return sendError(res, 400, 'Invalid RFID number. Please select from valid RFIDs.');
 
-    if (!trimmedRfidNumber || !trimmedEmpName || !trimmedEmpId) {
-      console.log('Validation failed: Empty trimmed fields');
-      return res.status(400).json({
-        success: false,
-        message: 'RFID Number, Employee Name, and Employee ID cannot be empty',
-        emptyFields: {
-          rfidNumber: !trimmedRfidNumber,
-          empName: !trimmedEmpName,
-          empId: !trimmedEmpId
-        }
-      });
-    }
+    if (!ID_REGEX.test(empId))
+      return sendError(res, 400, 'empId format invalid. Example: E1a3');
 
-    // Check if RFID is in valid list
-    const validRfids = getValidRfids();
-    if (!validRfids.includes(trimmedRfidNumber)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid RFID number. Please select from valid RFIDs.'
-      });
-    }
-    
-    // Check if RFID number already exists
-    const existingRfid = await RfidEmployee.findOne({ rfidNumber: trimmedRfidNumber });
-    if (existingRfid) {
-      console.log('RFID number already exists:', trimmedRfidNumber);
-      return res.status(409).json({
-        success: false,
-        message: 'RFID number already assigned to another employee'
-      });
-    }
-    
-    // Validate empId format early for clearer message
-    const ID_REGEX = /^E[1-9a-f]{3}$/;
-    if (!ID_REGEX.test(trimmedEmpId)) {
-      console.log('Invalid empId format:', trimmedEmpId);
-      return res.status(400).json({ success: false, message: "empId format invalid. Must start with capital 'E' followed by three characters each 1-9 or a-f. Example: E1a3" });
-    }
-
-    // Check if Employee ID already exists  
-    const existingEmpId = await RfidEmployee.findOne({ empId: trimmedEmpId });
-    if (existingEmpId) {
-      console.log('Employee ID already exists:', trimmedEmpId);
-      return res.status(409).json({
-        success: false,
-        message: 'Employee ID already exists'
-      });
-    }
-    
-    const newEmployeeData = {
-      rfidNumber: trimmedRfidNumber,
-      empName: trimmedEmpName,
-      empId: trimmedEmpId,
-      status: status || 'ACTIVE',
-      department: String(department || '').trim(),
-      phoneNumber: String(phoneNumber || '').trim(),
-      email: String(email || '').trim()
-    };
-    
-    console.log('Creating employee with data:', newEmployeeData);
-    
-    const newEmployee = new RfidEmployee(newEmployeeData);
-    const savedEmployee = await newEmployee.save();
-    
-    console.log('Employee saved successfully:', savedEmployee);
-    
-    res.status(201).json({
-      success: true,
-      message: 'RFID employee created successfully',
-      data: savedEmployee
+    const duplicate = await RfidEmployee.findOne({
+      $or: [{ rfidNumber }, { empId }]
     });
-  } catch (error) {
-    console.error('=== CREATE ERROR ===');
-    console.error('Error type:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Full error:', error);
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
-      console.error('Validation errors:', validationErrors);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: validationErrors
-      });
-    }
 
-    // Handle duplicate key errors
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyValue)[0];
-      console.error('Duplicate key error:', field, error.keyValue);
-      return res.status(409).json({
-        success: false,
-        message: `${field} already exists`
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error creating RFID employee',
-      error: error.message
+    if (duplicate)
+      return sendError(res, 409, 'RFID number or Employee ID already exists');
+
+    // Create new RFID employee entry
+    const newEmployee = await RfidEmployee.create({
+      rfidNumber,
+      empName,
+      empId,
+      status: rest.status || 'ACTIVE',
+      ...trimAll(rest)
     });
+
+    sendSuccess(res, 201, 'RFID employee created successfully', newEmployee);
+  } catch (err) {
+    // Duplicate key error (unique fields)
+    if (err.code === 11000)
+      return sendError(res, 409, `${Object.keys(err.keyValue)[0]} already exists`);
+
+    // Mongoose validation errors
+    if (err.name === 'ValidationError')
+      return sendError(res, 400, 'Validation error', {
+        errors: Object.values(err.errors).map((v) => v.message)
+      });
+
+    // General server error
+    sendError(res, 500, 'Error creating RFID employee', { error: err.message });
   }
 });
 
-// PUT /api/rfid-employees/:id - RFID employee එකක් update කරන්න
+
+// PUT route to update an existing RFID employee by ID
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rfidNumber, empName, empId, status, department, phoneNumber, email } = req.body;
-    
-    console.log('=== UPDATE EMPLOYEE DEBUG ===');
-    console.log('Employee ID:', id);
-    console.log('Request body:', req.body);
-    console.log('Extracted fields:', { rfidNumber, empName, empId, status, department, phoneNumber, email });
-    
-    // Basic validation
-    if (!rfidNumber || !empName || !empId) {
-      console.log('Validation failed: Missing required fields');
-      return res.status(400).json({
-        success: false,
-        message: 'RFID Number, Employee Name, and Employee ID are required',
-        missingFields: {
-          rfidNumber: !rfidNumber,
-          empName: !empName,
-          empId: !empId
-        }
-      });
-    }
+    const { rfidNumber, empName, empId, ...rest } = trimAll(req.body);
 
-    // Check if employee exists first
-    const existingEmployee = await RfidEmployee.findById(id);
-    if (!existingEmployee) {
-      console.log('Employee not found with ID:', id);
-      return res.status(404).json({
-        success: false,
-        message: 'RFID Employee not found'
-      });
-    }
-    
-    console.log('Existing employee found:', existingEmployee);
+    // Validate MongoDB ObjectId
+    if (!isValidMongoId(id)) return sendError(res, 400, 'Invalid ID format');
 
-    // Safe string conversion and trimming
-    const trimmedRfidNumber = String(rfidNumber || '').trim();
-    const trimmedEmpName = String(empName || '').trim();
-    const trimmedEmpId = String(empId || '').trim();
+    if (!rfidNumber || !empName || !empId)
+      return sendError(res, 400, 'RFID Number, Employee Name, and Employee ID are required');
 
-    // Validate empId format early in update
-    const ID_REGEX = /^E[1-9a-f]{3}$/;
-    if (!ID_REGEX.test(trimmedEmpId)) {
-      console.log('Invalid empId format (update):', trimmedEmpId);
-      return res.status(400).json({ success: false, message: "empId format invalid. Must start with capital 'E' followed by three characters each 1-9 or a-f. Example: E1a3" });
-    }
+    // Check if employee exists
+    const employee = await RfidEmployee.findById(id);
+    if (!employee) return sendError(res, 404, 'RFID Employee not found');
 
-    console.log('Trimmed values:', { trimmedRfidNumber, trimmedEmpName, trimmedEmpId });
+    if (!isValidRfid(rfidNumber))
+      return sendError(res, 400, 'Invalid RFID number');
 
-    if (!trimmedRfidNumber || !trimmedEmpName || !trimmedEmpId) {
-      console.log('Validation failed: Empty trimmed fields');
-      return res.status(400).json({
-        success: false,
-        message: 'RFID Number, Employee Name, and Employee ID cannot be empty',
-        emptyFields: {
-          rfidNumber: !trimmedRfidNumber,
-          empName: !trimmedEmpName,
-          empId: !trimmedEmpId
-        }
-      });
-    }
+    if (!ID_REGEX.test(empId))
+      return sendError(res, 400, 'empId format invalid. Example: E1a3');
 
-    // Check if RFID is in valid list
-    const validRfids = getValidRfids();
-    if (!validRfids.includes(trimmedRfidNumber)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid RFID number. Please select from valid RFIDs.'
-      });
-    }
-    
-    // Check for duplicates (excluding current employee)
-    const existingRfid = await RfidEmployee.findOne({ 
-      rfidNumber: trimmedRfidNumber,
+    const dup = await RfidEmployee.findOne({
+      $or: [{ rfidNumber }, { empId }],
       _id: { $ne: id }
     });
-    
-    if (existingRfid) {
-      console.log('RFID number conflict:', trimmedRfidNumber, 'exists in:', existingRfid._id);
-      return res.status(409).json({
-        success: false,
-        message: 'RFID number already assigned to another employee'
-      });
-    }
 
-    const existingEmpId = await RfidEmployee.findOne({ 
-      empId: trimmedEmpId,
-      _id: { $ne: id }
-    });
-    
-    if (existingEmpId) {
-      console.log('Employee ID conflict:', trimmedEmpId, 'exists in:', existingEmpId._id);
-      return res.status(409).json({
-        success: false,
-        message: 'Employee ID already exists'
-      });
-    }
-    
-    // Prepare update data
-    const updateData = {
-      rfidNumber: trimmedRfidNumber,
-      empName: trimmedEmpName,
-      empId: trimmedEmpId,
-      status: status || 'ACTIVE',
-      department: String(department || '').trim(),
-      phoneNumber: String(phoneNumber || '').trim(),
-      email: String(email || '').trim()
-    };
+    if (dup) return sendError(res, 409, 'RFID number or Employee ID already exists');
 
-    console.log('Final update data:', updateData);
-    
-    const updatedEmployee = await RfidEmployee.findByIdAndUpdate(
-      id, 
-      updateData, 
-      { 
-        new: true, 
-        runValidators: true,
-        context: 'query'
-      }
-    );
-    
-    if (!updatedEmployee) {
-      console.log('Update failed: Employee not found after update');
-      return res.status(404).json({
-        success: false,
-        message: 'RFID Employee not found'
-      });
-    }
-
-    console.log('Employee updated successfully:', updatedEmployee);
-    
-    res.status(200).json({
-      success: true,
-      message: 'RFID employee updated successfully',
-      data: updatedEmployee
-    });
-  } catch (error) {
-    console.error('=== UPDATE ERROR ===');
-    console.error('Error type:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Full error:', error);
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
-      console.error('Validation errors:', validationErrors);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: validationErrors,
-        details: error.errors
-      });
-    }
-
-    // Handle cast errors (invalid ObjectId)
-    if (error.name === 'CastError') {
-      console.error('Invalid ID format:', error.value);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid employee ID format'
-      });
-    }
-
-    // Handle duplicate key errors
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyValue)[0];
-      console.error('Duplicate key error:', field, error.keyValue);
-      return res.status(409).json({
-        success: false,
-        message: `${field} already exists`
-      });
-    }
-    
-    res.status(500).json({
-      success: false,
-      message: 'Error updating RFID employee',
-      error: error.message
-    });
-  }
-});
-
-// DELETE /api/rfid-employees/:id - RFID employee එකක් delete කරන්න
-router.delete('/:id', async (req, res) => {
-  try {
-    console.log('=== DELETE EMPLOYEE DEBUG ===');
-    console.log('Deleting employee with ID:', req.params.id);
-    
-    const deletedEmployee = await RfidEmployee.findByIdAndDelete(req.params.id);
-    
-    if (!deletedEmployee) {
-      console.log('Employee not found for deletion');
-      return res.status(404).json({
-        success: false,
-        message: 'RFID Employee not found'
-      });
-    }
-    
-    console.log('Employee deleted successfully:', deletedEmployee);
-    
-    res.status(200).json({
-      success: true,
-      message: 'RFID employee deleted successfully',
-      data: deletedEmployee
-    });
-  } catch (error) {
-    console.error('=== DELETE ERROR ===');
-    console.error('Error deleting RFID employee:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting RFID employee',
-      error: error.message
-    });
-  }
-});
-
-// PATCH /api/rfid-employees/:id/status - RFID employee status update කරන්න
-router.patch('/:id/status', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    console.log('=== UPDATE STATUS DEBUG ===');
-    console.log('Updating status for employee:', id, 'to:', status);
-    
-    if (!['ACTIVE', 'INACTIVE'].includes(status)) {
-      console.log('Invalid status provided:', status);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status. Must be ACTIVE or INACTIVE'
-      });
-    }
-    
-    const updatedEmployee = await RfidEmployee.findByIdAndUpdate(
+     // Update employee record in database
+    const updated = await RfidEmployee.findByIdAndUpdate(
       id,
-      { status },
+      {
+        rfidNumber,
+        empName,
+        empId,
+        status: rest.status || 'ACTIVE',
+        ...trimAll(rest)
+      },
       { new: true, runValidators: true }
     );
-    
-    if (!updatedEmployee) {
-      console.log('Employee not found for status update');
-      return res.status(404).json({
-        success: false,
-        message: 'RFID Employee not found'
+
+    if (!updated) return sendError(res, 404, 'RFID Employee not found');
+
+    sendSuccess(res, 200, 'RFID employee updated successfully', updated);
+  } catch (err) {
+    // Handle validation errors
+    if (err.name === 'ValidationError')
+      return sendError(res, 400, 'Validation error', {
+        errors: Object.values(err.errors).map((v) => v.message)
       });
-    }
-    
-    console.log('Status updated successfully:', updatedEmployee);
-    
-    res.status(200).json({
-      success: true,
-      message: 'Employee status updated successfully',
-      data: updatedEmployee
-    });
-  } catch (error) {
-    console.error('=== STATUS UPDATE ERROR ===');
-    console.error('Error updating employee status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating employee status',
-      error: error.message
-    });
+
+    sendError(res, 500, 'Error updating RFID employee', { error: err.message });
+  }
+});
+
+// DELETE route to remove an RFID employee by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidMongoId(id)) return sendError(res, 400, 'Invalid ID');
+
+    const deleted = await RfidEmployee.findByIdAndDelete(id);
+    //no data in database
+    if (!deleted) return sendError(res, 404, 'RFID Employee not found');
+
+    sendSuccess(res, 200, 'RFID employee deleted successfully', deleted);
+  } catch (err) {
+    //server error
+    sendError(res, 500, 'Error deleting RFID employee', { error: err.message });
+  }
+});
+
+// ----------------- PATCH: Update Status -----------------
+router.patch('/:id/status', async (req, res) => {
+  try {
+    // Get employee ID from URL
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['ACTIVE', 'INACTIVE'].includes(status))
+      return sendError(res, 400, 'Invalid status. Must be ACTIVE or INACTIVE');
+
+    // Validate MongoDB ObjectId
+    if (!isValidMongoId(id)) return sendError(res, 400, 'Invalid ID');
+
+    const updated = await RfidEmployee.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updated) return sendError(res, 404, 'RFID Employee not found');
+
+    sendSuccess(res, 200, 'Employee status updated successfully', updated);
+  } catch (err) {
+    sendError(res, 500, 'Error updating employee status', { error: err.message });
   }
 });
 

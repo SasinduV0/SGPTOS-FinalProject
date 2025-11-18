@@ -45,7 +45,7 @@ router.post("/signup", async (req, res) => {
             phoneNumber: String(phoneNumber || '').trim(),
             department: String(department || '').trim(),
             password,
-            role: role || "qc"
+            role: role || ''
         });
 
         await newUser.save();
