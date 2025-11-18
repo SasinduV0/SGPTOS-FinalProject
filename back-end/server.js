@@ -8,6 +8,7 @@ const connectDB = require("./config/database");
 const authRoutes = require("./routes/auth");
 const iotRoutes = require("./routes/iotRoute");
 const employeeRoutes = require("./routes/employee");
+const stationRoutes = require("./routes/Station");
 const iotDefectRoutes = require("./routes/iotRoute");
 const lineManagement = require("./routes/lineManagement");
 const lineReallocation = require("./routes/LineReallocation");
@@ -16,7 +17,7 @@ const userProfileRoutes = require("./routes/userProfile");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 
 const analyticsRoutes = require("./routes/analytics");
-
+const defectDefinitionRoutes = require("./routes/DefectDefinitions")
 
 const RFIDWebSocketServer = require('./websocket/rfidWebSocket');
 const userRoute = require('./routes/userRoute');
@@ -39,7 +40,9 @@ app.set("io", io);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userProfileRoutes);
 app.use("/api", employeeRoutes);
+app.use("/api", stationRoutes);
 app.use("/api", iotRoutes);
+app.use("/api/defect-definitions", defectDefinitionRoutes);
 app.use("/api/line-management", lineManagement);
 app.use("/api/line-reallocation", lineReallocation);
 app.use("/api/product", productionRoutes);

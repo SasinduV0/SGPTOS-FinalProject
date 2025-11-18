@@ -7,14 +7,14 @@ const Remain = () => {
 
   // Define the production targets for each line (used for totalTarget calculation).
   const lineTargets = {
-    1: 10,
-    2: 80,
-    3: 90,
-    4: 110,
-    5: 95,
-    6: 105,
-    7: 70,
-    8: 85,
+    1: 30,
+    2: 30,
+    3: 30,
+    4: 30,
+    5: 30,
+    6: 30,
+    7: 30,
+    8: 30,
   };
 
   // This effect fetches the total completed pieces from the new backend endpoint via polling.

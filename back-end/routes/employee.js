@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Employee = require("../models/Employee");
+const { RFIDTagScan } = require("../models/iot"); // Import for scan counts
 
 // Helper function to emit updates
 const emitEmployeeUpdate = async (io) => {
@@ -12,6 +13,429 @@ const emitEmployeeUpdate = async (io) => {
     console.error("❌ Error emitting update:", error);
   }
 };
+
+// ========== NEW EMPLOYEE SCHEMA ROUTES ==========
+
+// Create new employee with new schema structure
+router.post("/employee", async (req, res) => {
+  try {
+    const { ID, Card_UID, Name, Unit, Type, Assigned, Active } = req.body;
+
+    // Validate required fields
+    if (!ID || !Name || !Type) {
+      return res.status(400).json({ 
+        error: "Missing required fields",
+        required: ["ID", "Name", "Type"]
+      });
+    }
+
+    // Create new employee
+    const employee = new Employee({
+      ID,
+      Card_UID: Card_UID || null,
+      Name,
+      Unit: Unit || null,
+      Type,
+      Assigned: Assigned !== undefined ? Assigned : false,
+      Active: Active !== undefined ? Active : false
+    });
+
+    await employee.save();
+
+    console.log("✅ New Employee created:", employee.Name, "ID:", employee.ID, "Type:", employee.Type);
+
+    // Emit real-time update
+    const io = req.app.get("io");
+    if (io) {
+      await emitEmployeeUpdate(io);
+    }
+
+    res.status(201).json({
+      message: "Employee created successfully",
+      employee: employee
+    });
+  } catch (err) {
+    console.error("❌ Error creating new employee:", err);
+    
+    // Handle duplicate ID error
+    if (err.code === 11000) {
+      return res.status(409).json({ 
+        error: "Employee ID already exists",
+        field: "ID"
+      });
+    }
+    
+    // Handle validation errors
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ 
+        error: "Validation error",
+        details: err.message
+      });
+    }
+    
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== EMPLOYEE SCAN COUNT ROUTES (New Schema) ==========
+
+// Get all employees with their scan counts
+router.get("/employees-with-scans", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Get all active employees
+    const employees = await Employee.find({ Active: true });
+
+    // Build aggregation pipeline for scan counts
+    const pipeline = [
+      { 
+        $match: { 
+          Employee_ID: { $ne: null } // Only scans with assigned employees
+        } 
+      },
+      { 
+        $group: { 
+          _id: "$Employee_ID", 
+          scanCount: { $sum: 1 },
+          lineNumber: { $first: "$Line_Number" } // Get line number from first scan
+        } 
+      }
+    ];
+
+    // Add date filtering if provided
+    if (startDate && endDate) {
+      pipeline[0].$match.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    const scanCounts = await RFIDTagScan.aggregate(pipeline);
+
+    // Create a map for quick lookup
+    const scanMap = scanCounts.reduce((acc, item) => {
+      acc[item._id] = { 
+        pcs: item.scanCount,
+        line: item.lineNumber 
+      };
+      return acc;
+    }, {});
+
+    // Merge employee data with scan counts
+    const employeesWithScans = employees.map(emp => ({
+      _id: emp._id,
+      employeeId: emp.ID,
+      name: emp.Name,
+      line: scanMap[emp.ID]?.line || emp.Unit ? parseInt(emp.Unit.match(/\d+/)?.[0] || 0) : 0,
+      pcs: scanMap[emp.ID]?.pcs || 0,
+      type: emp.Type,
+      unit: emp.Unit,
+      assigned: emp.Assigned,
+      active: emp.Active
+    }));
+
+    res.json(employeesWithScans);
+  } catch (err) {
+    console.error("❌ Error fetching employees with scans:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single employee scan count
+router.get("/employee/:employeeId/scan-count", async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const employee = await Employee.findOne({ ID: employeeId.toUpperCase() });
+    
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+
+    // Build query filter
+    const filter = { Employee_ID: employeeId.toUpperCase() };
+    
+    if (startDate && endDate) {
+      filter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    const scanCount = await RFIDTagScan.countDocuments(filter);
+
+    res.json({
+      employeeId: employee.ID,
+      employeeName: employee.Name,
+      scanCount,
+      type: employee.Type,
+      unit: employee.Unit,
+      assigned: employee.Assigned,
+      active: employee.Active
+    });
+  } catch (err) {
+    console.error("❌ Error fetching employee scan count:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get top employees based on station scan counts (works with old data without Employee_ID)
+router.get("/top-employees-by-station-scans", async (req, res) => {
+  try {
+    const { startDate, endDate, limit = 4 } = req.query;
+
+    // Build match filter for date range
+    const matchFilter = {};
+    if (startDate && endDate) {
+      matchFilter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    // Step 1: Aggregate scans by Station_ID
+    const stationScanCounts = await RFIDTagScan.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$Station_ID",
+          scanCount: { $sum: 1 }
+        }
+      },
+      { $sort: { scanCount: -1 } }
+    ]);
+
+    // Step 2: Get all stations with employee assignments
+    const Station = require("../models/Station");
+    const stationIDs = stationScanCounts.map(s => s._id);
+    const stations = await Station.find({ 
+      ID: { $in: stationIDs },
+      Employee_ID: { $ne: null }
+    });
+
+    // Step 3: Match scans to employees and get top performers
+    const topEmployees = stationScanCounts
+      .map(scan => {
+        const station = stations.find(s => s.ID === scan._id);
+        if (!station || !station.Employee_ID) return null;
+        
+        return {
+          _id: station._id,
+          employeeId: station.Employee_ID,
+          name: station.Employee_Name,
+          stationId: scan._id,
+          pcs: scan.scanCount,
+          unit: station.Unit,
+          line: station.Line || 0,
+          type: 'SE', // Assume SE for now, can be enhanced
+          assigned: true,
+          active: true
+        };
+      })
+      .filter(e => e !== null)
+      .slice(0, parseInt(limit));
+
+    res.json(topEmployees);
+  } catch (err) {
+    console.error("❌ Error fetching top employees by station scans:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get leading line data (line with highest scan count and its employees)
+router.get("/leading-line-data", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Build match filter for date range
+    const matchFilter = {};
+    if (startDate && endDate) {
+      matchFilter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    // Step 1: Aggregate scans by Station_ID
+    const stationScanCounts = await RFIDTagScan.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$Station_ID",
+          scanCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Step 2: Get all stations with employee assignments (exclude QC stations)
+    const Station = require("../models/Station");
+    const stationIDs = stationScanCounts.map(s => s._id);
+    const stations = await Station.find({ 
+      ID: { $in: stationIDs },
+      Employee_ID: { $ne: null },
+      Line: { $ne: null, $ne: 0 } // Exclude QC stations (Line 0)
+    });
+
+    // Step 3: Calculate total scans per line
+    const lineTotals = {};
+    const lineStationsMap = {};
+    
+    stationScanCounts.forEach(scan => {
+      const station = stations.find(s => s.ID === scan._id);
+      if (station && station.Line) {
+        if (!lineTotals[station.Line]) {
+          lineTotals[station.Line] = 0;
+          lineStationsMap[station.Line] = [];
+        }
+        lineTotals[station.Line] += scan.scanCount;
+        lineStationsMap[station.Line].push({
+          station: station,
+          scanCount: scan.scanCount
+        });
+      }
+    });
+
+    // Step 4: Find leading line (highest total)
+    let leadingLine = null;
+    let leadingLineTotal = 0;
+    Object.entries(lineTotals).forEach(([line, total]) => {
+      if (total > leadingLineTotal) {
+        leadingLineTotal = total;
+        leadingLine = parseInt(line);
+      }
+    });
+
+    if (leadingLine === null) {
+      return res.json({
+        leadingLine: null,
+        leadingLineTotal: 0,
+        employees: []
+      });
+    }
+
+    // Step 5: Get employees for leading line
+    const leadingLineEmployees = lineStationsMap[leadingLine]
+      .map(item => ({
+        _id: item.station._id,
+        employeeId: item.station.Employee_ID,
+        name: item.station.Employee_Name,
+        stationId: item.station.ID,
+        pcs: item.scanCount,
+        line: item.station.Line
+      }))
+      .sort((a, b) => b.pcs - a.pcs);
+
+    res.json({
+      leadingLine: leadingLine,
+      leadingLineTotal: leadingLineTotal,
+      employees: leadingLineEmployees
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching leading line data:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get delayed line data (line with lowest scan count and its employees)
+router.get("/delayed-line-data", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Build match filter for date range
+    const matchFilter = {};
+    if (startDate && endDate) {
+      matchFilter.Time_Stamp = {
+        $gte: new Date(startDate).getTime() / 1000,
+        $lte: new Date(endDate).getTime() / 1000
+      };
+    }
+
+    // Step 1: Aggregate scans by Station_ID
+    const stationScanCounts = await RFIDTagScan.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: "$Station_ID",
+          scanCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Step 2: Get all stations with employee assignments (exclude QC stations)
+    const Station = require("../models/Station");
+    const stationIDs = stationScanCounts.map(s => s._id);
+    const stations = await Station.find({ 
+      ID: { $in: stationIDs },
+      Employee_ID: { $ne: null },
+      Line: { $ne: null, $ne: 0 } // Exclude QC stations (Line 0)
+    });
+
+    // Step 3: Calculate total scans per line
+    const lineTotals = {};
+    const lineStationsMap = {};
+    
+    stationScanCounts.forEach(scan => {
+      const station = stations.find(s => s.ID === scan._id);
+      if (station && station.Line) {
+        if (!lineTotals[station.Line]) {
+          lineTotals[station.Line] = 0;
+          lineStationsMap[station.Line] = [];
+        }
+        lineTotals[station.Line] += scan.scanCount;
+        lineStationsMap[station.Line].push({
+          station: station,
+          scanCount: scan.scanCount
+        });
+      }
+    });
+
+    // Step 4: Find delayed line (lowest total)
+    let delayedLine = null;
+    let delayedLineTotal = Infinity;
+    Object.entries(lineTotals).forEach(([line, total]) => {
+      if (total < delayedLineTotal) {
+        delayedLineTotal = total;
+        delayedLine = parseInt(line);
+      }
+    });
+
+    if (delayedLine === null) {
+      return res.json({
+        delayedLine: null,
+        delayedLineTotal: 0,
+        employees: []
+      });
+    }
+
+    // Step 5: Get employees for delayed line (sorted by lowest pcs first)
+    const delayedLineEmployees = lineStationsMap[delayedLine]
+      .map(item => ({
+        _id: item.station._id,
+        employeeId: item.station.Employee_ID,
+        name: item.station.Employee_Name,
+        stationId: item.station.ID,
+        pcs: item.scanCount,
+        line: item.station.Line
+      }))
+      .sort((a, b) => a.pcs - b.pcs); // Sort ascending (lowest first)
+
+    res.json({
+      delayedLine: delayedLine,
+      delayedLineTotal: delayedLineTotal,
+      employees: delayedLineEmployees
+    });
+
+  } catch (err) {
+    console.error("❌ Error fetching delayed line data:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== OLD EMPLOYEE SCHEMA ROUTES (Legacy - Commented Out) ==========
+
 
 // 1️⃣ Create new employee
 router.post("/employees", async (req, res) => {

@@ -44,9 +44,11 @@ const rfidEmployeeSchema = new mongoose.Schema({
   timestamps: true
 });
 
+/*
 // Index වලින් search performance වැඩි කරන්න
 rfidEmployeeSchema.index({ rfidNumber: 1 });
 rfidEmployeeSchema.index({ empId: 1 });
 rfidEmployeeSchema.index({ empName: 'text' });
+*/
 
 module.exports = mongoose.model('RfidEmployee', rfidEmployeeSchema);

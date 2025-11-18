@@ -64,7 +64,6 @@ router.get("/defects/:tagUID", async (req, res) => {
 });
 
 // Add or update defect for a garment
-// Add or update defect for a garment
 router.post("/defect", async (req, res) => {
   try {
     const { ID, Section, Type, Subtype, Tag_UID, Station_ID, Time_Stamp } = req.body;
@@ -270,6 +269,43 @@ router.get("/defect-definitions/esp32", async (req, res) => {
   } catch (err) {
     console.error("Error fetching defect definitions for ESP32:", err.message);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// POST a new RFID scan
+router.post("/scan", async (req, res) => {
+  try {
+    const { ID, Tag_UID, Station_ID, Station_Number, Line_Number, Time_Stamp } = req.body;
+    
+    // Validate required fields
+    if (!ID || !Tag_UID || !Station_ID || Station_Number === undefined || !Line_Number || !Time_Stamp) {
+      return res.status(400).json({ 
+        error: "All fields are required",
+        required: ["ID", "Tag_UID", "Station_ID", "Station_Number", "Line_Number", "Time_Stamp"],
+        received: req.body
+      });
+    }
+    
+    const newScan = new RFIDTagScan({ 
+      ID, 
+      Tag_UID, 
+      Station_ID, 
+      Station_Number,
+      Line_Number, 
+      Time_Stamp 
+    });
+    
+    await newScan.save();
+    
+    console.log("✅ RFID scan saved:", newScan.ID);
+    
+    res.status(201).json({ 
+      message: "RFID scan saved successfully", 
+      data: newScan 
+    });
+  } catch (err) {
+    console.error("❌ Error saving RFID scan:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 

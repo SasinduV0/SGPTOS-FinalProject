@@ -17,6 +17,13 @@ const rfidTagScanSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  Station_Number: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 99, // Two digits (0-99) for new format
+    index: true // For station number queries
+  },
   Line_Number: {
     type: Number,
     required: true,

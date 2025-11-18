@@ -19,14 +19,14 @@ const LineTargetChartRFID = () => {
   // Hardcoded target values for each line.
   // This could also be fetched from an API if needed.
   const lineTargets = {
-    1: 10,
-    2: 80,
-    3: 90,
-    4: 110,
-    5: 16,
-    6: 10,
-    7: 70,
-    8: 85,
+    1: 30,
+    2: 30,
+    3: 30,
+    4: 30,
+    5: 30,
+    6: 30,
+    7: 30,
+    8: 30,
   };
 
   // This function processes the raw data from the backend
@@ -95,7 +95,7 @@ const LineTargetChartRFID = () => {
   }
 
   return (
-    <div className="bg-white rounded-2xl w-[500px] max-w-xl p-4">
+    <div className="bg-white rounded-2xl w-[500px] max-w-xl px-3">
       <h2 className="text-center text-gray-800 font-bold text-2xl">
         Total Productivity - Line Wise Target
       </h2>
@@ -119,7 +119,7 @@ const LineTargetChartRFID = () => {
           </XAxis>
           
           <YAxis
-            domain={[0, 120]}
+            domain={[0, 100]}
             tickFormatter={(value) => `${value}%`}
             tick={{ fill: "#0a0a0a", fontSize: 12 }}
             axisLine={{ stroke: "#4b5563", strokeWidth: 2 }}

@@ -7,19 +7,19 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  CartesianGrid, // Added for a background grid
+  CartesianGrid,
 } from "recharts";
 import io from "socket.io-client";
 import axios from "axios";
 
-// Backend connection remains unchanged
+// Backend connection
 const socket = io("http://localhost:8001", {
   transports: ["websocket"],
   autoConnect: true,
   forceNew: true,
 });
 
-// A stylish, custom tooltip component
+// Custom tooltip component
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -27,7 +27,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         <p className="font-bold text-gray-800">{`Date: ${label}`}</p>
         {payload.map((p, i) => (
           <p key={i} style={{ color: p.color }} className="text-sm font-medium">
-            {`${p.name}: ${p.value.toLocaleString()} pcs`}
+            {`${p.name}: ${p.value.toLocaleString()} scans`}
           </p>
         ))}
       </div>
@@ -36,7 +36,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// An improved loading spinner component
+// Loading spinner component
 const ChartLoader = () => (
   <div className="flex flex-col justify-center items-center h-96 bg-white rounded-xl shadow-lg border border-gray-200/80 w-full max-w-4xl p-6">
     <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -50,71 +50,162 @@ const LineProductivityChart = () => {
 
   const lines = [1, 2, 3, 4, 5, 6, 7, 8];
   
-  // A more professional and harmonious color palette
+  // Professional color palette
   const lineColors = [
     "#3b82f6", "#10b981", "#f97316", "#ef4444",
     "#8b5cf6", "#ec4899", "#facc15", "#06b6d4"
   ];
 
-  // Data fetching and processing logic remains the same
+  // Fetch RFID scan data from IoT backend
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await axios.get("http://localhost:8001/api/employees");
-        processChartData(data);
+        // Fetch both employee data and RFID scans
+        const [employeeResponse, scanResponse] = await Promise.all([
+          axios.get("http://localhost:8001/api/employees"),
+          axios.get("http://localhost:8001/api/iot/station-summary")
+        ]);
+
+        // Process combined data
+        processChartData(employeeResponse.data, scanResponse.data);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching employees:", err);
+        console.error("Error fetching data:", err);
         setLoading(false);
       }
     };
+
     fetchData();
+
+    // Poll for updates every 5 seconds to ensure real-time data
+    const pollInterval = setInterval(fetchData, 5000);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
   }, []);
 
+  // Listen for real-time updates from both employee and RFID systems
   useEffect(() => {
-    socket.on("leadingLineUpdate", (updatedEmployees) => {
-      processChartData(updatedEmployees);
+    const fetchLatestData = async () => {
+      try {
+        const [employeeResponse, scanResponse] = await Promise.all([
+          axios.get("http://localhost:8001/api/employees"),
+          axios.get("http://localhost:8001/api/iot/station-summary")
+        ]);
+        processChartData(employeeResponse.data, scanResponse.data);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+
+    // Employee updates
+    socket.on("leadingLineUpdate", fetchLatestData);
+
+    // RFID scan updates
+    socket.on("rfidScanUpdate", fetchLatestData);
+
+    // Generic scan update event
+    socket.on("scanUpdate", fetchLatestData);
+
+    // Connection status logging
+    socket.on("connect", () => {
+      console.log("✅ LineProductivityChart: Socket connected");
+      fetchLatestData();
     });
-    return () => socket.off("leadingLineUpdate");
+
+    socket.on("disconnect", () => {
+      console.log("❌ LineProductivityChart: Socket disconnected");
+    });
+
+    return () => {
+      socket.off("leadingLineUpdate");
+      socket.off("rfidScanUpdate");
+      socket.off("scanUpdate");
+      socket.off("connect");
+      socket.off("disconnect");
+    };
   }, []);
 
-  const processChartData = (employees) => {
+  const processChartData = (employees, scanData) => {
     const dateMap = {};
+
+    // Process employee data (existing logic)
     employees.forEach((emp) => {
-      const date = new Date(emp.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!dateMap[date]) dateMap[date] = {};
+      const date = new Date(emp.createdAt).toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      if (!dateMap[date]) {
+        dateMap[date] = {};
+        lines.forEach(line => {
+          dateMap[date][`Line ${line}`] = 0;
+        });
+      }
       dateMap[date][`Line ${emp.line}`] = (dateMap[date][`Line ${emp.line}`] || 0) + emp.pcs;
     });
 
+    // Add RFID scan counts to the data (bonus tracking)
+    // This adds scan-based productivity alongside employee pieces
+    if (scanData && scanData.stationCounts) {
+      const today = new Date().toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      
+      if (!dateMap[today]) {
+        dateMap[today] = {};
+        lines.forEach(line => {
+          dateMap[today][`Line ${line}`] = 0;
+        });
+      }
+
+      // Add scan counts as bonus productivity metric
+      scanData.stationCounts.forEach(({ _id: lineNumber, count }) => {
+        if (lineNumber >= 1 && lineNumber <= 8) {
+          // Add scan count to existing production count
+          // Or you can multiply by a factor if scans represent batches
+          dateMap[today][`Line ${lineNumber}`] += count;
+        }
+      });
+    }
+
+    // Sort by date and format final data
     const processedData = Object.keys(dateMap)
       .sort((a, b) => new Date(a) - new Date(b))
       .map((date) => ({
         date,
-        ...lines.reduce((acc, line) => {
-          acc[`Line ${line}`] = dateMap[date][`Line ${line}`] || 0;
-          return acc;
-        }, {}),
+        ...dateMap[date]
       }));
+
     setChartData(processedData);
   };
-  
-  // Render the new loader while data is being fetched
+
   if (loading) {
     return <ChartLoader />;
   }
 
   return (
-    // Enhanced container with shadow, border, and more padding
     <div className="bg-white rounded-xl shadow-lg w-full max-w-5xl p-6 border border-gray-200/80">
-      <h2 className="text-xl font-semibold text-gray-700 mb-4">
-        Daily Productivity - Line Wise
-      </h2>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-700">
+            Daily Productivity - Line Wise
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Combined employee pieces + RFID scan tracking
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-sm text-gray-600">Live</span>
+        </div>
+      </div>
+      
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          {/* Added a subtle grid for better readability */}
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           
-          {/* Styled axes */}
           <XAxis 
             dataKey="date" 
             tick={{ fontSize: 12, fill: '#6b7280' }} 
@@ -125,9 +216,14 @@ const LineProductivityChart = () => {
             tick={{ fontSize: 12, fill: '#6b7280' }} 
             axisLine={{ stroke: '#d1d5db' }}
             tickLine={false}
+            label={{ 
+              value: 'Productivity (pcs + scans)', 
+              angle: -90, 
+              position: 'insideLeft',
+              style: { fontSize: 12, fill: '#6b7280' }
+            }}
           />
           
-          {/* Using the new custom tooltip */}
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }} />
 
           <Legend wrapperStyle={{ paddingTop: '20px' }} />
@@ -137,16 +233,21 @@ const LineProductivityChart = () => {
               key={line}
               type="monotone"
               dataKey={`Line ${line}`}
-              // Using the new color palette
               stroke={lineColors[idx % lineColors.length]}
               strokeWidth={2.5}
               dot={{ r: 3, fill: lineColors[idx % lineColors.length] }}
-              // Adds a larger dot on hover for better interaction
               activeDot={{ r: 7, strokeWidth: 2, stroke: '#ffffff' }}
             />
           ))}
         </LineChart>
       </ResponsiveContainer>
+
+      {/* Data source indicator */}
+      {/* <div className="mt-4 pt-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500">
+          📊 Data sources: Employee production records + RFID scan tracking system
+        </p>
+      </div> */}
     </div>
   );
 };
