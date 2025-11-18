@@ -82,7 +82,7 @@ httpServer.listen(SOCKET_IO_PORT, '0.0.0.0', () => {
 
 // --- Plain WebSocket server for ESP32 (port 8000) ---
 const wsServer = http.createServer();
-const rfidWS = new RFIDWebSocketServer(wsServer);
+const rfidWS = new RFIDWebSocketServer(wsServer, io); // ✅ Pass Socket.IO instance
 wsServer.listen(8000, '0.0.0.0', () => {
   console.log(`-> WebSocket server available at: ws://0.0.0.0:8000/rfid-ws`);
   console.log(`-> Ready to receive RFID data from ESP32`);

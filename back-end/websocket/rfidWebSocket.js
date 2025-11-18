@@ -3,14 +3,18 @@ const { RFIDTagScan, GarmentDefects } = require("../models/iot"); // Updated imp
 const Station = require("../models/Station"); // Import Station model
 
 class RFIDWebSocketServer {
-  constructor(server) {
+  constructor(server, io = null) {
     this.wss = new WebSocket.Server({ 
       server: server,
       path: '/rfid-ws'
     });
+    this.io = io; // Store Socket.IO instance for broadcasting to dashboard
 
     console.log('-> WebSocket server available at: ws://localhost:8000/rfid-ws');
     console.log('-> Ready to receive RFID data from ESP32');
+    if (io) {
+      console.log('-> Socket.IO integration enabled for real-time dashboard updates');
+    }
 
     this.wss.on('connection', (ws) => {
       console.log('ESP32 client connected to WebSocket');
@@ -50,6 +54,12 @@ class RFIDWebSocketServer {
             }));
 
             console.log(`RFID scan saved: ${data.data.ID} - Station: ${data.data.Station_ID}`);
+            
+            // ✅ Emit Socket.IO event for real-time dashboard updates
+            if (this.io) {
+              this.io.emit("leadingLineUpdate");
+              console.log('📡 Emitted Socket.IO event: leadingLineUpdate');
+            }
             
             // Broadcast to all connected clients (for real-time dashboard)
             this.wss.clients.forEach((client) => {
@@ -123,6 +133,15 @@ class RFIDWebSocketServer {
                 message: 'Defect recorded successfully'
               }
             }));
+
+            // ✅ Emit Socket.IO event for defect updates
+            if (this.io) {
+              this.io.emit("defectUpdate", {
+                garmentDefects,
+                newDefect: newDefectEntry
+              });
+              console.log('📡 Emitted Socket.IO event: defectUpdate');
+            }
 
             // Broadcast to all connected clients (for real-time dashboard)
             this.wss.clients.forEach((client) => {
